@@ -128,3 +128,13 @@
     @apply font-sans;
     }
 }
+
+body {
+  font-family: "Montserrat", sans-serif;
+}
+
+@font-face {
+  font-family: "Montserrat";
+  src: url("/assets/fonts/Montserrat.ttf") format("truetype");
+  font-weight: 400;
+}
