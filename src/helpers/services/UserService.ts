@@ -16,7 +16,7 @@ const getUserByEmail = async (
         .from("AuthenticatedUser")
         .select("*")
         .eq("email", email)
-        .single(),
+        .maybeSingle(),
     );
 
     return res;
