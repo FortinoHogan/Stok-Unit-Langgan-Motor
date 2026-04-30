@@ -1,9 +1,9 @@
 
 import { useEffect, useState } from "react";
-import { Navigate, Outlet, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { routes, routePaths } from "@/constants/paths";
 import { UserService } from "@/helpers/services/UserService";
-import { useAuthStore } from "@/helpers/store/useAuthStore/useAuthStore";
+import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore";
 import { supabase } from "@/helpers/supabase/client";
 import LoginPage from "@/views/auth-page/LoginPage";
 import NotFoundPage from "@/views/not-foundpage/NotFoundPage";
@@ -23,7 +23,11 @@ function ProtectedRoute({
         return <Navigate to={routes.login} replace />;
     }
 
-    return <Outlet />;
+    return (
+        <div className="flex min-h-screen w-full">
+            <Outlet />
+        </div>
+    );
 }
 
 function GuestRoute({
@@ -96,34 +100,32 @@ export default function AppRouter() {
     }, [clearAuthenticatedUser, setAuthenticatedUser]);
 
     return (
-        <Router>
-            <Routes>
-                <Route
-                    element={
-                        <GuestRoute
-                            isAuthenticated={Boolean(authenticatedUser)}
-                            isReady={isReady}
-                        />
-                    }
-                >
-                    <Route path={routes.login} element={<LoginPage />} />
-                </Route>
+        <Routes>
+            <Route
+                element={
+                    <GuestRoute
+                        isAuthenticated={Boolean(authenticatedUser)}
+                        isReady={isReady}
+                    />
+                }
+            >
+                <Route path={routes.login} element={<LoginPage />} />
+            </Route>
 
-                <Route
-                    element={
-                        <ProtectedRoute
-                            isAuthenticated={Boolean(authenticatedUser)}
-                            isReady={isReady}
-                        />
-                    }
-                >
-                    {routePaths.map(({ path, Component }) => (
-                        <Route key={path} path={path} element={<Component />} />
-                    ))}
-                </Route>
+            <Route
+                element={
+                    <ProtectedRoute
+                        isAuthenticated={Boolean(authenticatedUser)}
+                        isReady={isReady}
+                    />
+                }
+            >
+                {routePaths.map(({ path, Component }) => (
+                    <Route key={path} path={path} element={<Component />} />
+                ))}
+            </Route>
 
-                <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-        </Router>
+            <Route path="*" element={<NotFoundPage />} />
+        </Routes>
     );
 }

@@ -3,7 +3,7 @@ import { routes } from "@/constants/paths"
 
 const NotFoundPage = () => {
     return (
-        <main className="flex items-center justify-center min-h-screen">
+        <main className="flex items-center justify-center min-h-screen w-full">
             <Empty>
                 <EmptyHeader>
                     <EmptyTitle>404 - Not Found</EmptyTitle>

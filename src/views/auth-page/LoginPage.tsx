@@ -5,12 +5,14 @@ import { supabase } from "@/helpers/supabase/client";
 import AppTextField from "@/components/app-components/app-text-field/AppTextField";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import AppModal from "@/components/app-components/app-modal/AppModal";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [statusMessage, setStatusMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
+    const [isShowError, setIsShowError] = useState(false);
 
     const authenticateUser = async (email: string) => {
         const res = await supabase.auth.signInWithOtp({
@@ -18,9 +20,10 @@ export default function LoginPage() {
             options: {
                 emailRedirectTo: `${window.location.origin}${routes.home}`,
             },
-        })
+        })  
 
         if (res.error) {
+            setIsShowError(true);
             setErrorMessage(res.error.message);
         } else {
             setStatusMessage("Verification link sent! Please check your email.");
@@ -40,10 +43,12 @@ export default function LoginPage() {
                 if (res.data) {
                     authenticateUser(normalizedEmail);
                 } else {
+                    setIsShowError(true);
                     setErrorMessage("Account is not authenticated. Please contact administrator to authenticate your account.");
                 }
             })
             .catch((error) => {
+                setIsShowError(true);
                 setErrorMessage(error.message);
             });
     };
@@ -73,18 +78,47 @@ export default function LoginPage() {
                     </Button>
                 </div>
             </div>
-
-            {statusMessage && (
-                <p className="rounded-md border border-green-200 bg-green-50 p-2 text-sm text-green-700">
-                    {statusMessage}
-                </p>
-            )}
-
-            {errorMessage && (
-                <p className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">
-                    {errorMessage}
-                </p>
-            )}
+            <AppModal
+                open={isShowError}
+                onOpenChange={setIsShowError}
+                title={statusMessage ? "Success" : "Error"}
+                showCloseButton={true}
+                contentProps={{
+                    onOpenAutoFocus: (event) => {
+                        event.preventDefault();
+                    },
+                    onCloseAutoFocus: (event) => {
+                        event.preventDefault();
+                    },
+                }}
+                classNames={{
+                    content: "sm:max-w-sm",
+                    header: "gap-1",
+                    title: "text-lg",
+                    description: "text-xs",
+                    body: "space-y-3",
+                    footer: "bg-muted/30",
+                }}
+                footer={
+                    <div className="flex w-full justify-center">
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                setErrorMessage("");
+                                setIsShowError(false);
+                            }}
+                        >
+                            OK
+                        </Button>
+                    </div>
+                }
+            >
+                {statusMessage ? (
+                    <p>{statusMessage}</p>
+                ) : (
+                    <p>{errorMessage}</p>
+                )}
+            </AppModal>
         </main>
     );
 }
