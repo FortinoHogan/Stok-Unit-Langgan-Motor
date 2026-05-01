@@ -1,4 +1,4 @@
-import { House, User, type LucideIcon } from "lucide-react";
+import { FileText, House, Palette, User, type LucideIcon } from "lucide-react";
 import { routes } from "./paths";
 
 type SidebarSubMenuItem = {
@@ -11,26 +11,42 @@ type SidebarMenuItem = {
   title: string;
   url?: string;
   isAdminOnly?: boolean;
+  icon?: LucideIcon;
   subItems?: SidebarSubMenuItem[];
 };
 
 type SidebarMenuGroup = {
   title: string;
-  icon?: LucideIcon;
   items: SidebarMenuItem[];
 };
 
 export const sidebarMenu: SidebarMenuGroup[] = [
   {
     title: "Dashboard",
-    icon: House,
-    items: [{ title: "Home", url: routes.home }],
+    items: [{ title: "Home", url: routes.home, icon: House }],
   },
   {
     title: "Management",
-    icon: User,
     items: [
-      { title: "Manage Users", url: routes.manageUsers, isAdminOnly: true },
+      {
+        title: "Manage Users",
+        url: routes.manageUsers,
+        isAdminOnly: true,
+        icon: User,
+      },
+      {
+        title: "Manage Master Data",
+        icon: FileText,
+        subItems: [
+          { title: "Master Category", url: routes.manageMasterDataCategory },
+          { title: "Master Color", url: routes.manageMasterDataColor },
+          { title: "Master Type", url: routes.manageMasterDataType },
+        ],
+      },
     ],
-  }
+  },
+  {
+    title: "Configuration",
+    items: [{ title: "Type and Color", url: routes.typeAndColor, icon: Palette }],
+  },
 ];

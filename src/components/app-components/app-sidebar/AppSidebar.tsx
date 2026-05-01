@@ -112,7 +112,7 @@ const AppSidebar = () => {
                                                     <SidebarMenuItem>
                                                         <CollapsibleTrigger asChild>
                                                             <SidebarMenuButton isActive={isSubMenuActive}>
-                                                                {group.icon && <group.icon className="h-4 w-4" />}
+                                                                {item.icon && <item.icon className="h-4 w-4" />}
                                                                 <span>{item.title}</span>
                                                                 <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                                                             </SidebarMenuButton>
@@ -141,7 +141,7 @@ const AppSidebar = () => {
                                             <SidebarMenuItem key={item.title}>
                                                 <SidebarMenuButton asChild isActive={isItemActive}>
                                                     <Link to={item.url}>
-                                                        {group.icon && <group.icon className="h-4 w-4" />}
+                                                        {item.icon && <item.icon className="h-4 w-4" />}
                                                         {item.title}
                                                     </Link>
                                                 </SidebarMenuButton>

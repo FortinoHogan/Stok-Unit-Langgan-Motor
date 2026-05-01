@@ -298,7 +298,7 @@ const ManageUserPage = () => {
                     onChange={(e) => setNewUserEmail(e)}
                 />
                 <div>
-                    <FieldLabel className="mb-2">Role Access</FieldLabel>
+                    <FieldLabel className="mb-2">Admin Access</FieldLabel>
                     <AppSwitch
                         label={isAdminChecked ? "This user will get Admin Access" : "This user will get Regular Access"}
                         checked={isAdminChecked}
