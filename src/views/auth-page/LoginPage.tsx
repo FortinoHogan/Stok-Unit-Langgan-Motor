@@ -20,7 +20,7 @@ export default function LoginPage() {
             options: {
                 emailRedirectTo: `${window.location.origin}${routes.home}`,
             },
-        })  
+        })
 
         if (res.error) {
             setIsShowError(true);
@@ -38,7 +38,10 @@ export default function LoginPage() {
             return;
         }
 
-        await UserService.getUserByEmail(normalizedEmail, setIsLoading,)
+        await UserService.getUserByEmail({
+            email: normalizedEmail,
+            setIsLoading,
+        })
             .then((res) => {
                 if (res.data) {
                     authenticateUser(normalizedEmail);

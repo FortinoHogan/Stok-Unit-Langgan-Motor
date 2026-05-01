@@ -6,7 +6,8 @@ import { UserService } from "@/helpers/services/UserService";
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore";
 import { supabase } from "@/helpers/supabase/client";
 import LoginPage from "@/views/auth-page/LoginPage";
-import NotFoundPage from "@/views/not-foundpage/NotFoundPage";
+import NotFoundPage from "@/views/not-found-page/NotFoundPage";
+import AppContainer from "@/components/app-components/app-container/AppContainer";
 
 function ProtectedRoute({
     isAuthenticated,
@@ -23,11 +24,7 @@ function ProtectedRoute({
         return <Navigate to={routes.login} replace />;
     }
 
-    return (
-        <div className="flex min-h-screen w-full">
-            <Outlet />
-        </div>
-    );
+    return <AppContainer />;
 }
 
 function GuestRoute({
@@ -66,7 +63,7 @@ export default function AppRouter() {
                 return;
             }
 
-            const userResponse = await UserService.getUserByEmail(email);
+            const userResponse = await UserService.getUserByEmail({ email });
 
             if (!userResponse.data) {
                 clearAuthenticatedUser();

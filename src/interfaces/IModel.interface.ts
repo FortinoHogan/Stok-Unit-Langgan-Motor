@@ -12,12 +12,25 @@ export interface IResponse<T> {
   error: PostgrestError | null;
   status: number;
   statusText: string;
+  count?: number | null;
+}
+
+export interface IRequestWithLoading {
+  setIsLoading?: (val: boolean) => void;
+}
+
+export interface IGetListRequest extends IRequestWithLoading {
+  page: number;
+  pageSize: number;
+  search?: string;
 }
 
 export interface AuthenticatedUser {
   createdAt: string;
   userId: number;
   email: string;
+  isAdmin: boolean;
+  isDeleted: boolean;
 }
 
 export interface MsCategory extends IModel {

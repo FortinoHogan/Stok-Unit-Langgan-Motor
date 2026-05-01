@@ -1,5 +1,5 @@
-import { ChevronsUpDown, LogOut, Motorbike } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
+import { ChevronDown, ChevronsUpDown, LogOut, Motorbike } from "lucide-react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import {
     Sidebar,
@@ -12,6 +12,9 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
     useSidebar,
 } from "@/components/ui/sidebar"
 import { sidebarMenu } from "@/constants/SidebarMenu"
@@ -20,12 +23,43 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
 import { supabase } from "@/helpers/supabase/client"
 import { routes } from "@/constants/paths"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 const AppSidebar = () => {
     const { isMobile } = useSidebar()
     const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
     const clearAuthenticatedUser = useAuthStore((state) => state.clearAuthenticatedUser)
     const navigate = useNavigate()
+    const location = useLocation()
+    const isAdmin = Boolean(authenticatedUser?.isAdmin)
+
+    const visibleSidebarMenu = sidebarMenu
+        .map((group) => {
+            const visibleItems = group.items
+                .map((item) => {
+                    const visibleSubItems = item.subItems?.filter((subItem) => !subItem.isAdminOnly || isAdmin)
+
+                    if (item.isAdminOnly && !isAdmin && (!visibleSubItems || visibleSubItems.length === 0)) {
+                        return null
+                    }
+
+                    if (!item.url && (!visibleSubItems || visibleSubItems.length === 0)) {
+                        return null
+                    }
+
+                    return {
+                        ...item,
+                        subItems: visibleSubItems,
+                    }
+                })
+                .filter((item): item is NonNullable<typeof item> => item !== null)
+
+            return {
+                ...group,
+                items: visibleItems,
+            }
+        })
+        .filter((group) => group.items.length > 0)
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
@@ -57,7 +91,7 @@ const AppSidebar = () => {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                {sidebarMenu
+                {visibleSidebarMenu
                     .map((group) => (
                         <SidebarGroup key={group.title}>
                             {group.title && (
@@ -68,10 +102,44 @@ const AppSidebar = () => {
                             <SidebarGroupContent>
                                 <SidebarMenu>
                                     {group.items.map((item) => {
-                                        const isActive = location.pathname === item.url
+                                        const hasSubMenu = (item.subItems?.length ?? 0) > 0
+                                        const isSubMenuActive = item.subItems?.some((subItem) => location.pathname === subItem.url) ?? false
+                                        const isItemActive = item.url ? location.pathname === item.url : isSubMenuActive
+
+                                        if (hasSubMenu) {
+                                            return (
+                                                <Collapsible key={item.title} defaultOpen={isSubMenuActive} asChild className="group/collapsible">
+                                                    <SidebarMenuItem>
+                                                        <CollapsibleTrigger asChild>
+                                                            <SidebarMenuButton isActive={isSubMenuActive}>
+                                                                {group.icon && <group.icon className="h-4 w-4" />}
+                                                                <span>{item.title}</span>
+                                                                <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                                                            </SidebarMenuButton>
+                                                        </CollapsibleTrigger>
+                                                        <CollapsibleContent>
+                                                            <SidebarMenuSub>
+                                                                {item.subItems?.map((subItem) => (
+                                                                    <SidebarMenuSubItem key={subItem.title}>
+                                                                        <SidebarMenuSubButton asChild isActive={location.pathname === subItem.url}>
+                                                                            <Link to={subItem.url}>{subItem.title}</Link>
+                                                                        </SidebarMenuSubButton>
+                                                                    </SidebarMenuSubItem>
+                                                                ))}
+                                                            </SidebarMenuSub>
+                                                        </CollapsibleContent>
+                                                    </SidebarMenuItem>
+                                                </Collapsible>
+                                            )
+                                        }
+
+                                        if (!item.url) {
+                                            return null
+                                        }
+
                                         return (
                                             <SidebarMenuItem key={item.title}>
-                                                <SidebarMenuButton asChild isActive={isActive}>
+                                                <SidebarMenuButton asChild isActive={isItemActive}>
                                                     <Link to={item.url}>
                                                         {group.icon && <group.icon className="h-4 w-4" />}
                                                         {item.title}

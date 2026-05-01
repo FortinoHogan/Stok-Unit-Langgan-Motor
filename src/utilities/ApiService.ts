@@ -29,6 +29,8 @@ const request = <T>(
           error: result.error,
           status: result.status,
           statusText: result.statusText,
+          count:
+            (result as IResponse<T> & { count?: number | null }).count ?? null,
         };
 
         if (result.error) {
