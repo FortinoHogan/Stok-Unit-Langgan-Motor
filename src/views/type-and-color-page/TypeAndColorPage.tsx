@@ -240,7 +240,11 @@ const TypeAndColorPage = () => {
       search: "",
     })
       .then((res) => {
-        setColorList(res.data || [])
+        const sorted = (res.data || []).sort((a, b) =>
+          a.colorName.localeCompare(b.colorName)
+        );
+
+        setColorList(sorted);
       })
       .catch((error) => {
         setErrorMessage(error.message)

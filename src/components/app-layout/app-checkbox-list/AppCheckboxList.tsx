@@ -92,10 +92,15 @@ const AppCheckboxList = (props: AppCheckboxListProps) => {
                     </Button>
                 </PopoverTrigger>
 
-                <PopoverContent className={cn("w-(--radix-popover-trigger-width) p-0", classNames?.content)} align="start">
-                    <Command>
+                <PopoverContent className={cn("w-(--radix-popover-trigger-width) max-h-80 overflow-hidden p-0", classNames?.content)} align="start">
+                    <Command className="max-h-80">
                         <CommandInput placeholder={searchPlaceholder} disabled={resolvedDisabled} {...inputProps} />
-                        <CommandList className={cn(classNames?.list)}>
+                        <CommandList
+                            className={cn("max-h-64 overflow-y-auto overscroll-contain", classNames?.list)}
+                            onWheel={(event) => {
+                                event.stopPropagation()
+                            }}
+                        >
                             <CommandEmpty>{isLoading ? "Loading..." : emptyMessage}</CommandEmpty>
                             <CommandGroup>
                                 {options.map((option) => {
