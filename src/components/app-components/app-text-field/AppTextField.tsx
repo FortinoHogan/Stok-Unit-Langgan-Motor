@@ -17,6 +17,7 @@ const AppTextField = (props: AppTextFieldProps) => {
         value,
         onChange,
         withoutMargin = false,
+        isUppercase = false,
     } = props
     const generatedId = useId()
     const inputId = id ?? `input-field-${generatedId.replace(/:/g, "")}`
@@ -35,7 +36,8 @@ const AppTextField = (props: AppTextFieldProps) => {
     const resolvedError = error || validationError
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const nextValue = event.target.value
+        const rawValue = event.target.value
+        const nextValue = isUppercase ? rawValue.toUpperCase() : rawValue
 
         if (validationError) {
             setValidationError(getRequiredError(nextValue))

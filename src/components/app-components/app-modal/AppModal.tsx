@@ -34,7 +34,7 @@ const AppModal = (props: AppModalProps) => {
             modal={modal}
         >
             {trigger ? (
-                <DialogTrigger>{trigger}</DialogTrigger>
+                <DialogTrigger asChild>{trigger}</DialogTrigger>
             ) : null}
 
             <DialogContent

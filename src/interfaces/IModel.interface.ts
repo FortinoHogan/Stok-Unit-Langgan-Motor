@@ -7,6 +7,10 @@ interface IModel {
   updatedAt: string;
 }
 
+interface IModelMaster extends IModel {
+  isDeleted: boolean;
+}
+
 export interface IResponse<T> {
   data: T | null;
   error: PostgrestError | null;
@@ -33,17 +37,17 @@ export interface AuthenticatedUser {
   isDeleted: boolean;
 }
 
-export interface MsCategory extends IModel {
+export interface MsCategory extends IModelMaster {
   categoryId: number;
   categoryName: string;
 }
 
-export interface MsColor extends IModel {
+export interface MsColor extends IModelMaster {
   colorId: number;
   colorName: string;
 }
 
-export interface MsType extends IModel {
+export interface MsType extends IModelMaster {
   typeId: number;
   typeName: string;
   typeCode: string;

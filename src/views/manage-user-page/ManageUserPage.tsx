@@ -22,8 +22,7 @@ import type {
     UpdateAuthenticatedUserRequest,
 } from "@/interfaces/IUserService.interface"
 import { Pencil, Trash } from "lucide-react"
-
-type PendingAction = "update" | "delete" | null
+import { MANAGE_USER_PAGE_SIZE_OPTIONS, type PendingActionManageUser } from "./ManageUserPage.constant"
 
 const ManageUserPage = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -31,19 +30,18 @@ const ManageUserPage = () => {
     const [errorMessage, setErrorMessage] = useState("")
     const [isShowError, setIsShowError] = useState(false)
     const [newUserEmail, setNewUserEmail] = useState("")
+    const [editingOriginalEmail, setEditingOriginalEmail] = useState("")
     const [isAdminChecked, setIsAdminChecked] = useState(false)
     const [editingUserId, setEditingUserId] = useState<number | null>(null)
-    const [pendingAction, setPendingAction] = useState<PendingAction>(null)
+    const [pendingAction, setPendingAction] = useState<PendingActionManageUser>(null)
     const [pendingDeleteUser, setPendingDeleteUser] = useState<AuthenticatedUser | null>(null)
 
     const [userList, setUserList] = useState<AuthenticatedUser[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [search, setSearch] = useState("")
     const [page, setPage] = useState(1)
-    const [pageSize, setPageSize] = useState(10)
+    const [pageSize, setPageSize] = useState(5)
     const [totalCount, setTotalCount] = useState(0)
-
-    const MANAGE_USER_PAGE_SIZE_OPTIONS = [5, 10, 20];
 
     const manageUserTableColumns: ColumnDef<AuthenticatedUser>[] = [
         {
@@ -98,6 +96,7 @@ const ManageUserPage = () => {
 
     const resetUserForm = () => {
         setNewUserEmail("")
+        setEditingOriginalEmail("")
         setIsAdminChecked(false)
         setEditingUserId(null)
     }
@@ -116,8 +115,30 @@ const ManageUserPage = () => {
     const handleEditUser = (user: AuthenticatedUser) => {
         setEditingUserId(user.userId)
         setNewUserEmail(user.email)
+        setEditingOriginalEmail(user.email)
         setIsAdminChecked(user.isAdmin)
         setIsAddModalOpen(true)
+    }
+
+    const validateUniqueEmail = async (email: string) => {
+        const normalizedEmail = email.trim().toLowerCase()
+        const normalizedOriginalEmail = editingOriginalEmail.trim().toLowerCase()
+
+        if (editingUserId && normalizedEmail === normalizedOriginalEmail) {
+            return true
+        }
+
+        const res = await UserService.getUserByEmail({
+            email: normalizedEmail,
+        })
+
+        if (res.data) {
+            setErrorMessage("Email access already exists")
+            setIsShowError(true)
+            return false
+        }
+
+        return true
     }
 
     const handleOpenUpdateConfirmation = () => {
@@ -126,6 +147,16 @@ const ManageUserPage = () => {
         }
 
         setPendingAction("update")
+        setPendingDeleteUser(null)
+        setIsConfirmActionModalOpen(true)
+    }
+
+    const handleOpenInsertConfirmation = () => {
+        if (!newUserEmail.trim()) {
+            return
+        }
+
+        setPendingAction("insert")
         setPendingDeleteUser(null)
         setIsConfirmActionModalOpen(true)
     }
@@ -141,8 +172,13 @@ const ManageUserPage = () => {
             return;
         }
 
+        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
+        if (!isUniqueEmail) {
+            return
+        }
+
         const payload: InsertAuthenticatedUserRequest = {
-            email: newUserEmail,
+            email: newUserEmail.trim().toLowerCase(),
             isAdmin: isAdminChecked,
             setIsLoading,
         }
@@ -165,9 +201,14 @@ const ManageUserPage = () => {
             return;
         }
 
+        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
+        if (!isUniqueEmail) {
+            return
+        }
+
         const payload: UpdateAuthenticatedUserRequest = {
             userId: editingUserId,
-            email: newUserEmail,
+            email: newUserEmail.trim().toLowerCase(),
             isAdmin: isAdminChecked,
             setIsLoading,
         }
@@ -208,6 +249,11 @@ const ManageUserPage = () => {
     }
 
     const handleConfirmAction = async () => {
+        if (pendingAction === "insert") {
+            await handleInsert()
+            return
+        }
+
         if (pendingAction === "update") {
             await handleUpdate()
             return
@@ -247,12 +293,12 @@ const ManageUserPage = () => {
                 <h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
                     Manage User
                 </h1>
-                <p className="text-muted-foreground">Manage email access for AuthenticatedUser and update role access.</p>
+                <p className="text-muted-foreground">Manage email and role access for this application</p>
             </div>
             <AppModal
                 trigger={<Button className="mb-4" onClick={handleOpenCreateModal}>Add Email Access</Button>}
                 title={editingUserId ? "Edit User Access" : "Add New User Access"}
-                description={editingUserId ? "Update email access for AuthenticatedUser." : "Add a new email access for AuthenticatedUser."}
+                description={editingUserId ? "Update email access for AuthenticatedUser" : "Add a new email access for AuthenticatedUser"}
                 open={isAddModalOpen}
                 onOpenChange={(open) => {
                     setIsAddModalOpen(open)
@@ -281,7 +327,7 @@ const ManageUserPage = () => {
                                     return
                                 }
 
-                                handleInsert()
+                                handleOpenInsertConfirmation()
                             }}
                         >
                             {editingUserId ? "Update" : "Save"}
@@ -315,11 +361,19 @@ const ManageUserPage = () => {
                         resetConfirmActionState()
                     }
                 }}
-                title={pendingAction === "delete" ? "Delete User Access" : "Confirm Update"}
+                title={
+                    pendingAction === "delete"
+                        ? "Delete User Access"
+                        : pendingAction === "insert"
+                            ? "Confirm Save"
+                            : "Confirm Update"
+                }
                 description={
                     pendingAction === "delete"
-                        ? "This action will remove the selected user access."
-                        : "This action will update the selected user access."
+                        ? "This action will remove the selected user access"
+                        : pendingAction === "insert"
+                            ? "This action will add new user access"
+                            : "This action will update the selected user access"
                 }
                 classNames={{
                     content: "sm:max-w-sm",
@@ -345,15 +399,17 @@ const ManageUserPage = () => {
                                 handleConfirmAction()
                             }}
                         >
-                            {pendingAction === "delete" ? "Delete" : "Update"}
+                            {pendingAction === "delete" ? "Delete" : pendingAction === "insert" ? "Save" : "Update"}
                         </Button>
                     </div>
                 }
             >
                 <p>
                     {pendingAction === "delete"
-                        ? `Are you sure you want to delete this user"?`
-                        : `Are you sure you want to update this user"?`}
+                        ? "Are you sure you want to delete this user?"
+                        : pendingAction === "insert"
+                            ? "Are you sure you want to add this user?"
+                            : "Are you sure you want to update this user?"}
                 </p>
             </AppModal>
             <AppSearchBar

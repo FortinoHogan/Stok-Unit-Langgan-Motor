@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { routes, routePaths } from "@/constants/paths";
 import { UserService } from "@/helpers/services/UserService";
@@ -8,6 +8,7 @@ import { supabase } from "@/helpers/supabase/client";
 import LoginPage from "@/views/auth-page/LoginPage";
 import NotFoundPage from "@/views/not-found-page/NotFoundPage";
 import AppContainer from "@/components/app-components/app-container/AppContainer";
+import AppSpinner from "@/components/app-components/app-spinner/AppSpinner";
 
 function ProtectedRoute({
     isAuthenticated,
@@ -17,7 +18,7 @@ function ProtectedRoute({
     isReady: boolean;
 }) {
     if (!isReady) {
-        return <div>Checking session...</div>;
+        return <AppSpinner />;
     }
 
     if (!isAuthenticated) {
@@ -35,7 +36,7 @@ function GuestRoute({
     isReady: boolean;
 }) {
     if (!isReady) {
-        return <div>Checking session...</div>;
+        return <AppSpinner />;
     }
 
     if (isAuthenticated) {
@@ -54,6 +55,7 @@ export default function AppRouter() {
         (state) => state.clearAuthenticatedUser,
     );
     const [isReady, setIsReady] = useState(false);
+    const previousEmailRef = useRef<string | null>(null);
 
     useEffect(() => {
         const syncAuthState = async (email?: string) => {
@@ -62,6 +64,13 @@ export default function AppRouter() {
                 setIsReady(true);
                 return;
             }
+
+            if (previousEmailRef.current === email) {
+                setIsReady(true);
+                return;
+            }
+
+            previousEmailRef.current = email;
 
             const userResponse = await UserService.getUserByEmail({ email });
 
