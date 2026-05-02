@@ -1,4 +1,5 @@
 import AppModal from "@/components/app-components/app-modal/AppModal"
+import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
 import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
 import AppTable from "@/components/app-components/app-table/AppTable"
 import AppTextField from "@/components/app-components/app-text-field/AppTextField"
@@ -26,9 +27,10 @@ import { MANAGE_COLOR_PAGE_SIZE_OPTIONS, type PendingActionManageColor } from ".
 const ManageColorPage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const [isShowError, setIsShowError] = useState(false)
   const [newColorName, setNewColorName] = useState("")
   const [editingColorId, setEditingColorId] = useState<number | null>(null)
@@ -44,12 +46,6 @@ const ManageColorPage = () => {
   const [existingColorList, setExistingColorList] = useState<MsColor[]>([])
 
   const manageColorTableColumns: ColumnDef<MsColor>[] = [
-    {
-      accessorKey: "no",
-      header: "No",
-      enableSorting: false,
-      cell: ({ row }) => <p className="pl-2">{(page - 1) * pageSize + row.index + 1}</p>,
-    },
     {
       accessorKey: "colorName",
       header: "Color Name",
@@ -127,14 +123,14 @@ const ManageColorPage = () => {
   const handleOpenCreateModal = () => {
     resetColorForm()
     handleFetchExistingColors()
-    setIsAddModalOpen(true)
+    setIsUpsertModalOpen(true)
   }
 
   const handleEditColor = (color: MsColor) => {
     setEditingColorId(color.colorId)
     setNewColorName(color.colorName)
     handleFetchExistingColors()
-    setIsAddModalOpen(true)
+    setIsUpsertModalOpen(true)
   }
 
   const handleOpenUpdateConfirmation = () => {
@@ -203,8 +199,12 @@ const ManageColorPage = () => {
 
     await ColorService.insertColor(payload)
       .then(() => {
-        setIsAddModalOpen(false)
+        setIsUpsertModalOpen(false)
         resetColorForm()
+        resetConfirmActionState()
+        setErrorMessage("")
+        setSuccessMessage("Color added successfully")
+        setIsShowError(true)
         handleFetchColors()
       })
       .catch((error) => {
@@ -239,9 +239,12 @@ const ManageColorPage = () => {
 
     await ColorService.updateColor(payload)
       .then(() => {
-        setIsAddModalOpen(false)
+        setIsUpsertModalOpen(false)
         resetColorForm()
         resetConfirmActionState()
+        setErrorMessage("")
+        setSuccessMessage("Color updated successfully")
+        setIsShowError(true)
         handleFetchColors()
       })
       .catch((error) => {
@@ -266,6 +269,9 @@ const ManageColorPage = () => {
     await ColorService.deleteColor(payload)
       .then(() => {
         resetConfirmActionState()
+        setErrorMessage("")
+        setSuccessMessage("Color deleted successfully")
+        setIsShowError(true)
 
         if (colorList.length === 1 && page > 1) {
           setPage((prev) => prev - 1)
@@ -347,9 +353,9 @@ const ManageColorPage = () => {
         trigger={<Button className="mb-4" onClick={handleOpenCreateModal}>Add Color</Button>}
         title={editingColorId ? "Edit Color" : "Add New Color"}
         description={editingColorId ? "Update selected color" : "Add a new color"}
-        open={isAddModalOpen}
+        open={isUpsertModalOpen}
         onOpenChange={(open) => {
-          setIsAddModalOpen(open)
+          setIsUpsertModalOpen(open)
 
           if (!open) {
             resetColorForm()
@@ -360,7 +366,7 @@ const ManageColorPage = () => {
             <Button
               type="button"
               onClick={() => {
-                setIsAddModalOpen(false)
+                setIsUpsertModalOpen(false)
                 resetColorForm()
               }}
               variant="outline"
@@ -390,25 +396,11 @@ const ManageColorPage = () => {
           value={newColorName}
           onChange={(value) => setNewColorName(value)}
         />
-        <div>
-          <p className="mb-2 text-sm font-medium">Existing Color List</p>
-          <div className="max-h-36 overflow-y-auto rounded-md border p-2">
-            {filteredExistingColorList.length ? (
-              <div className="flex flex-wrap gap-2">
-                {filteredExistingColorList.map((color) => (
-                  <span
-                    key={color.colorId}
-                    className="rounded-md bg-muted px-2 py-1 text-xs"
-                  >
-                    {color.colorName}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No color data</p>
-            )}
-          </div>
-        </div>
+        <AppExistingList
+          title="Existing Color List"
+          items={filteredExistingColorList.map((color) => color.colorName)}
+          emptyMessage="No color data"
+        />
       </AppModal>
 
       <AppModal
@@ -486,6 +478,7 @@ const ManageColorPage = () => {
 
       <AppTable
         table={table}
+        showNumberColumn
         columnsCount={manageColorTableColumns.length}
         emptyMessage="No colors found."
         showPagination
@@ -532,6 +525,7 @@ const ManageColorPage = () => {
               type="button"
               onClick={() => {
                 setErrorMessage("")
+                setSuccessMessage("")
                 setIsShowError(false)
               }}
             >
@@ -540,7 +534,7 @@ const ManageColorPage = () => {
           </div>
         }
       >
-        {errorMessage ? <p>{errorMessage}</p> : <p>{errorMessage}</p>}
+        <p>{errorMessage || successMessage}</p>
       </AppModal>
 
       {isLoading && <AppSpinner />}

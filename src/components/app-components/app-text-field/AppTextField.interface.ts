@@ -14,4 +14,5 @@ export interface AppTextFieldProps {
   onChange?: (value: string) => void;
   withoutMargin?: boolean;
   isUppercase?: boolean;
+  isDisabled?: boolean;
 }

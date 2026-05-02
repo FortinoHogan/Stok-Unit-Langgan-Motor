@@ -25,9 +25,10 @@ import { Pencil, Trash } from "lucide-react"
 import { MANAGE_USER_PAGE_SIZE_OPTIONS, type PendingActionManageUser } from "./ManageUserPage.constant"
 
 const ManageUserPage = () => {
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+    const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
     const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
+    const [successMessage, setSuccessMessage] = useState("")
     const [isShowError, setIsShowError] = useState(false)
     const [newUserEmail, setNewUserEmail] = useState("")
     const [editingOriginalEmail, setEditingOriginalEmail] = useState("")
@@ -44,12 +45,6 @@ const ManageUserPage = () => {
     const [totalCount, setTotalCount] = useState(0)
 
     const manageUserTableColumns: ColumnDef<AuthenticatedUser>[] = [
-        {
-            accessorKey: "no",
-            header: "No",
-            enableSorting: false,
-            cell: ({ row }) => <p className="pl-2">{(page - 1) * pageSize + row.index + 1}</p>,
-        },
         {
             accessorKey: "email",
             header: "Email",
@@ -109,7 +104,7 @@ const ManageUserPage = () => {
 
     const handleOpenCreateModal = () => {
         resetUserForm()
-        setIsAddModalOpen(true)
+        setIsUpsertModalOpen(true)
     }
 
     const handleEditUser = (user: AuthenticatedUser) => {
@@ -117,7 +112,7 @@ const ManageUserPage = () => {
         setNewUserEmail(user.email)
         setEditingOriginalEmail(user.email)
         setIsAdminChecked(user.isAdmin)
-        setIsAddModalOpen(true)
+        setIsUpsertModalOpen(true)
     }
 
     const validateUniqueEmail = async (email: string) => {
@@ -185,9 +180,13 @@ const ManageUserPage = () => {
 
         await UserService.insertAuthenticatedUser(payload)
             .then(() => {
-                setIsAddModalOpen(false)
+                setIsUpsertModalOpen(false)
                 setNewUserEmail("")
                 setIsAdminChecked(false)
+                resetConfirmActionState()
+                setErrorMessage("")
+                setSuccessMessage("User access added successfully")
+                setIsShowError(true)
                 handleFetchUsers()
             })
             .catch((error) => {
@@ -215,9 +214,12 @@ const ManageUserPage = () => {
 
         await UserService.updateAuthenticatedUser(payload)
             .then(() => {
-                setIsAddModalOpen(false)
+                setIsUpsertModalOpen(false)
                 resetUserForm()
                 resetConfirmActionState()
+                setErrorMessage("")
+                setSuccessMessage("User access updated successfully")
+                setIsShowError(true)
                 handleFetchUsers()
             })
             .catch((error) => {
@@ -235,6 +237,9 @@ const ManageUserPage = () => {
         await UserService.deleteAuthenticatedUser(payload)
             .then(() => {
                 resetConfirmActionState()
+                setErrorMessage("")
+                setSuccessMessage("User access deleted successfully")
+                setIsShowError(true)
                 if (userList.length === 1 && page > 1) {
                     setPage((prev) => prev - 1)
                     return
@@ -299,9 +304,9 @@ const ManageUserPage = () => {
                 trigger={<Button className="mb-4" onClick={handleOpenCreateModal}>Add Email Access</Button>}
                 title={editingUserId ? "Edit User Access" : "Add New User Access"}
                 description={editingUserId ? "Update email access for AuthenticatedUser" : "Add a new email access for AuthenticatedUser"}
-                open={isAddModalOpen}
+                open={isUpsertModalOpen}
                 onOpenChange={(open) => {
-                    setIsAddModalOpen(open)
+                    setIsUpsertModalOpen(open)
 
                     if (!open) {
                         resetUserForm()
@@ -312,7 +317,7 @@ const ManageUserPage = () => {
                         <Button
                             type="button"
                             onClick={() => {
-                                setIsAddModalOpen(false)
+                                setIsUpsertModalOpen(false)
                                 resetUserForm()
                             }}
                             variant={"outline"}
@@ -426,6 +431,7 @@ const ManageUserPage = () => {
 
             <AppTable
                 table={table}
+                showNumberColumn
                 columnsCount={manageUserTableColumns.length}
                 emptyMessage={"No users found."}
                 showPagination
@@ -471,6 +477,7 @@ const ManageUserPage = () => {
                             type="button"
                             onClick={() => {
                                 setErrorMessage("");
+                                setSuccessMessage("");
                                 setIsShowError(false);
                             }}
                         >
@@ -479,11 +486,7 @@ const ManageUserPage = () => {
                     </div>
                 }
             >
-                {errorMessage ? (
-                    <p>{errorMessage}</p>
-                ) : (
-                    <p>{errorMessage}</p>
-                )}
+                <p>{errorMessage || successMessage}</p>
             </AppModal>
             {isLoading && <AppSpinner />}
         </div>

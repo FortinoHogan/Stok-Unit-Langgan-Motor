@@ -20,6 +20,8 @@ const AppTable = <TData,>(props: AppTableProps<TData>) => {
     const {
         table,
         columnsCount,
+        showNumberColumn = false,
+        numberColumnHeader = "No",
         emptyMessage = "No data found.",
         enableSorting = true,
         classNames,
@@ -42,7 +44,7 @@ const AppTable = <TData,>(props: AppTableProps<TData>) => {
 
     const rowModel = table.getRowModel()
     const visibleColumnLength = table.getVisibleLeafColumns().length
-    const resolvedColumnsCount = columnsCount ?? visibleColumnLength
+    const resolvedColumnsCount = (columnsCount ?? visibleColumnLength) + (showNumberColumn ? 1 : 0)
     const safeColSpan = Math.max(resolvedColumnsCount || 1, 1)
 
     const paginationContext = {
@@ -68,6 +70,11 @@ const AppTable = <TData,>(props: AppTableProps<TData>) => {
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
+                                {showNumberColumn ? (
+                                    <TableHead className={cn(classNames?.headerCell)}>
+                                        {numberColumnHeader}
+                                    </TableHead>
+                                ) : null}
                                 {headerGroup.headers.map((header) => (
                                     <TableHead key={header.id} className={cn(classNames?.headerCell)}>
                                         {header.isPlaceholder ? null : (
@@ -100,8 +107,13 @@ const AppTable = <TData,>(props: AppTableProps<TData>) => {
 
                     <TableBody>
                         {rowModel.rows.length ? (
-                            rowModel.rows.map((row) => (
+                            rowModel.rows.map((row, rowIndex) => (
                                 <TableRow key={row.id} className={cn(classNames?.bodyRow)}>
+                                    {showNumberColumn ? (
+                                        <TableCell className={cn(classNames?.bodyCell)}>
+                                            <p className="pl-2">{(page - 1) * pageSize + rowIndex + 1}</p>
+                                        </TableCell>
+                                    ) : null}
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id} className={cn(classNames?.bodyCell)}>
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}

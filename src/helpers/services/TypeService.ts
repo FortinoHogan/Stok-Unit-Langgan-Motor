@@ -26,8 +26,8 @@ const getTypeList = async (
           .from("MsType")
           .select("*", { count: "exact" })
           .eq("isDeleted", false)
-          .order("createdAt", { ascending: false })
-          .order("typeId", { ascending: false })
+          .order("categoryId", { ascending: true })
+          .order("typeName", { ascending: true })
           .range(from, to);
 
         if (search?.trim()) {
@@ -53,13 +53,20 @@ const getTypeList = async (
 const insertType = async (
   params: InsertTypeRequest,
 ): Promise<IResponse<MsType>> => {
-  const { typeName, typeCode, typeDescription, userIn, setIsLoading } = params;
+  const {
+    typeName,
+    typeCode,
+    typeDescription,
+    categoryId,
+    userIn,
+    setIsLoading,
+  } = params;
   setIsLoading?.(true);
   try {
     const res = await ApiService.request<MsType>(() =>
       supabase
         .from("MsType")
-        .insert({ typeName, typeCode, typeDescription, userIn })
+        .insert({ typeName, typeCode, typeDescription, categoryId, userIn })
         .select()
         .single(),
     );
@@ -79,6 +86,7 @@ const updateType = async (
     typeName,
     typeCode,
     typeDescription,
+    categoryId,
     userUp,
     updatedAt,
     setIsLoading,
@@ -88,7 +96,14 @@ const updateType = async (
     const res = await ApiService.request<MsType>(() =>
       supabase
         .from("MsType")
-        .update({ typeName, typeCode, typeDescription, userUp, updatedAt })
+        .update({
+          typeName,
+          typeCode,
+          typeDescription,
+          categoryId,
+          userUp,
+          updatedAt,
+        })
         .eq("typeId", typeId)
         .select()
         .single(),

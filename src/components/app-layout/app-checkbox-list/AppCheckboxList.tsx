@@ -1,8 +1,9 @@
 import { useId, useMemo, useState } from "react"
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react"
+import { ChevronDownIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
     Command,
     CommandEmpty,
@@ -15,40 +16,56 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
-import type { AppAutoCompleteProps } from "./AppAutoComplete.interface"
+import type { AppCheckboxListProps } from "./AppCheckboxList.interface"
 
-const AppAutoComplete = (props: AppAutoCompleteProps) => {
+const AppCheckboxList = (props: AppCheckboxListProps) => {
     const {
         id,
         name,
         label = "Select",
         required = false,
-        placeholder = "Select an option",
+        placeholder = "Select options",
         searchPlaceholder = "Search...",
         emptyMessage = "No results found.",
-        value,
+        values,
         options,
         disabled = false,
         isDisabled = false,
         isLoading = false,
         withoutMargin = false,
-        onValueChange,
+        onValuesChange,
         inputProps,
         triggerProps,
         classNames,
     } = props
 
     const generatedId = useId()
-    const triggerId = id ?? `input-autocomplete-${generatedId.replace(/:/g, "")}`
+    const triggerId = id ?? `input-checkbox-list-${generatedId.replace(/:/g, "")}`
 
     const [open, setOpen] = useState(false)
 
     const resolvedDisabled = disabled || isDisabled || isLoading
 
-    const selectedOption = useMemo(
-        () => options.find((option) => option.value === value),
-        [options, value],
+    const selectedLabels = useMemo(
+        () => options.filter((option) => values.includes(option.value)).map((option) => option.label),
+        [options, values],
     )
+
+    const displayValue = selectedLabels.length
+        ? `${selectedLabels.length} selected`
+        : placeholder
+
+    const toggleValue = (optionValue: string) => {
+        if (resolvedDisabled) {
+            return
+        }
+
+        const nextValues = values.includes(optionValue)
+            ? values.filter((value) => value !== optionValue)
+            : [...values, optionValue]
+
+        onValuesChange?.(nextValues)
+    }
 
     return (
         <Field className={cn(withoutMargin ? "" : "mb-4", classNames?.field)}>
@@ -70,10 +87,8 @@ const AppAutoComplete = (props: AppAutoCompleteProps) => {
                         className={cn("w-full justify-between", classNames?.trigger)}
                         {...triggerProps}
                     >
-                        <span className="truncate text-left">
-                            {selectedOption ? selectedOption.label : placeholder}
-                        </span>
-                        {isLoading ? <Spinner className="size-4 opacity-50" /> : <ChevronsUpDownIcon className="size-4 opacity-50" />}
+                        <span className="truncate text-left">{displayValue}</span>
+                        {isLoading ? <Spinner className="size-4 opacity-50" /> : <ChevronDownIcon className="size-4 opacity-50" />}
                     </Button>
                 </PopoverTrigger>
 
@@ -83,26 +98,26 @@ const AppAutoComplete = (props: AppAutoCompleteProps) => {
                         <CommandList className={cn(classNames?.list)}>
                             <CommandEmpty>{isLoading ? "Loading..." : emptyMessage}</CommandEmpty>
                             <CommandGroup>
-                                {options.map((option) => (
-                                    <CommandItem
-                                        key={option.value}
-                                        value={`${option.label} ${option.value}`}
-                                        disabled={resolvedDisabled}
-                                        onSelect={() => {
-                                            const nextValue = option.value === value ? "" : option.value
-                                            onValueChange?.(nextValue)
-                                            setOpen(false)
-                                        }}
-                                    >
-                                        <CheckIcon
-                                            className={cn(
-                                                "size-4",
-                                                value === option.value ? "opacity-100" : "opacity-0",
-                                            )}
-                                        />
-                                        {option.label}
-                                    </CommandItem>
-                                ))}
+                                {options.map((option) => {
+                                    const checked = values.includes(option.value)
+
+                                    return (
+                                        <CommandItem
+                                            key={option.value}
+                                            value={`${option.label} ${option.value}`}
+                                            disabled={resolvedDisabled}
+                                            onSelect={() => toggleValue(option.value)}
+                                            className="gap-2"
+                                        >
+                                            <Checkbox
+                                                checked={checked}
+                                                onCheckedChange={() => toggleValue(option.value)}
+                                                aria-label={option.label}
+                                            />
+                                            <span>{option.label}</span>
+                                        </CommandItem>
+                                    )
+                                })}
                             </CommandGroup>
                         </CommandList>
                     </Command>
@@ -112,4 +127,4 @@ const AppAutoComplete = (props: AppAutoCompleteProps) => {
     )
 }
 
-export default AppAutoComplete
+export default AppCheckboxList

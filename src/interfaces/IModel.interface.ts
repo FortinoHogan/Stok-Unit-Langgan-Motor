@@ -52,6 +52,7 @@ export interface MsType extends IModelMaster {
   typeName: string;
   typeCode: string;
   typeDescription: string;
+  categoryId: number;
 }
 
 export interface TrTypeColor extends IModel {

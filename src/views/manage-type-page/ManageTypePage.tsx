@@ -1,10 +1,13 @@
 import AppModal from "@/components/app-components/app-modal/AppModal"
+import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
 import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
 import AppTable from "@/components/app-components/app-table/AppTable"
 import AppTextField from "@/components/app-components/app-text-field/AppTextField"
+import AppAutoComplete from "@/components/app-layout/app-auto-complete/AppAutoComplete"
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
+import { CategoryService } from "@/helpers/services/CategoryService"
 import { TypeService } from "@/helpers/services/TypeService"
 import type {
   DeleteTypeRequest,
@@ -12,7 +15,7 @@ import type {
   InsertTypeRequest,
   UpdateTypeRequest,
 } from "@/interfaces/ITypeService"
-import type { MsType } from "@/interfaces/IModel.interface"
+import type { MsCategory, MsType } from "@/interfaces/IModel.interface"
 import {
   getCoreRowModel,
   getSortedRowModel,
@@ -29,31 +32,47 @@ import {
 const ManageTypePage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const [isShowError, setIsShowError] = useState(false)
   const [newTypeName, setNewTypeName] = useState("")
   const [newTypeCode, setNewTypeCode] = useState("")
   const [newTypeDescription, setNewTypeDescription] = useState("")
+  const [selectedCategoryId, setSelectedCategoryId] = useState("")
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingActionManageType>(null)
   const [pendingDeleteType, setPendingDeleteType] = useState<MsType | null>(null)
 
   const [typeList, setTypeList] = useState<MsType[]>([])
   const [existingTypeList, setExistingTypeList] = useState<MsType[]>([])
+  const [categoryList, setCategoryList] = useState<MsCategory[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalCount, setTotalCount] = useState(0)
 
+  const categoryNameById = useMemo(
+    () => new Map(categoryList.map((category) => [category.categoryId, category.categoryName])),
+    [categoryList],
+  )
+
+  const categoryOptions = useMemo(() =>
+    categoryList.map((category) =>
+    ({
+      value: String(category.categoryId),
+      label: category.categoryName,
+    })),
+    [categoryList],
+  )
+
   const manageTypeTableColumns: ColumnDef<MsType>[] = [
     {
-      accessorKey: "no",
-      header: "No",
-      enableSorting: false,
-      cell: ({ row }) => <p className="pl-2">{(page - 1) * pageSize + row.index + 1}</p>,
+      id: "categoryName",
+      header: "Category",
+      cell: ({ row }) => categoryNameById.get(row.original.categoryId) || "-",
     },
     {
       accessorKey: "typeName",
@@ -119,6 +138,7 @@ const ManageTypePage = () => {
     setNewTypeName("")
     setNewTypeCode("")
     setNewTypeDescription("")
+    setSelectedCategoryId("")
     setEditingTypeId(null)
   }
 
@@ -130,8 +150,9 @@ const ManageTypePage = () => {
 
   const handleOpenCreateModal = () => {
     resetTypeForm()
+    handleFetchCategories()
     handleFetchExistingTypes()
-    setIsAddModalOpen(true)
+    setIsUpsertModalOpen(true)
   }
 
   const handleEditType = (type: MsType) => {
@@ -139,12 +160,14 @@ const ManageTypePage = () => {
     setNewTypeName(type.typeName)
     setNewTypeCode(type.typeCode)
     setNewTypeDescription(type.typeDescription ?? "")
+    setSelectedCategoryId(String(type.categoryId))
+    handleFetchCategories()
     handleFetchExistingTypes()
-    setIsAddModalOpen(true)
+    setIsUpsertModalOpen(true)
   }
 
   const handleOpenInsertConfirmation = () => {
-    if (!newTypeName.trim() || !newTypeCode.trim() || !newTypeDescription.trim()) {
+    if (!newTypeName.trim() || !newTypeCode.trim() || !newTypeDescription.trim() || !selectedCategoryId) {
       return
     }
 
@@ -154,7 +177,7 @@ const ManageTypePage = () => {
   }
 
   const handleOpenUpdateConfirmation = () => {
-    if (!editingTypeId || !newTypeName.trim() || !newTypeCode.trim() || !newTypeDescription.trim()) {
+    if (!editingTypeId || !newTypeName.trim() || !newTypeCode.trim() || !newTypeDescription.trim() || !selectedCategoryId) {
       return
     }
 
@@ -202,7 +225,7 @@ const ManageTypePage = () => {
   }
 
   const handleInsert = async () => {
-    if (!newTypeName.trim() || !newTypeCode.trim() || !newTypeDescription.trim()) {
+    if (!newTypeName.trim() || !newTypeCode.trim() || !newTypeDescription.trim() || !selectedCategoryId) {
       return
     }
 
@@ -231,15 +254,19 @@ const ManageTypePage = () => {
       typeName: newTypeName.trim().toUpperCase(),
       typeCode: newTypeCode.trim().toUpperCase(),
       typeDescription: newTypeDescription.trim(),
+      categoryId: Number(selectedCategoryId),
       userIn: userId,
       setIsLoading,
     }
 
     await TypeService.insertType(payload)
       .then(() => {
-        setIsAddModalOpen(false)
+        setIsUpsertModalOpen(false)
         resetTypeForm()
         resetConfirmActionState()
+        setErrorMessage("")
+        setSuccessMessage("Type added successfully")
+        setIsShowError(true)
         handleFetchTypes()
       })
       .catch((error) => {
@@ -249,7 +276,7 @@ const ManageTypePage = () => {
   }
 
   const handleUpdate = async () => {
-    if (!editingTypeId || !newTypeName.trim() || !newTypeCode.trim() || !newTypeDescription.trim()) {
+    if (!editingTypeId || !newTypeName.trim() || !newTypeCode.trim() || !newTypeDescription.trim() || !selectedCategoryId) {
       return
     }
 
@@ -279,6 +306,7 @@ const ManageTypePage = () => {
       typeName: newTypeName.trim().toUpperCase(),
       typeCode: newTypeCode.trim().toUpperCase(),
       typeDescription: newTypeDescription.trim(),
+      categoryId: Number(selectedCategoryId),
       userUp: userId,
       updatedAt: new Date().toISOString(),
       setIsLoading,
@@ -286,9 +314,12 @@ const ManageTypePage = () => {
 
     await TypeService.updateType(payload)
       .then(() => {
-        setIsAddModalOpen(false)
+        setIsUpsertModalOpen(false)
         resetTypeForm()
         resetConfirmActionState()
+        setErrorMessage("")
+        setSuccessMessage("Type updated successfully")
+        setIsShowError(true)
         handleFetchTypes()
       })
       .catch((error) => {
@@ -313,6 +344,9 @@ const ManageTypePage = () => {
     await TypeService.deleteType(payload)
       .then(() => {
         resetConfirmActionState()
+        setErrorMessage("")
+        setSuccessMessage("Type deleted successfully")
+        setIsShowError(true)
 
         if (typeList.length === 1 && page > 1) {
           setPage((prev) => prev - 1)
@@ -377,22 +411,52 @@ const ManageTypePage = () => {
       })
   }
 
-  const filteredExistingTypeList = useMemo(() => {
-    const keyword = newTypeCode.trim().toLowerCase() || newTypeDescription.trim().toLowerCase()
+  const handleFetchCategories = async () => {
+    await CategoryService.getCategoryList({
+      page: 1,
+      pageSize: 1000,
+      search: "",
+    })
+      .then((res) => {
+        const nextCategoryList = res.data || []
 
-    if (!keyword) {
+        setCategoryList(nextCategoryList)
+        setSelectedCategoryId((currentValue) => currentValue || String(nextCategoryList[0]?.categoryId || ""))
+      })
+      .catch((error) => {
+        setErrorMessage(error.message)
+        setIsShowError(true)
+      })
+  }
+
+  const filteredExistingTypeList = useMemo(() => {
+    const typeCodeKeyword = newTypeCode.trim().toLowerCase()
+    const typeDescriptionKeyword = newTypeDescription.trim().toLowerCase()
+
+    if (!typeCodeKeyword && !typeDescriptionKeyword) {
       return existingTypeList
     }
 
-    return existingTypeList.filter((type) =>
-      type.typeCode.toLowerCase().includes(keyword) ||
-      type.typeDescription?.toLowerCase().includes(keyword)
-    )
+    return existingTypeList.filter((type) => {
+      const matchesTypeCode = typeCodeKeyword
+        ? type.typeCode.toLowerCase().includes(typeCodeKeyword)
+        : false
+
+      const matchesTypeDescription = typeDescriptionKeyword
+        ? (type.typeDescription || "").toLowerCase().includes(typeDescriptionKeyword)
+        : false
+
+      return matchesTypeCode || matchesTypeDescription
+    })
   }, [existingTypeList, newTypeCode, newTypeDescription])
 
   useEffect(() => {
     handleFetchTypes()
   }, [page, pageSize, search])
+
+  useEffect(() => {
+    handleFetchCategories()
+  }, [])
 
   return (
     <div>
@@ -400,27 +464,30 @@ const ManageTypePage = () => {
         <h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
           Manage Type
         </h1>
-        <p className="text-muted-foreground">Manage type motor (e.g., BEAT, VARIO)</p>
+        <p className="text-muted-foreground">Manage type motor (e.g., SUPRA X, VARIO)</p>
       </div>
 
       <AppModal
         trigger={<Button className="mb-4" onClick={handleOpenCreateModal}>Add Type</Button>}
         title={editingTypeId ? "Edit Type" : "Add New Type"}
         description={editingTypeId ? "Update selected type" : "Add a new type"}
-        open={isAddModalOpen}
+        open={isUpsertModalOpen}
         onOpenChange={(open) => {
-          setIsAddModalOpen(open)
+          setIsUpsertModalOpen(open)
 
           if (!open) {
             resetTypeForm()
           }
+        }}
+        classNames={{
+          content: "sm:max-w-xl",
         }}
         footer={
           <div className="flex gap-1">
             <Button
               type="button"
               onClick={() => {
-                setIsAddModalOpen(false)
+                setIsUpsertModalOpen(false)
                 resetTypeForm()
               }}
               variant="outline"
@@ -443,6 +510,16 @@ const ManageTypePage = () => {
           </div>
         }
       >
+        <AppAutoComplete
+          label="Category"
+          required
+          placeholder="EV"
+          searchPlaceholder="Search category"
+          emptyMessage="No categories found"
+          value={selectedCategoryId}
+          options={categoryOptions}
+          onValueChange={setSelectedCategoryId}
+        />
         <AppTextField
           label="Type Name"
           placeholder="SUPRA X 125 SW"
@@ -466,25 +543,15 @@ const ManageTypePage = () => {
           onChange={(value) => setNewTypeDescription(value)}
           isUppercase
         />
-        <div>
-          <p className="mb-2 text-sm font-medium">Existing Type List</p>
-          <div className="max-h-36 overflow-y-auto rounded-md border p-2">
-            {filteredExistingTypeList.length ? (
-              <div className="flex flex-wrap gap-2">
-                {filteredExistingTypeList.map((type) => (
-                  <span
-                    key={type.typeId}
-                    className="rounded-md bg-muted px-2 py-1 text-xs"
-                  >
-                    {type.typeName + " (" + type.typeCode + " - " + type.typeDescription + ")"}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No type data</p>
-            )}
-          </div>
-        </div>
+        <AppExistingList
+          title="Existing Type List"
+          items={filteredExistingTypeList.map((type) => {
+            const categoryName = categoryNameById.get(type.categoryId) || "-"
+            const typeDescription = type.typeDescription || "-"
+            return `${categoryName} - ${type.typeName} (${type.typeCode} - ${typeDescription})`
+          })}
+          emptyMessage="No type data"
+        />
       </AppModal>
 
       <AppModal
@@ -550,7 +617,7 @@ const ManageTypePage = () => {
 
       <AppSearchBar
         label="Search Type"
-        placeholder="BEAT"
+        placeholder="SUPRA"
         onSearch={(value) => {
           setSearch(value)
           setPage(1)
@@ -562,6 +629,7 @@ const ManageTypePage = () => {
 
       <AppTable
         table={table}
+        showNumberColumn
         columnsCount={manageTypeTableColumns.length}
         emptyMessage="No types found."
         showPagination
@@ -608,6 +676,7 @@ const ManageTypePage = () => {
               type="button"
               onClick={() => {
                 setErrorMessage("")
+                setSuccessMessage("")
                 setIsShowError(false)
               }}
             >
@@ -616,7 +685,7 @@ const ManageTypePage = () => {
           </div>
         }
       >
-        {errorMessage ? <p>{errorMessage}</p> : <p>{errorMessage}</p>}
+        <p>{errorMessage || successMessage}</p>
       </AppModal>
 
       {isLoading && <AppSpinner />}

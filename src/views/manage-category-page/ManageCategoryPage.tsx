@@ -1,4 +1,5 @@
 import AppModal from "@/components/app-components/app-modal/AppModal"
+import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
 import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
 import AppTable from "@/components/app-components/app-table/AppTable"
 import AppTextField from "@/components/app-components/app-text-field/AppTextField"
@@ -26,9 +27,10 @@ import { MANAGE_CATEGORY_PAGE_SIZE_OPTIONS, type PendingActionManageCategory } f
 const ManageCategoryPage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
   const [isShowError, setIsShowError] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
   const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null)
@@ -44,12 +46,6 @@ const ManageCategoryPage = () => {
   const [existingCategoryList, setExistingCategoryList] = useState<MsCategory[]>([])
 
   const manageCategoryTableColumns: ColumnDef<MsCategory>[] = [
-    {
-      accessorKey: "no",
-      header: "No",
-      enableSorting: false,
-      cell: ({ row }) => <p className="pl-2">{(page - 1) * pageSize + row.index + 1}</p>,
-    },
     {
       accessorKey: "categoryName",
       header: "Category Name",
@@ -127,14 +123,14 @@ const ManageCategoryPage = () => {
   const handleOpenCreateModal = () => {
     resetCategoryForm()
     handleFetchExistingCategories()
-    setIsAddModalOpen(true)
+    setIsUpsertModalOpen(true)
   }
 
   const handleEditCategory = (category: MsCategory) => {
     setEditingCategoryId(category.categoryId)
     setNewCategoryName(category.categoryName)
     handleFetchExistingCategories()
-    setIsAddModalOpen(true)
+    setIsUpsertModalOpen(true)
   }
 
   const handleOpenUpdateConfirmation = () => {
@@ -203,8 +199,12 @@ const ManageCategoryPage = () => {
 
     await CategoryService.insertCategory(payload)
       .then(() => {
-        setIsAddModalOpen(false)
+        setIsUpsertModalOpen(false)
         resetCategoryForm()
+        resetConfirmActionState()
+        setErrorMessage("")
+        setSuccessMessage("Category added successfully")
+        setIsShowError(true)
         handleFetchCategories()
       })
       .catch((error) => {
@@ -239,9 +239,12 @@ const ManageCategoryPage = () => {
 
     await CategoryService.updateCategory(payload)
       .then(() => {
-        setIsAddModalOpen(false)
+        setIsUpsertModalOpen(false)
         resetCategoryForm()
         resetConfirmActionState()
+        setErrorMessage("")
+        setSuccessMessage("Category updated successfully")
+        setIsShowError(true)
         handleFetchCategories()
       })
       .catch((error) => {
@@ -266,6 +269,9 @@ const ManageCategoryPage = () => {
     await CategoryService.deleteCategory(payload)
       .then(() => {
         resetConfirmActionState()
+        setErrorMessage("")
+        setSuccessMessage("Category deleted successfully")
+        setIsShowError(true)
 
         if (categoryList.length === 1 && page > 1) {
           setPage((prev) => prev - 1)
@@ -347,9 +353,9 @@ const ManageCategoryPage = () => {
         trigger={<Button className="mb-4" onClick={handleOpenCreateModal}>Add Category</Button>}
         title={editingCategoryId ? "Edit Category" : "Add New Category"}
         description={editingCategoryId ? "Update selected category" : "Add a new category motor"}
-        open={isAddModalOpen}
+        open={isUpsertModalOpen}
         onOpenChange={(open) => {
-          setIsAddModalOpen(open)
+          setIsUpsertModalOpen(open)
 
           if (!open) {
             resetCategoryForm()
@@ -360,7 +366,7 @@ const ManageCategoryPage = () => {
             <Button
               type="button"
               onClick={() => {
-                setIsAddModalOpen(false)
+                setIsUpsertModalOpen(false)
                 resetCategoryForm()
               }}
               variant="outline"
@@ -391,25 +397,11 @@ const ManageCategoryPage = () => {
           onChange={(value) => setNewCategoryName(value)}
           isUppercase
         />
-        <div>
-          <p className="mb-2 text-sm font-medium">Existing Category List</p>
-          <div className="max-h-36 overflow-y-auto rounded-md border p-2">
-            {filteredExistingCategoryList.length ? (
-              <div className="flex flex-wrap gap-2">
-                {filteredExistingCategoryList.map((category) => (
-                  <span
-                    key={category.categoryId}
-                    className="rounded-md bg-muted px-2 py-1 text-xs"
-                  >
-                    {category.categoryName}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No category data</p>
-            )}
-          </div>
-        </div>
+        <AppExistingList
+          title="Existing Category List"
+          items={filteredExistingCategoryList.map((category) => category.categoryName)}
+          emptyMessage="No category data"
+        />
       </AppModal>
 
       <AppModal
@@ -487,6 +479,7 @@ const ManageCategoryPage = () => {
 
       <AppTable
         table={table}
+        showNumberColumn
         columnsCount={manageCategoryTableColumns.length}
         emptyMessage="No categories found."
         showPagination
@@ -533,6 +526,7 @@ const ManageCategoryPage = () => {
               type="button"
               onClick={() => {
                 setErrorMessage("")
+                setSuccessMessage("")
                 setIsShowError(false)
               }}
             >
@@ -541,7 +535,7 @@ const ManageCategoryPage = () => {
           </div>
         }
       >
-        {errorMessage ? <p>{errorMessage}</p> : <p>{errorMessage}</p>}
+        <p>{errorMessage || successMessage}</p>
       </AppModal>
 
       {isLoading && <AppSpinner />}

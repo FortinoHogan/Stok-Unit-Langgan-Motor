@@ -18,6 +18,7 @@ const AppTextField = (props: AppTextFieldProps) => {
         onChange,
         withoutMargin = false,
         isUppercase = false,
+        isDisabled = false,
     } = props
     const generatedId = useId()
     const inputId = id ?? `input-field-${generatedId.replace(/:/g, "")}`
@@ -65,6 +66,7 @@ const AppTextField = (props: AppTextFieldProps) => {
                 placeholder={placeholder}
                 required={required}
                 value={value}
+                disabled={isDisabled}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 onInvalid={handleInvalid}

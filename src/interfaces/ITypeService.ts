@@ -6,6 +6,7 @@ export interface InsertTypeRequest extends IRequestWithLoading {
   typeName: string;
   typeCode: string;
   typeDescription: string;
+  categoryId: number;
   userIn: number;
 }
 
@@ -14,6 +15,7 @@ export interface UpdateTypeRequest extends IRequestWithLoading {
   typeName: string;
   typeCode: string;
   typeDescription: string;
+  categoryId: number;
   userUp: number;
   updatedAt: string;
 }
