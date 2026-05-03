@@ -26,9 +26,6 @@ interface IModel {
   userIn: number;
   userUp: number;
   updatedAt: string;
-}
-
-interface IModelMaster extends IModel {
   isDeleted: boolean;
 }
 
@@ -40,17 +37,17 @@ export interface AuthenticatedUser {
   isDeleted: boolean;
 }
 
-export interface MsCategory extends IModelMaster {
+export interface MsCategory extends IModel {
   categoryId: number;
   categoryName: string;
 }
 
-export interface MsColor extends IModelMaster {
+export interface MsColor extends IModel {
   colorId: number;
   colorName: string;
 }
 
-export interface MsType extends IModelMaster {
+export interface MsType extends IModel {
   typeId: number;
   typeName: string;
   typeCode: string;
@@ -58,7 +55,7 @@ export interface MsType extends IModelMaster {
   categoryId: number;
 }
 
-export interface TrTypeColor extends IModelMaster {
+export interface TrTypeColor extends IModel {
   typeColorId: number;
   colorId: number;
   typeId: number;
