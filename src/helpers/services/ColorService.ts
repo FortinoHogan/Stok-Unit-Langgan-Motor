@@ -91,6 +91,13 @@ const deleteColor = async (
   const { colorId, userUp, updatedAt, setIsLoading } = params;
   setIsLoading?.(true);
   try {
+    await ApiService.request(() =>
+      supabase
+        .from("TrTypeColor")
+        .update({ userUp, updatedAt, isDeleted: true })
+        .eq("colorId", colorId),
+    );
+
     const res = await ApiService.request<MsColor>(() =>
       supabase
         .from("MsColor")
