@@ -1,16 +1,6 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 
-interface IModel {
-  createdAt: string;
-  userIn: number;
-  userUp: number;
-  updatedAt: string;
-}
-
-interface IModelMaster extends IModel {
-  isDeleted: boolean;
-}
-
+// API Call Base Model
 export interface IResponse<T> {
   data: T | null;
   error: PostgrestError | null;
@@ -27,6 +17,19 @@ export interface IGetListRequest extends IRequestWithLoading {
   page: number;
   pageSize: number;
   search?: string;
+}
+
+// Database Model
+
+interface IModel {
+  createdAt: string;
+  userIn: number;
+  userUp: number;
+  updatedAt: string;
+}
+
+interface IModelMaster extends IModel {
+  isDeleted: boolean;
 }
 
 export interface AuthenticatedUser {
@@ -55,7 +58,7 @@ export interface MsType extends IModelMaster {
   categoryId: number;
 }
 
-export interface TrTypeColor extends IModel {
+export interface TrTypeColor extends IModelMaster {
   typeColorId: number;
   colorId: number;
   typeId: number;

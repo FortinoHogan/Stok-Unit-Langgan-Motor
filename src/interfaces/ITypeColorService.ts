@@ -9,3 +9,9 @@ export interface InsertTypeColorRequest extends IRequestWithLoading {
   colorId: number;
   userIn: number;
 }
+
+export interface DeleteTypeColorRequest extends IRequestWithLoading {
+  typeColorId: number;
+  userUp: number;
+  updatedAt: string;
+}

@@ -2,6 +2,7 @@ import type { IResponse, TrTypeColor } from "@/interfaces/IModel.interface";
 import { ApiService } from "@/utilities/ApiService";
 import { supabase } from "../supabase/client";
 import type {
+  DeleteTypeColorRequest,
   GetTypeColorListByTypeIdsRequest,
   InsertTypeColorRequest,
 } from "@/interfaces/ITypeColorService";
@@ -26,6 +27,7 @@ const getTypeColorListByTypeIds = async (
         .from("TrTypeColor")
         .select("*")
         .in("typeId", typeIds)
+        .eq("isDeleted", false)
         .order("createdAt", { ascending: false }),
     );
 
@@ -59,7 +61,31 @@ const insertTypeColor = async (
   }
 };
 
+const deleteTypeColor = async (
+  params: DeleteTypeColorRequest,
+): Promise<IResponse<TrTypeColor>> => {
+  const { typeColorId, userUp, updatedAt, setIsLoading } = params;
+  setIsLoading?.(true);
+  try {
+    const res = await ApiService.request<TrTypeColor>(() =>
+      supabase
+        .from("TrTypeColor")
+        .update({ userUp, updatedAt, isDeleted: true })
+        .eq("typeColorId", typeColorId)
+        .select()
+        .single(),
+    );
+
+    return res;
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
 export const TypeColorService = {
   getTypeColorListByTypeIds,
   insertTypeColor,
+  deleteTypeColor,
 };

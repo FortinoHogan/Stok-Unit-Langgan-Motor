@@ -261,12 +261,20 @@ const TypeAndColorPage = () => {
       return
     }
 
+    const selectedTypeColorMappings = typeColorList.filter(
+      (typeColor) => typeColor.typeId === selectedType.typeId,
+    )
+
     const nextColorIds = selectedColorIds.filter(
       (colorId) => !selectedTypeColorIds.includes(colorId),
     )
 
-    if (!nextColorIds.length) {
-      setErrorMessage("All selected colors already exist for this type")
+    const removedTypeColorMappings = selectedTypeColorMappings.filter(
+      (typeColor) => !selectedColorIds.includes(typeColor.colorId),
+    )
+
+    if (!nextColorIds.length && !removedTypeColorMappings.length) {
+      setErrorMessage("No changes detected for this type")
       setIsShowError(true)
       return
     }
@@ -278,13 +286,22 @@ const TypeAndColorPage = () => {
 
     setIsLoading(true)
     await Promise.all(
-      nextColorIds.map((colorId) =>
-        TypeColorService.insertTypeColor({
-          typeId: selectedType.typeId,
-          colorId,
-          userIn: userId,
-        }),
-      ),
+      [
+        ...nextColorIds.map((colorId) =>
+          TypeColorService.insertTypeColor({
+            typeId: selectedType.typeId,
+            colorId,
+            userIn: userId,
+          }),
+        ),
+        ...removedTypeColorMappings.map((typeColor) =>
+          TypeColorService.deleteTypeColor({
+            typeColorId: typeColor.typeColorId,
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
+          }),
+        ),
+      ],
     )
       .then(() => {
         resetConfirmSaveState()
