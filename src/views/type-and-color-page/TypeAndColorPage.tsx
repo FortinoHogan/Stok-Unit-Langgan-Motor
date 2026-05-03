@@ -93,6 +93,10 @@ const TypeAndColorPage = () => {
       header: "Type Name",
     },
     {
+      accessorKey: "typeCode",
+      header: "Type Code",
+    },
+    {
       id: "color",
       header: "Color",
       cell: ({ row }) => {
