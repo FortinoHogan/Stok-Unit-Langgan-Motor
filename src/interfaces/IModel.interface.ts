@@ -60,3 +60,14 @@ export interface TrTypeColor extends IModel {
   colorId: number;
   typeId: number;
 }
+
+export interface TrTransaction extends IModel {
+  transactionId: number;
+  typeColorId: number;
+  noMesin: string;
+  noRangka: string;
+  year: number;
+  isRFS: boolean;
+  dateDO: string;
+  dateOUT: string;
+}
