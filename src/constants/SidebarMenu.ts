@@ -1,4 +1,12 @@
-import { FileText, House, Palette, ShoppingCart, Truck, User, type LucideIcon } from "lucide-react";
+import {
+  FileText,
+  House,
+  Palette,
+  ShoppingCart,
+  Truck,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 import { routes } from "./paths";
 
 type SidebarSubMenuItem = {
@@ -49,10 +57,14 @@ export const sidebarMenu: SidebarMenuGroup[] = [
     title: "Configuration",
     items: [
       { title: "Type and Color", url: routes.typeAndColor, icon: Palette },
-      { title: "Transaction", icon: ShoppingCart, subItems: [
-        { title: "Delivery Order", url: routes.deliveryOrder },
-        { title: "Selling", url: routes.selling },
-      ]},
+      {
+        title: "Transaction",
+        icon: ShoppingCart,
+        subItems: [
+          { title: "Delivery Order", url: routes.deliveryOrder },
+          { title: "Selling", url: routes.selling },
+        ],
+      },
     ],
   },
 ];
