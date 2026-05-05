@@ -349,7 +349,6 @@ const TypeAndColorPage = () => {
           input: "max-w-sm",
         }}
       />
-
       <AppTable
         table={table}
         showNumberColumn

@@ -3,7 +3,7 @@ import AppExistingList from "@/components/app-components/app-existing-list/AppEx
 import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
 import AppTable from "@/components/app-components/app-table/AppTable"
 import AppTextField from "@/components/app-components/app-text-field/AppTextField"
-import AppAutoComplete from "@/components/app-layout/app-auto-complete/AppAutoComplete"
+import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAutoComplete"
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
@@ -44,7 +44,6 @@ const ManageTypePage = () => {
   const [editingTypeId, setEditingTypeId] = useState<number | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingActionManageType>(null)
   const [pendingDeleteType, setPendingDeleteType] = useState<MsType | null>(null)
-
   const [typeList, setTypeList] = useState<MsType[]>([])
   const [existingTypeList, setExistingTypeList] = useState<MsType[]>([])
   const [categoryList, setCategoryList] = useState<MsCategory[]>([])
@@ -421,7 +420,7 @@ const ManageTypePage = () => {
         const nextCategoryList = res.data || []
 
         setCategoryList(nextCategoryList)
-        setSelectedCategoryId((currentValue) => currentValue || String(nextCategoryList[0]?.categoryId || ""))
+        // setSelectedCategoryId((currentValue) => currentValue || String(nextCategoryList[0]?.categoryId || ""))
       })
       .catch((error) => {
         setErrorMessage(error.message)
@@ -514,11 +513,10 @@ const ManageTypePage = () => {
           label="Category"
           required
           placeholder="EV"
-          searchPlaceholder="Search category"
           emptyMessage="No categories found"
           value={selectedCategoryId}
           options={categoryOptions}
-          onValueChange={setSelectedCategoryId}
+          onValueChange={(value) => setSelectedCategoryId(value)}
         />
         <AppTextField
           label="Type Name"
