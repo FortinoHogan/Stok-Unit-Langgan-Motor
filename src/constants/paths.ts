@@ -1,11 +1,11 @@
 import LoginPage from "@/views/auth-page/LoginPage";
-import DeliveryOrderPage from "@/views/delivery-order-page/DeliveryOrderPage";
+import DeliveryOrderPage from "@/views/transaction-page/components/delivery-order-page/DeliveryOrderPage";
 import HomePage from "@/views/home-page/HomePage";
 import ManageCategoryPage from "@/views/manage-category-page/ManageCategoryPage";
 import ManageColorPage from "@/views/manage-color-page/ManageColorPage";
 import ManageTypePage from "@/views/manage-type-page/ManageTypePage";
 import ManageUserPage from "@/views/manage-user-page/ManageUserPage";
-import SellingPage from "@/views/selling-page/SellingPage";
+import SellingPage from "@/views/transaction-page/components/selling-page/SellingPage";
 import TypeAndColorPage from "@/views/type-and-color-page/TypeAndColorPage";
 
 export const routes = {
@@ -21,8 +21,8 @@ export const routes = {
 
   // Configuration
   typeAndColor: "/configuration/type-and-color",
-  deliveryOrder: "/configuration/delivery-order",
-  selling: "/configuration/selling",
+  deliveryOrder: "/configuration/transaction/delivery-order",
+  selling: "/configuration/transaction/selling",
 };
 
 export const routePaths = [

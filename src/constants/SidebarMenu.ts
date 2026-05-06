@@ -3,7 +3,6 @@ import {
   House,
   Palette,
   ShoppingCart,
-  Truck,
   User,
   type LucideIcon,
 } from "lucide-react";
