@@ -1,4 +1,25 @@
 import type { PostgrestError } from "@supabase/supabase-js";
+import type { LucideIcon } from "lucide-react";
+
+// Sidebar Model
+export type SidebarSubMenuItem = {
+  title: string;
+  url: string;
+  isAdminOnly?: boolean;
+};
+
+export type SidebarMenuItem = {
+  title: string;
+  url?: string;
+  isAdminOnly?: boolean;
+  icon?: LucideIcon;
+  subItems?: SidebarSubMenuItem[];
+};
+
+export type SidebarMenuGroup = {
+  title: string;
+  items: SidebarMenuItem[];
+};
 
 // API Call Base Model
 export interface IResponse<T> {

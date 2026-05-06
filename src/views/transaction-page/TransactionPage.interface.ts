@@ -1,10 +1,10 @@
-export interface TransactionPageProps {
-  mode: TransactionMode
-}
+import type { TransactionMode } from "./TransactionPage.constant";
 
-export type TransactionMode = "DO" | "SELLING"
+export interface TransactionPageProps {
+  mode: TransactionMode;
+}
 
 export type TransactionModeWording = {
-  title: string
-  description: string
-}
+  title: string;
+  description: string;
+};

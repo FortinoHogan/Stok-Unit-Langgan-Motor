@@ -4,28 +4,9 @@ import {
   Palette,
   ShoppingCart,
   User,
-  type LucideIcon,
 } from "lucide-react";
 import { routes } from "./paths";
-
-type SidebarSubMenuItem = {
-  title: string;
-  url: string;
-  isAdminOnly?: boolean;
-};
-
-type SidebarMenuItem = {
-  title: string;
-  url?: string;
-  isAdminOnly?: boolean;
-  icon?: LucideIcon;
-  subItems?: SidebarSubMenuItem[];
-};
-
-type SidebarMenuGroup = {
-  title: string;
-  items: SidebarMenuItem[];
-};
+import type { SidebarMenuGroup } from "@/interfaces/IModel.interface";
 
 export const sidebarMenu: SidebarMenuGroup[] = [
   {

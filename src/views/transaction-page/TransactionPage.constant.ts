@@ -1,7 +1,6 @@
-import type {
-  TransactionMode,
-  TransactionModeWording,
-} from "./TransactionPage.interface";
+import type { TransactionModeWording } from "./TransactionPage.interface";
+
+export type TransactionMode = "DO" | "SELLING";
 
 export const transactionModeWordingList: Record<
   TransactionMode,
@@ -9,12 +8,10 @@ export const transactionModeWordingList: Record<
 > = {
   DO: {
     title: "Delivery Order",
-    description:
-      "Manage Delivery Order/Barang In",
+    description: "Manage Delivery Order/Barang In",
   },
   SELLING: {
     title: "Selling",
-description:
-      "Manage Selling/Out",
+    description: "Manage Selling/Out",
   },
 };

@@ -12,7 +12,7 @@ export const routes = {
   // Authentication
   home: "/",
   login: "/login",
-  
+
   // Management
   manageUsers: "/management/manage-users",
   manageMasterDataCategory: "/management/manage-master-data/category",
