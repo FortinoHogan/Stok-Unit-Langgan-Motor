@@ -64,9 +64,15 @@ const AppTable = <TData,>(props: AppTableProps<TData>) => {
     }
 
     return (
-        <div className={cn("space-y-4", classNames?.wrapper)} {...wrapperProps}>
-            <div className={cn("rounded-lg border", classNames?.tableContainer)} {...tableContainerProps}>
-                <Table className={cn(classNames?.table)} {...tableProps}>
+        <div className={cn("min-w-0 space-y-4", classNames?.wrapper)} {...wrapperProps}>
+            <div className={cn("min-w-0 rounded-lg border overflow-x-auto", classNames?.tableContainer)} {...tableContainerProps}>
+                <Table
+                    className={cn(
+                        "table-fixed w-full md:table-auto [&_th]:whitespace-normal [&_td]:whitespace-normal [&_th]:break-words [&_td]:break-all md:[&_th]:whitespace-nowrap md:[&_td]:whitespace-nowrap",
+                        classNames?.table,
+                    )}
+                    {...tableProps}
+                >
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
@@ -143,7 +149,7 @@ const AppTable = <TData,>(props: AppTableProps<TData>) => {
                                     : `Page ${page} - ${rowCount} row(s)`}
                             </p>
 
-                            <div className={cn("flex items-center gap-2", classNames?.paginationActions)}>
+                            <div className={cn("flex flex-wrap items-center gap-2", classNames?.paginationActions)}>
                                 <Label htmlFor="app-table-page-size">{rowsPerPageLabel}</Label>
                                 <Select
                                     value={String(pageSize)}

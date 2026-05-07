@@ -9,9 +9,11 @@ export const transactionModeWordingList: Record<
   DO: {
     title: "Delivery Order",
     description: "Manage Delivery Order/Barang In",
+    cardAction: "In",
   },
   SELLING: {
     title: "Selling",
     description: "Manage Selling/Out",
+    cardAction: "Out",
   },
 };

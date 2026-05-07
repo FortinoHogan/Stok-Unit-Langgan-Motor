@@ -1,4 +1,4 @@
-import TransactionDateSelectionPage from "../../TransactionPage"
+import TransactionDateSelectionPage from "../../../TransactionPage"
 
 const DeliveryOrderPage = () => {
   return <TransactionDateSelectionPage mode="DO" />
