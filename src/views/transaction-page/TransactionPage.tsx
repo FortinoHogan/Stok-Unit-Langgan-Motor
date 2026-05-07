@@ -1,90 +1,86 @@
-import { useEffect, useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import AppCard from "@/components/app-components/app-card/AppCard"
-import AppModal from "@/components/app-components/app-modal/AppModal"
-import AppSkeleton from "@/components/app-components/app-skeleton/AppSkeleton"
-import { Button } from "@/components/ui/button"
-import { routes } from "@/constants/paths"
-import { TransactionService } from "@/helpers/services/TransactionService"
-import { transactionModeWordingList } from "./TransactionPage.constant"
-import type { TransactionPageProps } from "./TransactionPage.interface"
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import AppDatePicker from "@/components/app-components/app-datepicker/AppDatePicker";
+import { Button } from "@/components/ui/button";
+import { routes } from "@/constants/paths";
+import { TransactionService } from "@/helpers/services/TransactionService";
+import TransactionErrorModal from "./components/transaction-error-modal/TransactionErrorModal";
+import TodayButton from "./components/today-button/TodayButton";
+import { transactionModeWordingList } from "./TransactionPage.constant";
+import type { TransactionPageProps } from "./TransactionPage.interface";
 
 const TransactionPage = (props: TransactionPageProps) => {
-  const { mode } = props
-  const navigate = useNavigate()
-  const modeWording = transactionModeWordingList[mode]
+  const { mode } = props;
+  const navigate = useNavigate();
+  const modeWording = transactionModeWordingList[mode];
 
-  const [isLoadingYears, setIsLoadingYears] = useState(false)
-  const [dateDOYears, setDateDOYears] = useState<number[]>([])
-  const [dateOUTYears, setDateOUTYears] = useState<number[]>([])
-  const [dateDOYearQuantity, setDateDOYearQuantity] = useState<Record<number, number>>({})
-  const [dateOUTYearQuantity, setDateOUTYearQuantity] = useState<Record<number, number>>({})
-  const [errorMessage, setErrorMessage] = useState("")
-  const [isShowError, setIsShowError] = useState(false)
-  const [activeDate, setActiveDate] = useState(new Date())
-
-  const activeDateLabel = useMemo(
-    () => new Intl.DateTimeFormat("en-US", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    }).format(activeDate),
-    [activeDate],
-  )
+  const [dateDOYearQuantity, setDateDOYearQuantity] = useState<
+    Record<number, number>
+  >({});
+  const [dateOUTYearQuantity, setDateOUTYearQuantity] = useState<
+    Record<number, number>
+  >({});
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isShowError, setIsShowError] = useState(false);
+  const [activeDate, setActiveDate] = useState(new Date());
+  const [selectedYear, setSelectedYear] = useState<Date | undefined>(
+    new Date(),
+  );
 
   const handleGoToToday = () => {
-    const today = new Date()
-    setActiveDate(today)
+    const today = new Date();
+    setActiveDate(today);
 
-    const detailPathTemplate = mode === "DO"
-      ? routes.deliveryOrderDayDetail
-      : routes.sellingDayDetail
+    const detailPathTemplate =
+      mode === "DO" ? routes.deliveryOrderDayDetail : routes.sellingDayDetail;
 
     navigate(
       detailPathTemplate
         .replace(":year", String(today.getFullYear()))
         .replace(":month", String(today.getMonth() + 1))
         .replace(":day", String(today.getDate())),
-    )
-  }
+    );
+  };
 
   const handleViewDetail = (year: number) => {
-    const detailPathTemplate = mode === "DO" ? routes.deliveryOrderDetail : routes.sellingDetail
-    navigate(detailPathTemplate.replace(":year", String(year)))
-  }
+    const detailPathTemplate =
+      mode === "DO" ? routes.deliveryOrderDetail : routes.sellingDetail;
+    navigate(detailPathTemplate.replace(":year", String(year)));
+  };
+
+  const handleGoToSelectedYear = () => {
+    if (!selectedYear) return;
+    const year = selectedYear.getFullYear();
+    handleViewDetail(year);
+  };
+
+  const getSelectedYearQuantity = () => {
+    if (!selectedYear) return 0;
+    const year = selectedYear.getFullYear();
+    return modeYearQuantity[year] || 0;
+  };
 
   const handleFetchDistinctYears = async () => {
-    await TransactionService.getDistinctTransactionYears({ setIsLoading: setIsLoadingYears })
+    await TransactionService.getDistinctTransactionYears({
+      setIsLoading: () => {},
+    })
       .then((distinctYears) => {
-        setDateDOYears(distinctYears.dateDOYears)
-        setDateOUTYears(distinctYears.dateOUTYears)
-        setDateDOYearQuantity(distinctYears.dateDOYearQuantity)
-        setDateOUTYearQuantity(distinctYears.dateOUTYearQuantity)
+        setDateDOYearQuantity(distinctYears.dateDOYearQuantity);
+        setDateOUTYearQuantity(distinctYears.dateOUTYearQuantity);
       })
       .catch((error) => {
-        setErrorMessage(error.message)
-        setIsShowError(true)
-      })
-  }
-
-  const todayYear = useMemo(() => new Date().getFullYear(), [])
-
-  const modeYears = useMemo(() => {
-    return mode === "DO" ? dateDOYears : dateOUTYears
-  }, [dateDOYears, dateOUTYears, mode])
-
-  const displayYears = useMemo(
-    () => (modeYears.length ? modeYears : [todayYear]),
-    [modeYears, todayYear],
-  )
+        setErrorMessage(error.message);
+        setIsShowError(true);
+      });
+  };
 
   const modeYearQuantity = useMemo(() => {
-    return mode === "DO" ? dateDOYearQuantity : dateOUTYearQuantity
-  }, [dateDOYearQuantity, dateOUTYearQuantity, mode])
+    return mode === "DO" ? dateDOYearQuantity : dateOUTYearQuantity;
+  }, [dateDOYearQuantity, dateOUTYearQuantity, mode]);
 
   useEffect(() => {
-    handleFetchDistinctYears()
-  }, [])
+    handleFetchDistinctYears();
+  }, []);
 
   return (
     <div>
@@ -95,77 +91,51 @@ const TransactionPage = (props: TransactionPageProps) => {
         <p className="text-muted-foreground">{modeWording.description}</p>
       </div>
 
-      <div className="mb-4 flex items-center gap-3">
-        <Button type="button" onClick={handleGoToToday}>
-          Go to Today
-        </Button>
-        <p className="text-sm text-muted-foreground">Today: {activeDateLabel}</p>
+      <div className="mb-4">
+        <TodayButton onGoToToday={handleGoToToday} activeDate={activeDate} />
       </div>
 
-      {isLoadingYears ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <AppSkeleton withoutMargin itemClassName="h-16 rounded-xl" />
-          <AppSkeleton withoutMargin itemClassName="h-16 rounded-xl" />
-          <AppSkeleton withoutMargin itemClassName="h-16 rounded-xl" />
-          <AppSkeleton withoutMargin itemClassName="h-16 rounded-xl" />
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {displayYears.map((year) => (
-            <AppCard
-              key={`${mode}-${year}`}
+      <div className="space-y-4 mb-6">
+        <div className="flex gap-4 items-end">
+          <div className="flex-1 max-w-3xs">
+            <AppDatePicker
+              label="Select Transaction Year"
+              placeholder="Pick a year"
+              value={selectedYear}
+              onValueChange={setSelectedYear}
+              viewMode="year"
               withoutMargin
-              action={
-                <p className="text-xs text-muted-foreground">
-                  Qty: {modeYearQuantity[year] || 0} {modeWording.cardAction}
-                </p>
-              }
-              classNames={{
-                title: "text-xl",
-                footer: "flex items-center justify-end",
-              }}
-              title={year}
-              footer={
-                <Button type="button" onClick={() => handleViewDetail(year)}>
-                  View Detail
-                </Button>
-              }
             />
-          ))}
+          </div>
+          <div className="text-right pb-0 flex">
+            <p className="text-muted-foreground mb-1">Quantity: &nbsp;</p>
+            <p className="font-semibold">
+              {getSelectedYearQuantity()} {modeWording.cardAction}
+            </p>
+          </div>
         </div>
-      )}
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            onClick={handleGoToSelectedYear}
+            disabled={!selectedYear}
+          >
+            View Selected Year
+          </Button>
+        </div>
+      </div>
 
-      <AppModal
+      <TransactionErrorModal
         open={isShowError}
         onOpenChange={setIsShowError}
-        title="Error"
-        showCloseButton={true}
-        classNames={{
-          content: "sm:max-w-sm",
-          header: "gap-1",
-          title: "text-lg",
-          description: "text-xs",
-          body: "space-y-3",
-          footer: "bg-muted/30",
+        errorMessage={errorMessage}
+        onClose={() => {
+          setErrorMessage("");
+          setIsShowError(false);
         }}
-        footer={
-          <div className="flex w-full justify-center">
-            <Button
-              type="button"
-              onClick={() => {
-                setErrorMessage("")
-                setIsShowError(false)
-              }}
-            >
-              OK
-            </Button>
-          </div>
-        }
-      >
-        <p>{errorMessage}</p>
-      </AppModal>
+      />
     </div>
-  )
-}
+  );
+};
 
-export default TransactionPage
+export default TransactionPage;

@@ -1,80 +1,121 @@
-import { useEffect, useMemo, useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   getCoreRowModel,
   getSortedRowModel,
   type ColumnDef,
   useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 
-import AppCard from "@/components/app-components/app-card/AppCard"
-import AppModal from "@/components/app-components/app-modal/AppModal"
-import AppSkeleton from "@/components/app-components/app-skeleton/AppSkeleton"
-import AppTable from "@/components/app-components/app-table/AppTable"
-import { Button } from "@/components/ui/button"
-import { routes } from "@/constants/paths"
-import { TransactionService } from "@/helpers/services/TransactionService"
-import { transactionModeWordingList } from "../../TransactionPage.constant"
-import type { TransactionMonthDetailPageProps, TransactionGroupedRow } from "./TransactionMonthDetailPage.interface"
-import { getDayIndex, getMonthIndex, monthFormatter } from "../../utilities"
-import { Eye } from "lucide-react"
-import type { TransactionDetailRow } from "@/interfaces/ITransactionService"
+import AppDatePicker from "@/components/app-components/app-datepicker/AppDatePicker";
+import { Button } from "@/components/ui/button";
+import { routes } from "@/constants/paths";
+import { TransactionService } from "@/helpers/services/TransactionService";
+import { transactionModeWordingList } from "../../TransactionPage.constant";
+import TransactionErrorModal from "../transaction-error-modal/TransactionErrorModal";
+import TransactionTableSection from "../transaction-table-section/TransactionTableSection";
+import TodayButton from "../today-button/TodayButton";
+import type {
+  TransactionMonthDetailPageProps,
+  TransactionGroupedRow,
+} from "./TransactionMonthDetailPage.interface";
+import { getDayIndex, getMonthIndex, monthFormatter } from "../../utilities";
+import { Eye } from "lucide-react";
+import type { TransactionDetailRow } from "@/interfaces/ITransactionService";
+import AppBackButton from "@/components/app-layout/app-back-button/AppBackButton";
 
 const TransactionMonthDetailPage = (props: TransactionMonthDetailPageProps) => {
-  const { mode } = props
+  const { mode } = props;
 
-  const navigate = useNavigate()
-  const { year: yearParam, month: monthParam } = useParams()
+  const navigate = useNavigate();
+  const { year: yearParam, month: monthParam } = useParams();
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState("")
-  const [isShowError, setIsShowError] = useState(false)
-  const [transactionList, setTransactionList] = useState<TransactionDetailRow[]>([])
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
-  const [selectedDetailRows, setSelectedDetailRows] = useState<TransactionDetailRow[]>([])
-  const [selectedDetailTitle, setSelectedDetailTitle] = useState("")
-  const [selectedDay, setSelectedDay] = useState(new Date().getDate())
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isShowError, setIsShowError] = useState(false);
+  const [transactionList, setTransactionList] = useState<
+    TransactionDetailRow[]
+  >([]);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedDetailRows, setSelectedDetailRows] = useState<
+    TransactionDetailRow[]
+  >([]);
+  const [selectedDetailTitle, setSelectedDetailTitle] = useState("");
+  const [activeDate, setActiveDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+  const [selectedDayDate, setSelectedDayDate] = useState<Date | undefined>(
+    new Date(),
+  );
+
+  const handleGoToToday = () => {
+    const today = new Date();
+    setActiveDate(today);
+    const detailPathTemplate =
+      mode === "DO" ? routes.deliveryOrderDayDetail : routes.sellingDayDetail;
+
+    navigate(
+      detailPathTemplate
+        .replace(":year", String(today.getFullYear()))
+        .replace(":month", String(today.getMonth() + 1))
+        .replace(":day", String(today.getDate())),
+    );
+  };
 
   const handleCloseErrorModal = () => {
-    setErrorMessage("")
-    setIsShowError(false)
-  }
+    setErrorMessage("");
+    setIsShowError(false);
+  };
 
   const handleSelectDay = (day: number) => {
-    const detailPathTemplate = mode === "DO"
-      ? routes.deliveryOrderDayDetail
-      : routes.sellingDayDetail
+    const detailPathTemplate =
+      mode === "DO" ? routes.deliveryOrderDayDetail : routes.sellingDayDetail;
 
     navigate(
       detailPathTemplate
         .replace(":year", String(selectedYear))
         .replace(":month", String(selectedMonth))
         .replace(":day", String(day)),
-    )
-  }
+    );
+  };
+
+  const handleGoToSelectedDay = () => {
+    if (!selectedDayDate) return;
+    const day = selectedDayDate.getDate();
+    handleSelectDay(day);
+  };
+
+  const getSelectedDayQuantity = () => {
+    if (!selectedDayDate) return 0;
+    const day = selectedDayDate.getDate();
+    return dayQuantityMap[day] || 0;
+  };
 
   const handleOpenDetailModal = (row: TransactionGroupedRow) => {
-    setSelectedDetailRows(row.details)
-    setSelectedDetailTitle(`${row.categoryName} - ${row.typeName} (${row.typeCode})`)
-    setIsDetailModalOpen(true)
-  }
+    setSelectedDetailRows(row.details);
+    setSelectedDetailTitle(
+      `${row.categoryName} - ${row.typeName} (${row.typeCode})`,
+    );
+    setIsDetailModalOpen(true);
+  };
 
   const handleFetchTransactionByMonth = async () => {
     if (!isValidYear || !isValidMonth) {
-      navigate(routes.notFound, { replace: true })
-      return
+      navigate(routes.notFound, { replace: true });
+      return;
     }
 
-    const distinctYearResponse = await TransactionService.getDistinctTransactionYears()
-    const validYearList = mode === "DO"
-      ? distinctYearResponse.dateDOYears
-      : distinctYearResponse.dateOUTYears
+    const distinctYearResponse =
+      await TransactionService.getDistinctTransactionYears();
+    const validYearList =
+      mode === "DO"
+        ? distinctYearResponse.dateDOYears
+        : distinctYearResponse.dateOUTYears;
 
-    const hasTransactionInYear = validYearList.includes(selectedYear)
+    const hasTransactionInYear = validYearList.includes(selectedYear);
 
     if (!hasTransactionInYear && selectedYear !== todayYear) {
-      navigate(routes.notFound, { replace: true })
-      return
+      navigate(routes.notFound, { replace: true });
+      return;
     }
 
     await TransactionService.getTransactionsByModeYear({
@@ -83,81 +124,104 @@ const TransactionMonthDetailPage = (props: TransactionMonthDetailPageProps) => {
       setIsLoading,
     })
       .then((res) => {
-        setTransactionList(res.data || [])
+        setTransactionList(res.data || []);
       })
       .catch((error) => {
-        setErrorMessage(error.message)
-        setIsShowError(true)
-      })
-  }
+        setErrorMessage(error.message);
+        setIsShowError(true);
+      });
+  };
 
-  const modeWording = useMemo(() => transactionModeWordingList[mode], [mode])
-  const todayYear = useMemo(() => new Date().getFullYear(), [])
-  const todayMonth = useMemo(() => new Date().getMonth() + 1, [])
-  const todayDay = useMemo(() => new Date().getDate(), [])
-  const selectedYear = useMemo(() => Number(yearParam), [yearParam])
-  const selectedMonth = useMemo(() => Number(monthParam), [monthParam])
-  const isValidYear = useMemo(() => Number.isInteger(selectedYear) && selectedYear > 0, [selectedYear])
-  const isValidMonth = useMemo(() => Number.isInteger(selectedMonth) && selectedMonth >= 1 && selectedMonth <= 12, [selectedMonth])
+  const modeWording = useMemo(() => transactionModeWordingList[mode], [mode]);
+  const todayYear = useMemo(() => new Date().getFullYear(), []);
+  const todayMonth = useMemo(() => new Date().getMonth() + 1, []);
+  const todayDay = useMemo(() => new Date().getDate(), []);
+  const selectedYear = useMemo(() => Number(yearParam), [yearParam]);
+  const selectedMonth = useMemo(() => Number(monthParam), [monthParam]);
+  const isValidYear = useMemo(
+    () => Number.isInteger(selectedYear) && selectedYear > 0,
+    [selectedYear],
+  );
+  const isValidMonth = useMemo(
+    () =>
+      Number.isInteger(selectedMonth) &&
+      selectedMonth >= 1 &&
+      selectedMonth <= 12,
+    [selectedMonth],
+  );
 
   const monthTransactionList = useMemo(() => {
     return transactionList.filter((transaction) => {
-      const month = getMonthIndex(mode === "DO" ? transaction.dateDO : transaction.dateOUT)
-      return month === selectedMonth
-    })
-  }, [mode, selectedMonth, transactionList])
+      const month = getMonthIndex(
+        mode === "DO" ? transaction.dateDO : transaction.dateOUT,
+      );
+      return month === selectedMonth;
+    });
+  }, [mode, selectedMonth, transactionList]);
 
   const dayQuantityMap = useMemo(() => {
-    const quantityMap: Record<number, number> = {}
+    const quantityMap: Record<number, number> = {};
 
     monthTransactionList.forEach((transaction) => {
-      const day = getDayIndex(mode === "DO" ? transaction.dateDO : transaction.dateOUT)
+      const day = getDayIndex(
+        mode === "DO" ? transaction.dateDO : transaction.dateOUT,
+      );
 
       if (day !== null) {
-        quantityMap[day] = (quantityMap[day] || 0) + 1
+        quantityMap[day] = (quantityMap[day] || 0) + 1;
       }
-    })
+    });
 
-    return quantityMap
-  }, [mode, monthTransactionList])
+    return quantityMap;
+  }, [mode, monthTransactionList]);
 
   const displayDays = useMemo(() => {
-    const dayList = Object.keys(dayQuantityMap).map((day) => Number(day))
-    const shouldIncludeToday = selectedYear === todayYear && selectedMonth === todayMonth
+    const dayList = Object.keys(dayQuantityMap).map((day) => Number(day));
+    const shouldIncludeToday =
+      selectedYear === todayYear && selectedMonth === todayMonth;
 
     if (!shouldIncludeToday) {
-      return dayList.sort((a, b) => a - b)
+      return dayList.sort((a, b) => a - b);
     }
 
-    return [...new Set([...dayList, todayDay])].sort((a, b) => a - b)
-  }, [dayQuantityMap, selectedMonth, selectedYear, todayDay, todayMonth, todayYear])
+    return [...new Set([...dayList, todayDay])].sort((a, b) => a - b);
+  }, [
+    dayQuantityMap,
+    selectedMonth,
+    selectedYear,
+    todayDay,
+    todayMonth,
+    todayYear,
+  ]);
 
   const filteredTransactionList = useMemo(() => {
     if (!displayDays.length) {
-      return []
+      return [];
     }
 
     return monthTransactionList.filter((transaction) => {
-      const day = getDayIndex(mode === "DO" ? transaction.dateDO : transaction.dateOUT)
-      return day === selectedDay
-    })
-  }, [displayDays.length, mode, monthTransactionList, selectedDay])
+      const day = getDayIndex(
+        mode === "DO" ? transaction.dateDO : transaction.dateOUT,
+      );
+      return day === selectedDay;
+    });
+  }, [displayDays.length, mode, monthTransactionList, selectedDay]);
 
   const groupedTransactionRows = useMemo<TransactionGroupedRow[]>(() => {
-    const groupedMap = new Map<string, TransactionGroupedRow>()
+    const groupedMap = new Map<string, TransactionGroupedRow>();
 
     filteredTransactionList.forEach((transaction) => {
-      const categoryName = transaction.categoryName || "-"
-      const typeName = transaction.typeName || "-"
-      const typeCode = transaction.typeCode || "-"
-      const key = `${categoryName}|${typeName}|${typeCode}|${transaction.year}`
+      const categoryName = transaction.categoryName || "-";
+      const typeName = transaction.typeName || "-";
+      const typeCode = transaction.typeCode || "-";
+      const key = `${categoryName}|${typeName}|${typeCode}|${transaction.year}`;
 
-      const existing = groupedMap.get(key)
+      const existing = groupedMap.get(key);
 
       if (existing) {
-        existing.quantity += 1
-        existing.details.push(transaction)
-        return
+        existing.quantity += 1;
+        existing.details.push(transaction);
+        return;
       }
 
       groupedMap.set(key, {
@@ -168,11 +232,11 @@ const TransactionMonthDetailPage = (props: TransactionMonthDetailPageProps) => {
         year: transaction.year,
         quantity: 1,
         details: [transaction],
-      })
-    })
+      });
+    });
 
-    return Array.from(groupedMap.values())
-  }, [filteredTransactionList])
+    return Array.from(groupedMap.values());
+  }, [filteredTransactionList]);
 
   const transactionColumns: ColumnDef<TransactionGroupedRow>[] = [
     {
@@ -186,10 +250,6 @@ const TransactionMonthDetailPage = (props: TransactionMonthDetailPageProps) => {
     {
       accessorKey: "typeCode",
       header: "Type Code",
-    },
-    {
-      accessorKey: "year",
-      header: "Year",
     },
     {
       accessorKey: "quantity",
@@ -209,158 +269,120 @@ const TransactionMonthDetailPage = (props: TransactionMonthDetailPageProps) => {
         </Button>
       ),
     },
-  ]
+  ];
 
   const table = useReactTable({
     data: groupedTransactionRows,
     columns: transactionColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-  })
+  });
 
   useEffect(() => {
-    handleFetchTransactionByMonth()
-  }, [mode, selectedYear, selectedMonth, isValidYear, isValidMonth, todayYear])
+    handleFetchTransactionByMonth();
+  }, [mode, selectedYear, selectedMonth, isValidYear, isValidMonth, todayYear]);
 
   useEffect(() => {
-    const shouldUseTodayDay = selectedYear === todayYear && selectedMonth === todayMonth
+    const shouldUseTodayDay =
+      selectedYear === todayYear && selectedMonth === todayMonth;
 
     if (shouldUseTodayDay) {
-      setSelectedDay(todayDay)
-      return
+      setSelectedDay(todayDay);
+      setSelectedDayDate(new Date());
+      return;
     }
 
     if (displayDays.length) {
-      setSelectedDay(displayDays[0])
-      return
+      setSelectedDay(displayDays[0]);
+      const dayDate = new Date(selectedYear, selectedMonth - 1, displayDays[0]);
+      setSelectedDayDate(dayDate);
+      return;
     }
 
-    setSelectedDay(1)
-  }, [displayDays, selectedMonth, selectedYear, todayDay, todayMonth, todayYear])
+    setSelectedDay(1);
+    const dayDate = new Date(selectedYear, selectedMonth - 1, 1);
+    setSelectedDayDate(dayDate);
+  }, [
+    displayDays,
+    selectedMonth,
+    selectedYear,
+    todayDay,
+    todayMonth,
+    todayYear,
+  ]);
 
   return (
     <div>
       <div className="mb-4">
         <div className="mb-2 flex items-center gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate(-1)}>
-            Back
-          </Button>
+          <AppBackButton />
           <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-            {modeWording.title} - {monthFormatter.format(new Date(2000, selectedMonth - 1, 1))} {isValidYear ? selectedYear : "-"}
+            {modeWording.title} -{" "}
+            {monthFormatter.format(new Date(2000, selectedMonth - 1, 1))}{" "}
+            {isValidYear ? selectedYear : "-"}
           </h1>
         </div>
         <p className="text-muted-foreground">
-          Showing transaction list of {monthFormatter.format(new Date(2000, selectedMonth - 1, 1))} {isValidYear ? selectedYear : "-"}.
+          Showing transaction list of{" "}
+          {monthFormatter.format(new Date(2000, selectedMonth - 1, 1))}{" "}
+          {isValidYear ? selectedYear : "-"}.
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <AppSkeleton withoutMargin itemClassName="h-16 rounded-xl" />
-          <AppSkeleton withoutMargin itemClassName="h-16 rounded-xl" />
-          <AppSkeleton withoutMargin itemClassName="h-16 rounded-xl" />
-          <AppSkeleton withoutMargin itemClassName="h-16 rounded-xl" />
-        </div>
-      ) : (
-        <div className="mb-6 grid gap-3 sm:grid-cols-5 lg:grid-cols-7">
-          {displayDays.length ? displayDays.map((day) => (
-            <AppCard
-              key={`${mode}-${selectedYear}-${selectedMonth}-${day}`}
+      <div className="mb-6 space-y-4">
+        <div className="flex gap-4 items-end">
+          <div className="flex-1 max-w-3xs">
+            <AppDatePicker
+              label="Select Transaction Day"
+              placeholder="Pick a day"
+              value={selectedDayDate}
+              onValueChange={setSelectedDayDate}
+              viewMode="day"
+              lockedYear={selectedYear}
+              lockedMonth={selectedMonth}
               withoutMargin
-              title={day}
-              action={
-                <p className="text-xs text-muted-foreground">
-                  Qty: {dayQuantityMap[day] || 0}
-                  {selectedYear === todayYear && selectedMonth === todayMonth && day === todayDay
-                    ? ` ${modeWording.cardAction} (Today)`
-                    : ""}
-                </p>
-              }
-              classNames={{
-                title: "text-xl",
-                card: day === selectedDay ? "border-primary" : "",
-                footer: "flex items-center justify-end",
-              }}
-              footer={
-                <Button type="button" variant={day === selectedDay ? "default" : "outline"} onClick={() => handleSelectDay(day)}>
-                  View Detail
-                </Button>
-              }
             />
-          )) : (
-            <AppCard
-              withoutMargin
-              title="No Day Data"
-              action={<p className="text-xs text-muted-foreground">Qty: 0</p>}
-            />
-          )}
-        </div>
-      )}
-
-      <AppTable
-        table={table}
-        showNumberColumn
-        emptyMessage={isLoading ? "Loading transactions..." : "No transaction found for this day."}
-      />
-
-      <AppModal
-        open={isDetailModalOpen}
-        onOpenChange={setIsDetailModalOpen}
-        title={selectedDetailTitle || "Detail"}
-        showCloseButton={true}
-        classNames={{
-          content: "sm:max-w-lg",
-          body: "space-y-2",
-          footer: "bg-muted/30",
-        }}
-        footer={
-          <div className="flex w-full justify-center">
-            <Button type="button" onClick={() => setIsDetailModalOpen(false)}>
-              Close
-            </Button>
           </div>
-        }
-      >
-        {selectedDetailRows.length ? selectedDetailRows.map((item) => (
-          <div key={item.transactionId} className="rounded-md border p-2 text-sm">
-            <p>No Mesin: {item.noMesin || "-"}</p>
-            <p>No Rangka: {item.noRangka || "-"}</p>
-            <p>
-              Date DO: {item.dateDO ? new Intl.DateTimeFormat("en-US", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              }).format(new Date(item.dateDO)) : "-"}
+          <div className="text-right pb-0 flex">
+            <p className="text-muted-foreground mb-1">Quantity: &nbsp;</p>
+            <p className="font-semibold">
+              {getSelectedDayQuantity()} {modeWording.cardAction}
             </p>
           </div>
-        )) : <p className="text-sm text-muted-foreground">No detail found.</p>}
-      </AppModal>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            onClick={handleGoToSelectedDay}
+            disabled={!selectedDayDate}
+          >
+            View Selected Day
+          </Button>
+          <TodayButton onGoToToday={handleGoToToday} activeDate={activeDate} />
+        </div>
+      </div>
 
-      <AppModal
+      <TransactionTableSection
+        table={table}
+        emptyMessage={
+          isLoading
+            ? "Loading transactions..."
+            : "No transaction found for this day."
+        }
+        detailOpen={isDetailModalOpen}
+        onDetailOpenChange={setIsDetailModalOpen}
+        detailTitle={selectedDetailTitle}
+        detailRows={selectedDetailRows}
+      />
+
+      <TransactionErrorModal
         open={isShowError}
         onOpenChange={setIsShowError}
-        title="Error"
-        showCloseButton={true}
-        classNames={{
-          content: "sm:max-w-sm",
-          header: "gap-1",
-          title: "text-lg",
-          description: "text-xs",
-          body: "space-y-3",
-          footer: "bg-muted/30",
-        }}
-        footer={
-          <div className="flex w-full justify-center">
-            <Button type="button" onClick={handleCloseErrorModal}>
-              OK
-            </Button>
-          </div>
-        }
-      >
-        <p>{errorMessage}</p>
-      </AppModal>
+        errorMessage={errorMessage}
+        onClose={handleCloseErrorModal}
+      />
     </div>
-  )
-}
+  );
+};
 
-export default TransactionMonthDetailPage
+export default TransactionMonthDetailPage;
