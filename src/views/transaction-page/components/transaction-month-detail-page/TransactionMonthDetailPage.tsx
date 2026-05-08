@@ -367,7 +367,7 @@ const TransactionMonthDetailPage = (props: TransactionMonthDetailPageProps) => {
         emptyMessage={
           isLoading
             ? "Loading transactions..."
-            : "No transaction found for this day."
+            : "No transaction found for this month."
         }
         detailOpen={isDetailModalOpen}
         onDetailOpenChange={setIsDetailModalOpen}
