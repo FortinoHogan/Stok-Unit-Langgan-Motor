@@ -17,7 +17,6 @@ import type { TransactionDetailRow } from "@/interfaces/ITransactionService";
 import { transactionModeWordingList } from "../../TransactionPage.constant";
 import TransactionErrorModal from "../transaction-error-modal/TransactionErrorModal";
 import TransactionTableSection from "../transaction-table-section/TransactionTableSection";
-import TodayButton from "../today-button/TodayButton";
 import { getDayIndex, getMonthIndex, monthFormatter } from "../../utilities";
 import type {
   TransactionDayDetailPageProps,
@@ -45,25 +44,10 @@ const TransactionDayDetailPage = (props: TransactionDayDetailPageProps) => {
     TransactionDetailRow[]
   >([]);
   const [selectedDetailTitle, setSelectedDetailTitle] = useState("");
-  const [activeDate, setActiveDate] = useState(new Date());
   const [typeColorIdInput, setTypeColorIdInput] = useState("");
   const [noMesinInput, setNoMesinInput] = useState("");
   const [noRangkaInput, setNoRangkaInput] = useState("");
   const [isRFSInput, setIsRFSInput] = useState(false);
-
-  const handleGoToToday = () => {
-    const today = new Date();
-    setActiveDate(today);
-    const detailPathTemplate =
-      mode === "DO" ? routes.deliveryOrderDayDetail : routes.sellingDayDetail;
-
-    navigate(
-      detailPathTemplate
-        .replace(":year", String(today.getFullYear()))
-        .replace(":month", String(today.getMonth() + 1))
-        .replace(":day", String(today.getDate())),
-    );
-  };
 
   const handleCloseErrorModal = () => {
     setErrorMessage("");
@@ -320,7 +304,6 @@ const TransactionDayDetailPage = (props: TransactionDayDetailPageProps) => {
           <Button type="button" onClick={handleOpenAddModal}>
             {mode === "DO" ? "Add Delivery Order" : "Add Selling"}
           </Button>
-          <TodayButton onGoToToday={handleGoToToday} activeDate={activeDate} />
         </div>
       </div>
 

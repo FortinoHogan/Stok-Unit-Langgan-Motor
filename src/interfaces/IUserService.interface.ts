@@ -11,13 +11,13 @@ export interface GetUserByEmailRequest extends IRequestWithLoading {
 
 export interface InsertAuthenticatedUserRequest extends IRequestWithLoading {
   email: string;
-  isAdmin: boolean;
+  roleId: number;
 }
 
 export interface UpdateAuthenticatedUserRequest extends IRequestWithLoading {
   userId: number;
   email: string;
-  isAdmin: boolean;
+  roleId: number;
 }
 
 export interface DeleteAuthenticatedUserRequest extends IRequestWithLoading {

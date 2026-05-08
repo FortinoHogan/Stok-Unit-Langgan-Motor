@@ -6,6 +6,7 @@ import AppCheckboxList from "@/components/app-layout/app-checkbox-list/AppCheckb
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
+import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
 import { CategoryService } from "@/helpers/services/CategoryService"
 import { ColorService } from "@/helpers/services/ColorService"
 import { TypeColorService } from "@/helpers/services/TypeColorService"
@@ -29,6 +30,7 @@ import { TYPE_AND_COLOR_PAGE_SIZE_OPTIONS } from "./TypeAndColorPage.constant"
 
 const TypeAndColorPage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
+  const typeAndColorAccess = usePrivillegeAccess("Type and Color")
 
   const [isAddColorModalOpen, setIsAddColorModalOpen] = useState(false)
   const [isConfirmSaveModalOpen, setIsConfirmSaveModalOpen] = useState(false)
@@ -123,14 +125,16 @@ const TypeAndColorPage = () => {
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            title="Add colors"
-            onClick={() => handleOpenAddColorModal(row.original)}
-          >
-            <Pencil className="size-4" />
-          </Button>
+          {typeAndColorAccess.canUpdate ? (
+            <Button
+              variant="outline"
+              size="sm"
+              title="Add colors"
+              onClick={() => handleOpenAddColorModal(row.original)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          ) : null}
         </div>
       ),
     },
@@ -398,6 +402,7 @@ const TypeAndColorPage = () => {
               onClick={() => {
                 handleOpenConfirmSave()
               }}
+              disabled={!typeAndColorAccess.canUpdate}
             >
               Save
             </Button>

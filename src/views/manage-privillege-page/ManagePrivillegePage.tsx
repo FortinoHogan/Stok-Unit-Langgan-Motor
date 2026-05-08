@@ -1,20 +1,4 @@
-import AppModal from "@/components/app-components/app-modal/AppModal"
-import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
-import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
-import AppTable from "@/components/app-components/app-table/AppTable"
-import AppTextField from "@/components/app-components/app-text-field/AppTextField"
-import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
-import { Button } from "@/components/ui/button"
-import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
-import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
-import { ColorService } from "@/helpers/services/ColorService"
-import type {
-  DeleteColorRequest,
-  GetColorListRequest,
-  InsertColorRequest,
-  UpdateColorRequest,
-} from "@/interfaces/IColorService"
-import type { MsColor } from "@/interfaces/IModel.interface"
+import { useEffect, useMemo, useState } from "react"
 import {
   getCoreRowModel,
   getSortedRowModel,
@@ -22,56 +6,73 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { Pencil, Trash } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { MANAGE_COLOR_PAGE_SIZE_OPTIONS, type PendingActionManageColor } from "./MangeColorPage.constant"
 
-const ManageColorPage = () => {
+import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
+import AppModal from "@/components/app-components/app-modal/AppModal"
+import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
+import AppTable from "@/components/app-components/app-table/AppTable"
+import AppTextField from "@/components/app-components/app-text-field/AppTextField"
+import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
+import { Button } from "@/components/ui/button"
+import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
+import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
+import { PrivillegeService } from "@/helpers/services/PrivillegeService"
+import type { MsPrivillege } from "@/interfaces/IModel.interface"
+import type {
+  DeletePrivillegeRequest,
+  GetPrivillegeListRequest,
+  InsertPrivillegeRequest,
+  UpdatePrivillegeRequest,
+} from "@/interfaces/IPrivillegeService"
+import { MANAGE_PRIVILLEGE_PAGE_SIZE_OPTIONS } from "./ManagePrivillegePage.constant"
+
+const ManagePrivillegePage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-  const colorAccess = usePrivillegeAccess("Master Color")
+  const privillegeAccess = usePrivillegeAccess("Master Privillege")
 
   const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const [isShowError, setIsShowError] = useState(false)
-  const [newColorName, setNewColorName] = useState("")
-  const [editingColorId, setEditingColorId] = useState<number | null>(null)
-  const [pendingAction, setPendingAction] = useState<PendingActionManageColor>(null)
-  const [pendingDeleteColor, setPendingDeleteColor] = useState<MsColor | null>(null)
+  const [newPrivillegeName, setNewPrivillegeName] = useState("")
+  const [editingPrivillegeId, setEditingPrivillegeId] = useState<number | null>(null)
+  const [pendingAction, setPendingAction] = useState<"insert" | "update" | "delete" | null>(null)
+  const [pendingDeletePrivillege, setPendingDeletePrivillege] = useState<MsPrivillege | null>(null)
 
-  const [colorList, setColorList] = useState<MsColor[]>([])
+  const [privillegeList, setPrivillegeList] = useState<MsPrivillege[]>([])
+  const [existingPrivillegeList, setExistingPrivillegeList] = useState<MsPrivillege[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalCount, setTotalCount] = useState(0)
-  const [existingColorList, setExistingColorList] = useState<MsColor[]>([])
 
-  const manageColorTableColumns: ColumnDef<MsColor>[] = [
+  const managePrivillegeTableColumns: ColumnDef<MsPrivillege>[] = [
     {
-      accessorKey: "colorName",
-      header: "Color Name",
+      accessorKey: "privillegeName",
+      header: "Privillege Name",
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          {colorAccess.canUpdate ? (
+          {privillegeAccess.canUpdate ? (
             <Button
               variant="outline"
               size="sm"
-              title="Edit color"
-              onClick={() => handleEditColor(row.original)}
+              title="Edit privillege"
+              onClick={() => handleEditPrivillege(row.original)}
             >
               <Pencil className="size-4" />
             </Button>
           ) : null}
-          {colorAccess.canDelete ? (
+          {privillegeAccess.canDelete ? (
             <Button
               variant="destructive"
               size="sm"
-              title="Delete color"
+              title="Delete privillege"
               onClick={() => handleOpenDeleteConfirmation(row.original)}
             >
               <Trash className="size-4" />
@@ -85,23 +86,23 @@ const ManageColorPage = () => {
   const hasNextPage = page * pageSize < totalCount
 
   const table = useReactTable({
-    data: colorList,
-    columns: manageColorTableColumns,
+    data: privillegeList,
+    columns: managePrivillegeTableColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
 
-  const filteredExistingColorList = useMemo(() => {
-    const keyword = newColorName.trim().toLowerCase()
+  const filteredExistingPrivillegeList = useMemo(() => {
+    const keyword = newPrivillegeName.trim().toLowerCase()
 
     if (!keyword) {
-      return existingColorList
+      return existingPrivillegeList
     }
 
-    return existingColorList.filter((color) =>
-      color.colorName.toLowerCase().includes(keyword),
+    return existingPrivillegeList.filter((privillege) =>
+      privillege.privillegeName.toLowerCase().includes(keyword),
     )
-  }, [existingColorList, newColorName])
+  }, [existingPrivillegeList, newPrivillegeName])
 
   const ensureAuthenticatedUserId = () => {
     const userId = authenticatedUser?.userId
@@ -115,79 +116,79 @@ const ManageColorPage = () => {
     return userId
   }
 
-  const resetColorForm = () => {
-    setNewColorName("")
-    setEditingColorId(null)
+  const resetPrivillegeForm = () => {
+    setNewPrivillegeName("")
+    setEditingPrivillegeId(null)
   }
 
   const resetConfirmActionState = () => {
     setPendingAction(null)
-    setPendingDeleteColor(null)
+    setPendingDeletePrivillege(null)
     setIsConfirmActionModalOpen(false)
   }
 
   const handleOpenCreateModal = () => {
-    resetColorForm()
-    handleFetchExistingColors()
+    resetPrivillegeForm()
+    handleFetchExistingPrivilleges()
     setIsUpsertModalOpen(true)
   }
 
-  const handleEditColor = (color: MsColor) => {
-    setEditingColorId(color.colorId)
-    setNewColorName(color.colorName)
-    handleFetchExistingColors()
+  const handleEditPrivillege = (privillege: MsPrivillege) => {
+    setEditingPrivillegeId(privillege.privillegeId)
+    setNewPrivillegeName(privillege.privillegeName)
+    handleFetchExistingPrivilleges()
     setIsUpsertModalOpen(true)
   }
 
   const handleOpenUpdateConfirmation = () => {
-    if (!editingColorId || !newColorName.trim()) {
+    if (!editingPrivillegeId || !newPrivillegeName.trim()) {
       return
     }
 
     setPendingAction("update")
-    setPendingDeleteColor(null)
+    setPendingDeletePrivillege(null)
     setIsConfirmActionModalOpen(true)
   }
 
   const handleOpenInsertConfirmation = () => {
-    if (!newColorName.trim()) {
+    if (!newPrivillegeName.trim()) {
       return
     }
 
     setPendingAction("insert")
-    setPendingDeleteColor(null)
+    setPendingDeletePrivillege(null)
     setIsConfirmActionModalOpen(true)
   }
 
-  const handleOpenDeleteConfirmation = (color: MsColor) => {
+  const handleOpenDeleteConfirmation = (privillege: MsPrivillege) => {
     setPendingAction("delete")
-    setPendingDeleteColor(color)
+    setPendingDeletePrivillege(privillege)
     setIsConfirmActionModalOpen(true)
   }
 
-  const isDuplicateColorName = () => {
-    const normalizedColorName = newColorName.trim().toLowerCase()
+  const isDuplicatePrivillegeName = () => {
+    const normalizedPrivillegeName = newPrivillegeName.trim().toLowerCase()
 
-    return existingColorList.some((color) => {
-      const isSameRecord = editingColorId
-        ? color.colorId === editingColorId
+    return existingPrivillegeList.some((privillege) => {
+      const isSameRecord = editingPrivillegeId
+        ? privillege.privillegeId === editingPrivillegeId
         : false
 
       if (isSameRecord) {
         return false
       }
 
-      return color.colorName.trim().toLowerCase() === normalizedColorName
+      return privillege.privillegeName.trim().toLowerCase() === normalizedPrivillegeName
     })
   }
 
   const handleInsert = async () => {
-    if (!newColorName.trim()) {
+    if (!newPrivillegeName.trim()) {
       return
     }
 
-    if (isDuplicateColorName()) {
-      setErrorMessage("Color name already exists")
+    if (isDuplicatePrivillegeName()) {
+      setErrorMessage("Privillege name already exists")
       setIsShowError(true)
       return
     }
@@ -197,21 +198,21 @@ const ManageColorPage = () => {
       return
     }
 
-    const payload: InsertColorRequest = {
-      colorName: newColorName,
+    const payload: InsertPrivillegeRequest = {
+      privillegeName: newPrivillegeName.trim(),
       userIn: userId,
       setIsLoading,
     }
 
-    await ColorService.insertColor(payload)
+    await PrivillegeService.insertPrivillege(payload)
       .then(() => {
         setIsUpsertModalOpen(false)
-        resetColorForm()
+        resetPrivillegeForm()
         resetConfirmActionState()
         setErrorMessage("")
-        setSuccessMessage("Color added successfully")
+        setSuccessMessage("Privillege added successfully")
         setIsShowError(true)
-        handleFetchColors()
+        handleFetchPrivilleges()
       })
       .catch((error) => {
         setErrorMessage(error.message)
@@ -220,12 +221,12 @@ const ManageColorPage = () => {
   }
 
   const handleUpdate = async () => {
-    if (!editingColorId || !newColorName.trim()) {
+    if (!editingPrivillegeId || !newPrivillegeName.trim()) {
       return
     }
 
-    if (isDuplicateColorName()) {
-      setErrorMessage("Color name already exists")
+    if (isDuplicatePrivillegeName()) {
+      setErrorMessage("Privillege name already exists")
       setIsShowError(true)
       return
     }
@@ -235,23 +236,23 @@ const ManageColorPage = () => {
       return
     }
 
-    const payload: UpdateColorRequest = {
-      colorId: editingColorId,
-      colorName: newColorName,
+    const payload: UpdatePrivillegeRequest = {
+      privillegeId: editingPrivillegeId,
+      privillegeName: newPrivillegeName.trim(),
       userUp: userId,
       updatedAt: new Date().toISOString(),
       setIsLoading,
     }
 
-    await ColorService.updateColor(payload)
+    await PrivillegeService.updatePrivillege(payload)
       .then(() => {
         setIsUpsertModalOpen(false)
-        resetColorForm()
+        resetPrivillegeForm()
         resetConfirmActionState()
         setErrorMessage("")
-        setSuccessMessage("Color updated successfully")
+        setSuccessMessage("Privillege updated successfully")
         setIsShowError(true)
-        handleFetchColors()
+        handleFetchPrivilleges()
       })
       .catch((error) => {
         setErrorMessage(error.message)
@@ -259,32 +260,32 @@ const ManageColorPage = () => {
       })
   }
 
-  const handleDeleteColor = async (color: MsColor) => {
+  const handleDeletePrivillege = async (privillege: MsPrivillege) => {
     const userId = ensureAuthenticatedUserId()
     if (!userId) {
       return
     }
 
-    const payload: DeleteColorRequest = {
-      colorId: color.colorId,
+    const payload: DeletePrivillegeRequest = {
+      privillegeId: privillege.privillegeId,
       userUp: userId,
       updatedAt: new Date().toISOString(),
       setIsLoading,
     }
 
-    await ColorService.deleteColor(payload)
+    await PrivillegeService.deletePrivillege(payload)
       .then(() => {
         resetConfirmActionState()
         setErrorMessage("")
-        setSuccessMessage("Color deleted successfully")
+        setSuccessMessage("Privillege deleted successfully")
         setIsShowError(true)
 
-        if (colorList.length === 1 && page > 1) {
+        if (privillegeList.length === 1 && page > 1) {
           setPage((prev) => prev - 1)
           return
         }
 
-        handleFetchColors()
+        handleFetchPrivilleges()
       })
       .catch((error) => {
         setErrorMessage(error.message)
@@ -303,22 +304,22 @@ const ManageColorPage = () => {
       return
     }
 
-    if (pendingAction === "delete" && pendingDeleteColor) {
-      await handleDeleteColor(pendingDeleteColor)
+    if (pendingAction === "delete" && pendingDeletePrivillege) {
+      await handleDeletePrivillege(pendingDeletePrivillege)
     }
   }
 
-  const handleFetchColors = async () => {
-    const payload: GetColorListRequest = {
+  const handleFetchPrivilleges = async () => {
+    const payload: GetPrivillegeListRequest = {
       page,
       pageSize,
       search,
       setIsLoading,
     }
 
-    await ColorService.getColorList(payload)
+    await PrivillegeService.getPrivillegeList(payload)
       .then((res) => {
-        setColorList(res.data || [])
+        setPrivillegeList(res.data || [])
         setTotalCount(res.count ?? 0)
       })
       .catch((error) => {
@@ -327,14 +328,14 @@ const ManageColorPage = () => {
       })
   }
 
-  const handleFetchExistingColors = async () => {
-    await ColorService.getColorList({
+  const handleFetchExistingPrivilleges = async () => {
+    await PrivillegeService.getPrivillegeList({
       page: 1,
       pageSize: 1000,
       search: "",
     })
       .then((res) => {
-        setExistingColorList(res.data || [])
+        setExistingPrivillegeList(res.data || [])
       })
       .catch((error) => {
         setErrorMessage(error.message)
@@ -343,28 +344,28 @@ const ManageColorPage = () => {
   }
 
   useEffect(() => {
-    handleFetchColors()
+    handleFetchPrivilleges()
   }, [page, pageSize, search])
 
   return (
     <div>
       <div className="mb-4">
         <h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-          Manage Color
+          Manage Privillege
         </h1>
-        <p className="text-muted-foreground">Manage color motor (e.g., Red, Black)</p>
+        <p className="text-muted-foreground">Manage privillege access (e.g., Read Master Category)</p>
       </div>
 
       <AppModal
-        trigger={colorAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Color</Button> : undefined}
-        title={editingColorId ? "Edit Color" : "Add New Color"}
-        description={editingColorId ? "Update selected color" : "Add a new color"}
+        trigger={privillegeAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Privillege</Button> : undefined}
+        title={editingPrivillegeId ? "Edit Privillege" : "Add New Privillege"}
+        description={editingPrivillegeId ? "Update selected privillege" : "Add a new privillege"}
         open={isUpsertModalOpen}
         onOpenChange={(open) => {
           setIsUpsertModalOpen(open)
 
           if (!open) {
-            resetColorForm()
+            resetPrivillegeForm()
           }
         }}
         footer={
@@ -373,7 +374,7 @@ const ManageColorPage = () => {
               type="button"
               onClick={() => {
                 setIsUpsertModalOpen(false)
-                resetColorForm()
+                resetPrivillegeForm()
               }}
               variant="outline"
             >
@@ -382,7 +383,7 @@ const ManageColorPage = () => {
             <Button
               type="button"
               onClick={() => {
-                if (editingColorId) {
+                if (editingPrivillegeId) {
                   handleOpenUpdateConfirmation()
                   return
                 }
@@ -390,22 +391,22 @@ const ManageColorPage = () => {
                 handleOpenInsertConfirmation()
               }}
             >
-              {editingColorId ? "Update" : "Save"}
+              {editingPrivillegeId ? "Update" : "Save"}
             </Button>
           </div>
         }
       >
         <AppTextField
-          label="Color Name"
-          placeholder="Red"
+          label="Privillege Name"
+          placeholder="Can Edit User"
           required={true}
-          value={newColorName}
-          onChange={(value) => setNewColorName(value)}
+          value={newPrivillegeName}
+          onChange={(value) => setNewPrivillegeName(value)}
         />
         <AppExistingList
-          title="Existing Color List"
-          items={filteredExistingColorList.map((color) => color.colorName)}
-          emptyMessage="No color data"
+          title="Existing Privillege List"
+          items={filteredExistingPrivillegeList.map((privillege) => privillege.privillegeName)}
+          emptyMessage="No privillege data"
         />
       </AppModal>
 
@@ -420,17 +421,17 @@ const ManageColorPage = () => {
         }}
         title={
           pendingAction === "delete"
-            ? "Delete Color"
+            ? "Delete Privillege"
             : pendingAction === "insert"
               ? "Confirm Save"
               : "Confirm Update"
         }
         description={
           pendingAction === "delete"
-            ? "This action will remove the selected color"
+            ? "This action will remove the selected privillege"
             : pendingAction === "insert"
-              ? "This action will add new color"
-              : "This action will update the selected color"
+              ? "This action will add new privillege"
+              : "This action will update the selected privillege"
         }
         classNames={{
           content: "sm:max-w-sm",
@@ -463,16 +464,16 @@ const ManageColorPage = () => {
       >
         <p>
           {pendingAction === "delete"
-            ? "Are you sure you want to delete this color?"
+            ? "Are you sure you want to delete this privillege?"
             : pendingAction === "insert"
-              ? "Are you sure you want to add this color?"
-              : "Are you sure you want to update this color?"}
+              ? "Are you sure you want to add this privillege?"
+              : "Are you sure you want to update this privillege?"}
         </p>
       </AppModal>
 
       <AppSearchBar
-        label="Search Color"
-        placeholder="Red"
+        label="Search Privillege"
+        placeholder="Can Edit"
         onSearch={(value) => {
           setSearch(value)
           setPage(1)
@@ -485,12 +486,12 @@ const ManageColorPage = () => {
       <AppTable
         table={table}
         showNumberColumn
-        columnsCount={manageColorTableColumns.length}
-        emptyMessage="No colors found."
+        columnsCount={managePrivillegeTableColumns.length}
+        emptyMessage="No privilleges found."
         showPagination
         page={page}
         pageSize={pageSize}
-        rowCount={colorList.length}
+        rowCount={privillegeList.length}
         hasNextPage={hasNextPage}
         onPreviousPage={() => setPage((p) => Math.max(p - 1, 1))}
         onNextPage={() => setPage((p) => p + 1)}
@@ -498,7 +499,7 @@ const ManageColorPage = () => {
           setPageSize(size)
           setPage(1)
         }}
-        pageSizeOptions={MANAGE_COLOR_PAGE_SIZE_OPTIONS}
+        pageSizeOptions={MANAGE_PRIVILLEGE_PAGE_SIZE_OPTIONS}
         pageInfoRenderer={({ page: currentPage, rowCount }) =>
           `Page ${currentPage} • ${totalCount} total • ${rowCount} row(s) shown`
         }
@@ -548,4 +549,4 @@ const ManageColorPage = () => {
   )
 }
 
-export default ManageColorPage
+export default ManagePrivillegePage

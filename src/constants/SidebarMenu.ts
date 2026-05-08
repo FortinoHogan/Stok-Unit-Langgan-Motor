@@ -4,6 +4,7 @@ import {
   Palette,
   ShoppingCart,
   User,
+  UserKey,
 } from "lucide-react";
 import { routes } from "./paths";
 import type { SidebarMenuGroup } from "@/interfaces/IModel.interface";
@@ -19,7 +20,6 @@ export const sidebarMenu: SidebarMenuGroup[] = [
       {
         title: "Manage Users",
         url: routes.manageUsers,
-        isAdminOnly: true,
         icon: User,
       },
       {
@@ -29,6 +29,8 @@ export const sidebarMenu: SidebarMenuGroup[] = [
           { title: "Master Category", url: routes.manageMasterDataCategory },
           { title: "Master Color", url: routes.manageMasterDataColor },
           { title: "Master Type", url: routes.manageMasterDataType },
+          { title: "Master Role", url: routes.manageMasterDataRole },
+          { title: "Master Privillege", url: routes.manageMasterDataPrivillege },
         ],
       },
     ],
@@ -36,6 +38,7 @@ export const sidebarMenu: SidebarMenuGroup[] = [
   {
     title: "Configuration",
     items: [
+      { title: "Role and Privillege", url: routes.roleAndPrivillege, icon: UserKey },
       { title: "Type and Color", url: routes.typeAndColor, icon: Palette },
       {
         title: "Transaction",

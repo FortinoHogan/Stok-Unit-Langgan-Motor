@@ -24,26 +24,31 @@ import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
 import { supabase } from "@/helpers/supabase/client"
 import { routes } from "@/constants/paths"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { usePrivillegeStore } from "@/helpers/hooks/usePrivillegeStore/usePrivillegeStore"
+import { canAccessPathByPrivillege } from "@/constants/privillegeAccess"
 
 const AppSidebar = () => {
     const { isMobile } = useSidebar()
     const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
     const clearAuthenticatedUser = useAuthStore((state) => state.clearAuthenticatedUser)
+    const privillegeList = usePrivillegeStore((state) => state.privillegeList)
+    const isLoadingPrivilleges = usePrivillegeStore((state) => state.isLoading)
     const navigate = useNavigate()
     const location = useLocation()
-    const isAdmin = Boolean(authenticatedUser?.isAdmin)
 
     const visibleSidebarMenu = sidebarMenu
         .map((group) => {
             const visibleItems = group.items
                 .map((item) => {
-                    const visibleSubItems = item.subItems?.filter((subItem) => !subItem.isAdminOnly || isAdmin)
+                    const visibleSubItems = item.subItems?.filter((subItem) =>
+                        canAccessPathByPrivillege(subItem.url, privillegeList),
+                    )
 
-                    if (item.isAdminOnly && !isAdmin && (!visibleSubItems || visibleSubItems.length === 0)) {
+                    if (!item.url && (!visibleSubItems || visibleSubItems.length === 0)) {
                         return null
                     }
 
-                    if (!item.url && (!visibleSubItems || visibleSubItems.length === 0)) {
+                    if (item.url && !canAccessPathByPrivillege(item.url, privillegeList)) {
                         return null
                     }
 
@@ -60,6 +65,10 @@ const AppSidebar = () => {
             }
         })
         .filter((group) => group.items.length > 0)
+
+    if (isLoadingPrivilleges) {
+        return null
+    }
 
     const handleLogout = async () => {
         await supabase.auth.signOut()

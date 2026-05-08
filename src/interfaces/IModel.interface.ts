@@ -5,13 +5,11 @@ import type { LucideIcon } from "lucide-react";
 export type SidebarSubMenuItem = {
   title: string;
   url: string;
-  isAdminOnly?: boolean;
 };
 
 export type SidebarMenuItem = {
   title: string;
   url?: string;
-  isAdminOnly?: boolean;
   icon?: LucideIcon;
   subItems?: SidebarSubMenuItem[];
 };
@@ -41,7 +39,6 @@ export interface IGetListRequest extends IRequestWithLoading {
 }
 
 // Database Model
-
 interface IModel {
   createdAt: string;
   userIn: number;
@@ -54,8 +51,8 @@ export interface AuthenticatedUser {
   createdAt: string;
   userId: number;
   email: string;
-  isAdmin: boolean;
   isDeleted: boolean;
+  roleId: number;
 }
 
 export interface MsCategory extends IModel {
@@ -91,4 +88,20 @@ export interface TrTransaction extends IModel {
   isRFS: boolean;
   dateDO: string;
   dateOUT: string;
+}
+
+export interface MsRole extends IModel {
+  roleId: number;
+  roleName: string;
+}
+
+export interface MsPrivillege extends IModel {
+  privillegeId: number;
+  privillegeName: string;
+}
+
+export interface TrRolePrivillege extends IModel {
+  rolePrivillegeId: number;
+  roleId: number;
+  privillegeId: number;
 }

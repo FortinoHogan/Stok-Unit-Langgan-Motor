@@ -73,13 +73,13 @@ const getAuthenticatedUserList = async (
 const insertAuthenticatedUser = async (
   params: InsertAuthenticatedUserRequest,
 ): Promise<IResponse<AuthenticatedUser>> => {
-  const { email, isAdmin, setIsLoading } = params;
+  const { email, roleId, setIsLoading } = params;
   setIsLoading?.(true);
   try {
     const res = await ApiService.request<AuthenticatedUser>(() =>
       supabase
         .from("AuthenticatedUser")
-        .insert({ email, isAdmin })
+        .insert({ email, roleId })
         .select()
         .single(),
     );
@@ -95,13 +95,13 @@ const insertAuthenticatedUser = async (
 const updateAuthenticatedUser = async (
   params: UpdateAuthenticatedUserRequest,
 ): Promise<IResponse<AuthenticatedUser>> => {
-  const { userId, email, isAdmin, setIsLoading } = params;
+  const { userId, email, roleId, setIsLoading } = params;
   setIsLoading?.(true);
   try {
     const res = await ApiService.request<AuthenticatedUser>(() =>
       supabase
         .from("AuthenticatedUser")
-        .update({ email, isAdmin })
+        .update({ email, roleId })
         .eq("userId", userId)
         .select()
         .single(),

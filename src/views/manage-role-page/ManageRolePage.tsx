@@ -1,20 +1,4 @@
-import AppModal from "@/components/app-components/app-modal/AppModal"
-import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
-import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
-import AppTable from "@/components/app-components/app-table/AppTable"
-import AppTextField from "@/components/app-components/app-text-field/AppTextField"
-import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
-import { Button } from "@/components/ui/button"
-import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
-import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
-import { ColorService } from "@/helpers/services/ColorService"
-import type {
-  DeleteColorRequest,
-  GetColorListRequest,
-  InsertColorRequest,
-  UpdateColorRequest,
-} from "@/interfaces/IColorService"
-import type { MsColor } from "@/interfaces/IModel.interface"
+import { useEffect, useMemo, useState } from "react"
 import {
   getCoreRowModel,
   getSortedRowModel,
@@ -22,56 +6,73 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { Pencil, Trash } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { MANAGE_COLOR_PAGE_SIZE_OPTIONS, type PendingActionManageColor } from "./MangeColorPage.constant"
 
-const ManageColorPage = () => {
+import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
+import AppModal from "@/components/app-components/app-modal/AppModal"
+import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
+import AppTable from "@/components/app-components/app-table/AppTable"
+import AppTextField from "@/components/app-components/app-text-field/AppTextField"
+import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
+import { Button } from "@/components/ui/button"
+import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
+import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
+import { RoleService } from "@/helpers/services/RoleService"
+import type { MsRole } from "@/interfaces/IModel.interface"
+import type {
+  DeleteRoleRequest,
+  GetRoleListRequest,
+  InsertRoleRequest,
+  UpdateRoleRequest,
+} from "@/interfaces/IRoleService"
+import { MANAGE_ROLE_PAGE_SIZE_OPTIONS } from "./ManageRolePage.constant"
+
+const ManageRolePage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-  const colorAccess = usePrivillegeAccess("Master Color")
+  const roleAccess = usePrivillegeAccess("Master Role")
 
   const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const [isShowError, setIsShowError] = useState(false)
-  const [newColorName, setNewColorName] = useState("")
-  const [editingColorId, setEditingColorId] = useState<number | null>(null)
-  const [pendingAction, setPendingAction] = useState<PendingActionManageColor>(null)
-  const [pendingDeleteColor, setPendingDeleteColor] = useState<MsColor | null>(null)
+  const [newRoleName, setNewRoleName] = useState("")
+  const [editingRoleId, setEditingRoleId] = useState<number | null>(null)
+  const [pendingAction, setPendingAction] = useState<"insert" | "update" | "delete" | null>(null)
+  const [pendingDeleteRole, setPendingDeleteRole] = useState<MsRole | null>(null)
 
-  const [colorList, setColorList] = useState<MsColor[]>([])
+  const [roleList, setRoleList] = useState<MsRole[]>([])
+  const [existingRoleList, setExistingRoleList] = useState<MsRole[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalCount, setTotalCount] = useState(0)
-  const [existingColorList, setExistingColorList] = useState<MsColor[]>([])
 
-  const manageColorTableColumns: ColumnDef<MsColor>[] = [
+  const manageRoleTableColumns: ColumnDef<MsRole>[] = [
     {
-      accessorKey: "colorName",
-      header: "Color Name",
+      accessorKey: "roleName",
+      header: "Role Name",
     },
     {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          {colorAccess.canUpdate ? (
+          {roleAccess.canUpdate ? (
             <Button
               variant="outline"
               size="sm"
-              title="Edit color"
-              onClick={() => handleEditColor(row.original)}
+              title="Edit role"
+              onClick={() => handleEditRole(row.original)}
             >
               <Pencil className="size-4" />
             </Button>
           ) : null}
-          {colorAccess.canDelete ? (
+          {roleAccess.canDelete ? (
             <Button
               variant="destructive"
               size="sm"
-              title="Delete color"
+              title="Delete role"
               onClick={() => handleOpenDeleteConfirmation(row.original)}
             >
               <Trash className="size-4" />
@@ -85,23 +86,23 @@ const ManageColorPage = () => {
   const hasNextPage = page * pageSize < totalCount
 
   const table = useReactTable({
-    data: colorList,
-    columns: manageColorTableColumns,
+    data: roleList,
+    columns: manageRoleTableColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
 
-  const filteredExistingColorList = useMemo(() => {
-    const keyword = newColorName.trim().toLowerCase()
+  const filteredExistingRoleList = useMemo(() => {
+    const keyword = newRoleName.trim().toLowerCase()
 
     if (!keyword) {
-      return existingColorList
+      return existingRoleList
     }
 
-    return existingColorList.filter((color) =>
-      color.colorName.toLowerCase().includes(keyword),
+    return existingRoleList.filter((role) =>
+      role.roleName.toLowerCase().includes(keyword),
     )
-  }, [existingColorList, newColorName])
+  }, [existingRoleList, newRoleName])
 
   const ensureAuthenticatedUserId = () => {
     const userId = authenticatedUser?.userId
@@ -115,79 +116,77 @@ const ManageColorPage = () => {
     return userId
   }
 
-  const resetColorForm = () => {
-    setNewColorName("")
-    setEditingColorId(null)
+  const resetRoleForm = () => {
+    setNewRoleName("")
+    setEditingRoleId(null)
   }
 
   const resetConfirmActionState = () => {
     setPendingAction(null)
-    setPendingDeleteColor(null)
+    setPendingDeleteRole(null)
     setIsConfirmActionModalOpen(false)
   }
 
   const handleOpenCreateModal = () => {
-    resetColorForm()
-    handleFetchExistingColors()
+    resetRoleForm()
+    handleFetchExistingRoles()
     setIsUpsertModalOpen(true)
   }
 
-  const handleEditColor = (color: MsColor) => {
-    setEditingColorId(color.colorId)
-    setNewColorName(color.colorName)
-    handleFetchExistingColors()
+  const handleEditRole = (role: MsRole) => {
+    setEditingRoleId(role.roleId)
+    setNewRoleName(role.roleName)
+    handleFetchExistingRoles()
     setIsUpsertModalOpen(true)
   }
 
   const handleOpenUpdateConfirmation = () => {
-    if (!editingColorId || !newColorName.trim()) {
+    if (!editingRoleId || !newRoleName.trim()) {
       return
     }
 
     setPendingAction("update")
-    setPendingDeleteColor(null)
+    setPendingDeleteRole(null)
     setIsConfirmActionModalOpen(true)
   }
 
   const handleOpenInsertConfirmation = () => {
-    if (!newColorName.trim()) {
+    if (!newRoleName.trim()) {
       return
     }
 
     setPendingAction("insert")
-    setPendingDeleteColor(null)
+    setPendingDeleteRole(null)
     setIsConfirmActionModalOpen(true)
   }
 
-  const handleOpenDeleteConfirmation = (color: MsColor) => {
+  const handleOpenDeleteConfirmation = (role: MsRole) => {
     setPendingAction("delete")
-    setPendingDeleteColor(color)
+    setPendingDeleteRole(role)
     setIsConfirmActionModalOpen(true)
   }
 
-  const isDuplicateColorName = () => {
-    const normalizedColorName = newColorName.trim().toLowerCase()
+  const isDuplicateRoleName = () => {
+    const normalizedRoleName = newRoleName.trim().toLowerCase()
 
-    return existingColorList.some((color) => {
-      const isSameRecord = editingColorId
-        ? color.colorId === editingColorId
-        : false
+    return existingRoleList.some((role) => {
+      const isSameRecord = editingRoleId ? role.roleId === editingRoleId : false
 
       if (isSameRecord) {
         return false
       }
 
-      return color.colorName.trim().toLowerCase() === normalizedColorName
+      return role.roleName.trim().toLowerCase() === normalizedRoleName
     })
   }
 
   const handleInsert = async () => {
-    if (!newColorName.trim()) {
+    if (!newRoleName.trim()) {
       return
     }
 
-    if (isDuplicateColorName()) {
-      setErrorMessage("Color name already exists")
+    if (isDuplicateRoleName()) {
+      setErrorMessage("Role name already exists")
       setIsShowError(true)
       return
     }
@@ -197,21 +196,21 @@ const ManageColorPage = () => {
       return
     }
 
-    const payload: InsertColorRequest = {
-      colorName: newColorName,
+    const payload: InsertRoleRequest = {
+      roleName: newRoleName.trim(),
       userIn: userId,
       setIsLoading,
     }
 
-    await ColorService.insertColor(payload)
+    await RoleService.insertRole(payload)
       .then(() => {
         setIsUpsertModalOpen(false)
-        resetColorForm()
+        resetRoleForm()
         resetConfirmActionState()
         setErrorMessage("")
-        setSuccessMessage("Color added successfully")
+        setSuccessMessage("Role added successfully")
         setIsShowError(true)
-        handleFetchColors()
+        handleFetchRoles()
       })
       .catch((error) => {
         setErrorMessage(error.message)
@@ -220,12 +219,12 @@ const ManageColorPage = () => {
   }
 
   const handleUpdate = async () => {
-    if (!editingColorId || !newColorName.trim()) {
+    if (!editingRoleId || !newRoleName.trim()) {
       return
     }
 
-    if (isDuplicateColorName()) {
-      setErrorMessage("Color name already exists")
+    if (isDuplicateRoleName()) {
+      setErrorMessage("Role name already exists")
       setIsShowError(true)
       return
     }
@@ -235,23 +234,23 @@ const ManageColorPage = () => {
       return
     }
 
-    const payload: UpdateColorRequest = {
-      colorId: editingColorId,
-      colorName: newColorName,
+    const payload: UpdateRoleRequest = {
+      roleId: editingRoleId,
+      roleName: newRoleName.trim(),
       userUp: userId,
       updatedAt: new Date().toISOString(),
       setIsLoading,
     }
 
-    await ColorService.updateColor(payload)
+    await RoleService.updateRole(payload)
       .then(() => {
         setIsUpsertModalOpen(false)
-        resetColorForm()
+        resetRoleForm()
         resetConfirmActionState()
         setErrorMessage("")
-        setSuccessMessage("Color updated successfully")
+        setSuccessMessage("Role updated successfully")
         setIsShowError(true)
-        handleFetchColors()
+        handleFetchRoles()
       })
       .catch((error) => {
         setErrorMessage(error.message)
@@ -259,32 +258,32 @@ const ManageColorPage = () => {
       })
   }
 
-  const handleDeleteColor = async (color: MsColor) => {
+  const handleDeleteRole = async (role: MsRole) => {
     const userId = ensureAuthenticatedUserId()
     if (!userId) {
       return
     }
 
-    const payload: DeleteColorRequest = {
-      colorId: color.colorId,
+    const payload: DeleteRoleRequest = {
+      roleId: role.roleId,
       userUp: userId,
       updatedAt: new Date().toISOString(),
       setIsLoading,
     }
 
-    await ColorService.deleteColor(payload)
+    await RoleService.deleteRole(payload)
       .then(() => {
         resetConfirmActionState()
         setErrorMessage("")
-        setSuccessMessage("Color deleted successfully")
+        setSuccessMessage("Role deleted successfully")
         setIsShowError(true)
 
-        if (colorList.length === 1 && page > 1) {
+        if (roleList.length === 1 && page > 1) {
           setPage((prev) => prev - 1)
           return
         }
 
-        handleFetchColors()
+        handleFetchRoles()
       })
       .catch((error) => {
         setErrorMessage(error.message)
@@ -303,22 +302,22 @@ const ManageColorPage = () => {
       return
     }
 
-    if (pendingAction === "delete" && pendingDeleteColor) {
-      await handleDeleteColor(pendingDeleteColor)
+    if (pendingAction === "delete" && pendingDeleteRole) {
+      await handleDeleteRole(pendingDeleteRole)
     }
   }
 
-  const handleFetchColors = async () => {
-    const payload: GetColorListRequest = {
+  const handleFetchRoles = async () => {
+    const payload: GetRoleListRequest = {
       page,
       pageSize,
       search,
       setIsLoading,
     }
 
-    await ColorService.getColorList(payload)
+    await RoleService.getRoleList(payload)
       .then((res) => {
-        setColorList(res.data || [])
+        setRoleList(res.data || [])
         setTotalCount(res.count ?? 0)
       })
       .catch((error) => {
@@ -327,14 +326,14 @@ const ManageColorPage = () => {
       })
   }
 
-  const handleFetchExistingColors = async () => {
-    await ColorService.getColorList({
+  const handleFetchExistingRoles = async () => {
+    await RoleService.getRoleList({
       page: 1,
       pageSize: 1000,
       search: "",
     })
       .then((res) => {
-        setExistingColorList(res.data || [])
+        setExistingRoleList(res.data || [])
       })
       .catch((error) => {
         setErrorMessage(error.message)
@@ -343,28 +342,28 @@ const ManageColorPage = () => {
   }
 
   useEffect(() => {
-    handleFetchColors()
+    handleFetchRoles()
   }, [page, pageSize, search])
 
   return (
     <div>
       <div className="mb-4">
         <h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-          Manage Color
+          Manage Role
         </h1>
-        <p className="text-muted-foreground">Manage color motor (e.g., Red, Black)</p>
+        <p className="text-muted-foreground">Manage role access (e.g., Admin, Staff)</p>
       </div>
 
       <AppModal
-        trigger={colorAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Color</Button> : undefined}
-        title={editingColorId ? "Edit Color" : "Add New Color"}
-        description={editingColorId ? "Update selected color" : "Add a new color"}
+        trigger={roleAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Role</Button> : undefined}
+        title={editingRoleId ? "Edit Role" : "Add New Role"}
+        description={editingRoleId ? "Update selected role" : "Add a new role"}
         open={isUpsertModalOpen}
         onOpenChange={(open) => {
           setIsUpsertModalOpen(open)
 
           if (!open) {
-            resetColorForm()
+            resetRoleForm()
           }
         }}
         footer={
@@ -373,7 +372,7 @@ const ManageColorPage = () => {
               type="button"
               onClick={() => {
                 setIsUpsertModalOpen(false)
-                resetColorForm()
+                resetRoleForm()
               }}
               variant="outline"
             >
@@ -382,7 +381,7 @@ const ManageColorPage = () => {
             <Button
               type="button"
               onClick={() => {
-                if (editingColorId) {
+                if (editingRoleId) {
                   handleOpenUpdateConfirmation()
                   return
                 }
@@ -390,22 +389,22 @@ const ManageColorPage = () => {
                 handleOpenInsertConfirmation()
               }}
             >
-              {editingColorId ? "Update" : "Save"}
+              {editingRoleId ? "Update" : "Save"}
             </Button>
           </div>
         }
       >
         <AppTextField
-          label="Color Name"
-          placeholder="Red"
+          label="Role Name"
+          placeholder="Admin"
           required={true}
-          value={newColorName}
-          onChange={(value) => setNewColorName(value)}
+          value={newRoleName}
+          onChange={(value) => setNewRoleName(value)}
         />
         <AppExistingList
-          title="Existing Color List"
-          items={filteredExistingColorList.map((color) => color.colorName)}
-          emptyMessage="No color data"
+          title="Existing Role List"
+          items={filteredExistingRoleList.map((role) => role.roleName)}
+          emptyMessage="No role data"
         />
       </AppModal>
 
@@ -420,17 +419,17 @@ const ManageColorPage = () => {
         }}
         title={
           pendingAction === "delete"
-            ? "Delete Color"
+            ? "Delete Role"
             : pendingAction === "insert"
               ? "Confirm Save"
               : "Confirm Update"
         }
         description={
           pendingAction === "delete"
-            ? "This action will remove the selected color"
+            ? "This action will remove the selected role"
             : pendingAction === "insert"
-              ? "This action will add new color"
-              : "This action will update the selected color"
+              ? "This action will add new role"
+              : "This action will update the selected role"
         }
         classNames={{
           content: "sm:max-w-sm",
@@ -463,16 +462,16 @@ const ManageColorPage = () => {
       >
         <p>
           {pendingAction === "delete"
-            ? "Are you sure you want to delete this color?"
+            ? "Are you sure you want to delete this role?"
             : pendingAction === "insert"
-              ? "Are you sure you want to add this color?"
-              : "Are you sure you want to update this color?"}
+              ? "Are you sure you want to add this role?"
+              : "Are you sure you want to update this role?"}
         </p>
       </AppModal>
 
       <AppSearchBar
-        label="Search Color"
-        placeholder="Red"
+        label="Search Role"
+        placeholder="Admin"
         onSearch={(value) => {
           setSearch(value)
           setPage(1)
@@ -485,12 +484,12 @@ const ManageColorPage = () => {
       <AppTable
         table={table}
         showNumberColumn
-        columnsCount={manageColorTableColumns.length}
-        emptyMessage="No colors found."
+        columnsCount={manageRoleTableColumns.length}
+        emptyMessage="No roles found."
         showPagination
         page={page}
         pageSize={pageSize}
-        rowCount={colorList.length}
+        rowCount={roleList.length}
         hasNextPage={hasNextPage}
         onPreviousPage={() => setPage((p) => Math.max(p - 1, 1))}
         onNextPage={() => setPage((p) => p + 1)}
@@ -498,7 +497,7 @@ const ManageColorPage = () => {
           setPageSize(size)
           setPage(1)
         }}
-        pageSizeOptions={MANAGE_COLOR_PAGE_SIZE_OPTIONS}
+        pageSizeOptions={MANAGE_ROLE_PAGE_SIZE_OPTIONS}
         pageInfoRenderer={({ page: currentPage, rowCount }) =>
           `Page ${currentPage} • ${totalCount} total • ${rowCount} row(s) shown`
         }
@@ -548,4 +547,4 @@ const ManageColorPage = () => {
   )
 }
 
-export default ManageColorPage
+export default ManageRolePage

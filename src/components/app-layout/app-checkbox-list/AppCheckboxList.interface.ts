@@ -4,6 +4,7 @@ import { Command as CommandPrimitive } from "cmdk";
 export interface CheckboxListOption {
   value: string;
   label: string;
+  group?: string;
 }
 
 export interface AppCheckboxListProps {

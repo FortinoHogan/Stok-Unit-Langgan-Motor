@@ -1,19 +1,19 @@
 import AppModal from "@/components/app-components/app-modal/AppModal"
-import AppSwitch from "@/components/app-components/app-switch/AppSwitch"
+import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAutoComplete"
 import AppTable from "@/components/app-components/app-table/AppTable"
 import AppTextField from "@/components/app-components/app-text-field/AppTextField"
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
-import { FieldLabel } from "@/components/ui/field"
-import type { AuthenticatedUser } from "@/interfaces/IModel.interface"
+import type { AuthenticatedUser, MsRole } from "@/interfaces/IModel.interface"
 import { UserService } from "@/helpers/services/UserService"
+import { RoleService } from "@/helpers/services/RoleService"
 import {
     useReactTable,
     getCoreRowModel,
     getSortedRowModel,
     type ColumnDef,
 } from "@tanstack/react-table"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
 import type {
     DeleteAuthenticatedUserRequest,
@@ -31,18 +31,29 @@ const ManageUserPage = () => {
     const [successMessage, setSuccessMessage] = useState("")
     const [isShowError, setIsShowError] = useState(false)
     const [newUserEmail, setNewUserEmail] = useState("")
+    const [selectedRoleId, setSelectedRoleId] = useState("")
     const [editingOriginalEmail, setEditingOriginalEmail] = useState("")
-    const [isAdminChecked, setIsAdminChecked] = useState(false)
     const [editingUserId, setEditingUserId] = useState<number | null>(null)
     const [pendingAction, setPendingAction] = useState<PendingActionManageUser>(null)
     const [pendingDeleteUser, setPendingDeleteUser] = useState<AuthenticatedUser | null>(null)
 
     const [userList, setUserList] = useState<AuthenticatedUser[]>([])
+    const [roleList, setRoleList] = useState<MsRole[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [search, setSearch] = useState("")
     const [page, setPage] = useState(1)
     const [pageSize, setPageSize] = useState(5)
     const [totalCount, setTotalCount] = useState(0)
+
+    const roleNameById = useMemo(
+        () => new Map(roleList.map((role) => [role.roleId, role.roleName])),
+        [roleList],
+    )
+
+    const roleOptions = useMemo(() => roleList.map((role) => ({
+        value: String(role.roleId),
+        label: role.roleName,
+    })), [roleList])
 
     const manageUserTableColumns: ColumnDef<AuthenticatedUser>[] = [
         {
@@ -50,9 +61,9 @@ const ManageUserPage = () => {
             header: "Email",
         },
         {
-            accessorKey: "isAdmin",
+            accessorKey: "roleId",
             header: "Role",
-            cell: ({ getValue }) => (getValue<boolean>() ? "Admin" : "Regular"),
+            cell: ({ getValue }) => roleNameById.get(getValue<number>()) || "-",
         },
         {
             id: "actions",
@@ -91,8 +102,8 @@ const ManageUserPage = () => {
 
     const resetUserForm = () => {
         setNewUserEmail("")
+        setSelectedRoleId("")
         setEditingOriginalEmail("")
-        setIsAdminChecked(false)
         setEditingUserId(null)
     }
 
@@ -110,8 +121,8 @@ const ManageUserPage = () => {
     const handleEditUser = (user: AuthenticatedUser) => {
         setEditingUserId(user.userId)
         setNewUserEmail(user.email)
+        setSelectedRoleId(String(user.roleId))
         setEditingOriginalEmail(user.email)
-        setIsAdminChecked(user.isAdmin)
         setIsUpsertModalOpen(true)
     }
 
@@ -137,7 +148,7 @@ const ManageUserPage = () => {
     }
 
     const handleOpenUpdateConfirmation = () => {
-        if (!editingUserId || !newUserEmail.trim()) {
+        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
             return
         }
 
@@ -147,7 +158,7 @@ const ManageUserPage = () => {
     }
 
     const handleOpenInsertConfirmation = () => {
-        if (!newUserEmail.trim()) {
+        if (!newUserEmail.trim() || !selectedRoleId) {
             return
         }
 
@@ -163,7 +174,7 @@ const ManageUserPage = () => {
     }
 
     const handleInsert = async () => {
-        if (!newUserEmail.trim()) {
+        if (!newUserEmail.trim() || !selectedRoleId) {
             return;
         }
 
@@ -174,7 +185,7 @@ const ManageUserPage = () => {
 
         const payload: InsertAuthenticatedUserRequest = {
             email: newUserEmail.trim().toLowerCase(),
-            isAdmin: isAdminChecked,
+            roleId: Number(selectedRoleId),
             setIsLoading,
         }
 
@@ -182,7 +193,7 @@ const ManageUserPage = () => {
             .then(() => {
                 setIsUpsertModalOpen(false)
                 setNewUserEmail("")
-                setIsAdminChecked(false)
+                setSelectedRoleId("")
                 resetConfirmActionState()
                 setErrorMessage("")
                 setSuccessMessage("User access added successfully")
@@ -196,7 +207,7 @@ const ManageUserPage = () => {
     }
 
     const handleUpdate = async () => {
-        if (!editingUserId || !newUserEmail.trim()) {
+        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
             return;
         }
 
@@ -208,7 +219,7 @@ const ManageUserPage = () => {
         const payload: UpdateAuthenticatedUserRequest = {
             userId: editingUserId,
             email: newUserEmail.trim().toLowerCase(),
-            isAdmin: isAdminChecked,
+            roleId: Number(selectedRoleId),
             setIsLoading,
         }
 
@@ -288,9 +299,28 @@ const ManageUserPage = () => {
             })
     }
 
+    const handleFetchRoles = async () => {
+        await RoleService.getRoleList({
+            page: 1,
+            pageSize: 1000,
+            search: "",
+        })
+            .then((res) => {
+                setRoleList(res.data || [])
+            })
+            .catch((error) => {
+                setErrorMessage(error.message)
+                setIsShowError(true)
+            })
+    }
+
     useEffect(() => {
         handleFetchUsers();
     }, [page, pageSize, search])
+
+    useEffect(() => {
+        handleFetchRoles()
+    }, [])
 
     return (
         <div>
@@ -348,14 +378,18 @@ const ManageUserPage = () => {
                     value={newUserEmail}
                     onChange={(e) => setNewUserEmail(e)}
                 />
-                <div>
-                    <FieldLabel className="mb-2">Admin Access</FieldLabel>
-                    <AppSwitch
-                        label={isAdminChecked ? "This user will get Admin Access" : "This user will get Regular Access"}
-                        checked={isAdminChecked}
-                        onCheckedChange={setIsAdminChecked}
-                    />
-                </div>
+                <AppAutoComplete
+                    label="Role"
+                    placeholder="Select role"
+                    searchPlaceholder="Search role"
+                    emptyMessage="No role found"
+                    required={true}
+                    value={selectedRoleId}
+                    options={roleOptions}
+                    onValueChange={(value) => {
+                        setSelectedRoleId(value)
+                    }}
+                />
             </AppModal>
             <AppModal
                 open={isConfirmActionModalOpen}

@@ -1,43 +1,61 @@
-import { Navigate, Outlet, matchPath, useLocation } from "react-router-dom"
+import { Outlet } from "react-router-dom"
+import { useEffect } from "react"
 
-import { routes } from "@/constants/paths"
-import { sidebarMenu } from "@/constants/SidebarMenu"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
+import { usePrivillegeStore } from "@/helpers/hooks/usePrivillegeStore/usePrivillegeStore"
+import { PrivillegeService } from "@/helpers/services/PrivillegeService"
+import { RolePrivillegeService } from "@/helpers/services/RolePrivillegeService"
 import SidebarProvider from "@/helpers/provider/SidebarProvider"
-
-const getAdminOnlyPaths = () => {
-    const paths: string[] = []
-
-    sidebarMenu.forEach((group) => {
-        group.items.forEach((item) => {
-            if (item.isAdminOnly && item.url) {
-                paths.push(item.url)
-            }
-
-            item.subItems?.forEach((subItem) => {
-                if (subItem.isAdminOnly) {
-                    paths.push(subItem.url)
-                }
-            })
-        })
-    })
-
-    return paths
-}
-
-const adminOnlyPaths = getAdminOnlyPaths()
 
 const AppContainer = () => {
     const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-    const location = useLocation()
+    const setPrivillegeList = usePrivillegeStore((state) => state.setPrivillegeList)
+    const setIsLoading = usePrivillegeStore((state) => state.setIsLoading)
+    const clearPrivilleges = usePrivillegeStore((state) => state.clearPrivilleges)
 
-    const isAdminOnlyPath = adminOnlyPaths.some((path) =>
-        Boolean(matchPath({ path, end: true }, location.pathname)),
-    )
+    useEffect(() => {
+        const roleId = authenticatedUser?.roleId
 
-    if (isAdminOnlyPath && !authenticatedUser?.isAdmin) {
-        return <Navigate to={routes.home} replace />
-    }
+        if (!roleId) {
+            clearPrivilleges()
+            return
+        }
+
+        const fetchPrivilleges = async () => {
+            clearPrivilleges()
+            setIsLoading(true)
+
+            try {
+                const [rolePrivillegeResponse, privillegeResponse] = await Promise.all([
+                    RolePrivillegeService.getRolePrivillegeListByRoleIds({ roleIds: [roleId] }),
+                    PrivillegeService.getPrivillegeList({
+                        page: 1,
+                        pageSize: 1000,
+                        search: "",
+                    }),
+                ])
+
+                const privillegeNameById = new Map(
+                    (privillegeResponse.data || []).map((privillege) => [
+                        privillege.privillegeId,
+                        privillege.privillegeName,
+                    ]),
+                )
+
+                const nextPrivillegeList = Array.from(new Set(
+                    (rolePrivillegeResponse.data || [])
+                        .map((rolePrivillege) => privillegeNameById.get(rolePrivillege.privillegeId) || "")
+                        .filter(Boolean),
+                ))
+
+                setPrivillegeList(nextPrivillegeList, roleId)
+            } catch {
+                clearPrivilleges()
+            }
+        }
+
+        void fetchPrivilleges()
+    }, [authenticatedUser?.roleId, clearPrivilleges, setIsLoading, setPrivillegeList])
 
     return (
         <SidebarProvider>

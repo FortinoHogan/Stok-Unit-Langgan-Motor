@@ -6,6 +6,7 @@ import AppTextField from "@/components/app-components/app-text-field/AppTextFiel
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
+import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
 import { CategoryService } from "@/helpers/services/CategoryService"
 import type {
   DeleteCategoryRequest,
@@ -26,6 +27,7 @@ import { MANAGE_CATEGORY_PAGE_SIZE_OPTIONS, type PendingActionManageCategory } f
 
 const ManageCategoryPage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
+  const categoryAccess = usePrivillegeAccess("Master Category")
 
   const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
@@ -55,22 +57,26 @@ const ManageCategoryPage = () => {
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            title="Edit category"
-            onClick={() => handleEditCategory(row.original)}
-          >
-            <Pencil className="size-4" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            title="Delete category"
-            onClick={() => handleOpenDeleteConfirmation(row.original)}
-          >
-            <Trash className="size-4" />
-          </Button>
+          {categoryAccess.canUpdate ? (
+            <Button
+              variant="outline"
+              size="sm"
+              title="Edit category"
+              onClick={() => handleEditCategory(row.original)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          ) : null}
+          {categoryAccess.canDelete ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              title="Delete category"
+              onClick={() => handleOpenDeleteConfirmation(row.original)}
+            >
+              <Trash className="size-4" />
+            </Button>
+          ) : null}
         </div>
       ),
     },
@@ -350,7 +356,7 @@ const ManageCategoryPage = () => {
       </div>
 
       <AppModal
-        trigger={<Button className="mb-4" onClick={handleOpenCreateModal}>Add Category</Button>}
+        trigger={categoryAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Category</Button> : undefined}
         title={editingCategoryId ? "Edit Category" : "Add New Category"}
         description={editingCategoryId ? "Update selected category" : "Add a new category motor"}
         open={isUpsertModalOpen}

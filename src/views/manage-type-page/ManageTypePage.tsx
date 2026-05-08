@@ -7,6 +7,7 @@ import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAu
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
+import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
 import { CategoryService } from "@/helpers/services/CategoryService"
 import { TypeService } from "@/helpers/services/TypeService"
 import type {
@@ -31,6 +32,7 @@ import {
 
 const ManageTypePage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
+  const typeAccess = usePrivillegeAccess("Master Type")
 
   const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
@@ -91,22 +93,26 @@ const ManageTypePage = () => {
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            title="Edit type"
-            onClick={() => handleEditType(row.original)}
-          >
-            <Pencil className="size-4" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            title="Delete type"
-            onClick={() => handleOpenDeleteConfirmation(row.original)}
-          >
-            <Trash className="size-4" />
-          </Button>
+          {typeAccess.canUpdate ? (
+            <Button
+              variant="outline"
+              size="sm"
+              title="Edit type"
+              onClick={() => handleEditType(row.original)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          ) : null}
+          {typeAccess.canDelete ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              title="Delete type"
+              onClick={() => handleOpenDeleteConfirmation(row.original)}
+            >
+              <Trash className="size-4" />
+            </Button>
+          ) : null}
         </div>
       ),
     },
@@ -467,7 +473,7 @@ const ManageTypePage = () => {
       </div>
 
       <AppModal
-        trigger={<Button className="mb-4" onClick={handleOpenCreateModal}>Add Type</Button>}
+        trigger={typeAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Type</Button> : undefined}
         title={editingTypeId ? "Edit Type" : "Add New Type"}
         description={editingTypeId ? "Update selected type" : "Add a new type"}
         open={isUpsertModalOpen}

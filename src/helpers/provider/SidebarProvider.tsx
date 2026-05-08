@@ -3,6 +3,7 @@ import { SidebarProvider as ShadcnSidebarProvider, SidebarTrigger } from "@/comp
 import { Separator } from "@/components/ui/separator"
 import { Outlet } from "react-router-dom"
 import AppThemeSwitcher from "@/components/app-layout/app-theme-switcher/AppThemeSwitcher"
+import AppContent from "@/components/app-layout/app-content/AppContent"
 import AppSidebar from "@/components/app-components/app-sidebar/AppSidebar"
 
 type SidebarProviderProps = {
@@ -25,7 +26,9 @@ const SidebarProvider = ({ children, defaultOpen = true }: SidebarProviderProps)
                 <Separator />
 
                 <div className="p-4">
-                    {children || <Outlet />}
+                    <AppContent>
+                        {children || <Outlet />}
+                    </AppContent>
                 </div>
             </main>
         </ShadcnSidebarProvider>
