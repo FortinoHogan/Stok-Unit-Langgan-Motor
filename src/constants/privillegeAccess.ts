@@ -15,6 +15,14 @@ const routePrivillegeRuleList: RoutePrivillegeRule[] = [
   { path: routes.manageMasterDataPrivillege, resourceName: "Master Privillege" },
   { path: routes.typeAndColor, resourceName: "Type and Color" },
   { path: routes.roleAndPrivillege, resourceName: "Role and Privillege" },
+  { path: routes.deliveryOrder, resourceName: "Delivery Order" },
+  { path: routes.deliveryOrderDetail, resourceName: "Delivery Order" },
+  { path: routes.deliveryOrderMonthDetail, resourceName: "Delivery Order" },
+  { path: routes.deliveryOrderDayDetail, resourceName: "Delivery Order" },
+  { path: routes.selling, resourceName: "Selling" },
+  { path: routes.sellingDetail, resourceName: "Selling" },
+  { path: routes.sellingMonthDetail, resourceName: "Selling" },
+  { path: routes.sellingDayDetail, resourceName: "Selling" },
 ];
 
 const ACTION_READ = "Read";

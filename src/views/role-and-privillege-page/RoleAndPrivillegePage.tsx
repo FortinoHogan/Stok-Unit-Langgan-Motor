@@ -26,9 +26,7 @@ import { ROLE_AND_PRIVILLEGE_PAGE_SIZE_OPTIONS } from "./RoleAndPrivillegePage.c
 const RoleAndPrivillegePage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
   const roleAndPrivillegeAccess = usePrivillegeAccess("Role and Privillege")
-  const roleAccess = usePrivillegeAccess("Master Role")
-  const privillegeAccess = usePrivillegeAccess("Master Privillege")
-  const canUpdateRolePrivillege = roleAndPrivillegeAccess.canUpdate || roleAccess.canUpdate || privillegeAccess.canUpdate
+  const canUpdateRolePrivillege = roleAndPrivillegeAccess.canUpdate
 
   const [isAddPrivillegeModalOpen, setIsAddPrivillegeModalOpen] = useState(false)
   const [isConfirmSaveModalOpen, setIsConfirmSaveModalOpen] = useState(false)
@@ -46,7 +44,7 @@ const RoleAndPrivillegePage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(5)
   const [totalCount, setTotalCount] = useState(0)
 
   const privillegeNameById = useMemo(

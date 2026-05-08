@@ -1,6 +1,14 @@
+import {
+  getCoreRowModel,
+  getSortedRowModel,
+  type ColumnDef,
+  useReactTable,
+} from "@tanstack/react-table";
+import { Pencil, Trash } from "lucide-react";
 import AppModal from "@/components/app-components/app-modal/AppModal";
 import AppTable from "@/components/app-components/app-table/AppTable";
 import { Button } from "@/components/ui/button";
+import type { TransactionDetailRow } from "@/interfaces/ITransactionService";
 import type { TransactionTableSectionProps } from "./TransactionTableSection.interface";
 
 const TransactionTableSection = (props: TransactionTableSectionProps) => {
@@ -11,7 +19,95 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
     onDetailOpenChange,
     detailTitle,
     detailRows,
+    canUpdateDetail = false,
+    canDeleteDetail = false,
+    onEditDetailRow,
+    onDeleteDetailRow,
   } = props;
+
+  const detailColumns: ColumnDef<TransactionDetailRow>[] = [
+    {
+      accessorKey: "colorName",
+      header: "Color",
+      cell: ({ row }) => row.original.colorName || "-",
+    },
+    {
+      accessorKey: "noMesin",
+      header: "No Mesin",
+    },
+    {
+      accessorKey: "noRangka",
+      header: "No Rangka",
+    },
+    {
+      accessorKey: "year",
+      header: "Year",
+      cell: ({ row }) => row.original.year || "-",
+    },
+    {
+      accessorKey: "isRFS",
+      header: "Status",
+      cell: ({ row }) =>
+        row.original.isRFS
+          ? "RFS"
+          : "NRFS",
+    },
+    {
+      accessorKey: "dateDO",
+      header: "Date DO",
+      cell: ({ row }) => {
+        const value = row.original.dateDO;
+        return value
+          ? new Intl.DateTimeFormat("en-US", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }).format(new Date(value))
+          : "-";
+      },
+    },
+  ];
+
+  if (onEditDetailRow || onDeleteDetailRow) {
+    detailColumns.push({
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          {canUpdateDetail && onEditDetailRow ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              title="Edit transaction"
+              onClick={() => onEditDetailRow(row.original)}
+            >
+              <Pencil className="size-4" />
+            </Button>
+          ) : null}
+          {canDeleteDetail && onDeleteDetailRow ? (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              title="Delete transaction"
+              onClick={() => onDeleteDetailRow(row.original)}
+            >
+              <Trash className="size-4" />
+            </Button>
+          ) : null}
+        </div>
+      ),
+    });
+  }
+
+  const detailTable = useReactTable({
+    data: detailRows,
+    columns: detailColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
+
   return (
     <>
       <AppTable table={table} showNumberColumn emptyMessage={emptyMessage} />
@@ -22,7 +118,7 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
         title={detailTitle || "Detail"}
         showCloseButton={true}
         classNames={{
-          content: "sm:max-w-lg",
+          content: "sm:max-w-5xl",
           body: "space-y-2",
           footer: "bg-muted/30",
         }}
@@ -34,29 +130,12 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
           </div>
         }
       >
-        {detailRows.length ? (
-          detailRows.map((item) => (
-            <div
-              key={item.transactionId}
-              className="rounded-md border p-2 text-sm"
-            >
-              <p>No Mesin: {item.noMesin || "-"}</p>
-              <p>No Rangka: {item.noRangka || "-"}</p>
-              <p>
-                Date DO:{" "}
-                {item.dateDO
-                  ? new Intl.DateTimeFormat("en-US", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    }).format(new Date(item.dateDO))
-                  : "-"}
-              </p>
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-muted-foreground">No detail found.</p>
-        )}
+        <AppTable
+          table={detailTable}
+          showNumberColumn
+          columnsCount={detailColumns.length}
+          emptyMessage="No detail found."
+        />
       </AppModal>
     </>
   );

@@ -50,7 +50,7 @@ const AppContainer = () => {
 
                 setPrivillegeList(nextPrivillegeList, roleId)
             } catch {
-                clearPrivilleges()
+                setPrivillegeList([], roleId)
             }
         }
 

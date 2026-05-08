@@ -1,7 +1,7 @@
-import TransactionDateSelectionPage from "../../../TransactionPage"
+import TransactionPage from "../../../TransactionPage"
 
 const SellingPage = () => {
-  return <TransactionDateSelectionPage mode="SELLING" />
+  return <TransactionPage mode="SELLING" />
 }
 
 export default SellingPage

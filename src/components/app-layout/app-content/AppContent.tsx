@@ -14,14 +14,13 @@ const AppContent = ({ children }: AppContentProps) => {
   const location = useLocation();
   const privillegeList = usePrivillegeStore((state) => state.privillegeList);
   const loadedRoleId = usePrivillegeStore((state) => state.loadedRoleId);
-  const isLoadingPrivilleges = usePrivillegeStore((state) => state.isLoading);
 
   const canAccessCurrentPath = useMemo(
     () => canAccessPathByPrivillege(location.pathname, privillegeList),
     [location.pathname, privillegeList],
   );
 
-  if (isLoadingPrivilleges && loadedRoleId === null) {
+  if (loadedRoleId === null) {
     return <AppSpinner />;
   }
 

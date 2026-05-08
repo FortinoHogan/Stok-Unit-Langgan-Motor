@@ -17,6 +17,7 @@ const AppTextField = (props: AppTextFieldProps) => {
         value,
         onChange,
         withoutMargin = false,
+        isCapital = false,
         isUppercase = false,
         isDisabled = false,
     } = props
@@ -38,7 +39,8 @@ const AppTextField = (props: AppTextFieldProps) => {
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
         const rawValue = event.target.value
-        const nextValue = isUppercase ? rawValue.toUpperCase() : rawValue
+        const shouldTransformToUppercase = isCapital || isUppercase
+        const nextValue = shouldTransformToUppercase ? rawValue.toUpperCase() : rawValue
 
         if (validationError) {
             setValidationError(getRequiredError(nextValue))

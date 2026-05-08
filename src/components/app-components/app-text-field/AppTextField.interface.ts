@@ -13,6 +13,7 @@ export interface AppTextFieldProps {
   value?: string;
   onChange?: (value: string) => void;
   withoutMargin?: boolean;
+  isCapital?: boolean;
   isUppercase?: boolean;
   isDisabled?: boolean;
 }

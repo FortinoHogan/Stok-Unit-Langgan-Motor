@@ -86,7 +86,7 @@ const AppAutoComplete = (props: AppAutoCompleteProps) => {
                                 {options.map((option) => (
                                     <CommandItem
                                         key={option.value}
-                                        value={`${option.label} ${option.value}`}
+                                        value={option.label}
                                         disabled={resolvedDisabled}
                                         onSelect={() => {
                                             const nextValue = option.value === value ? "" : option.value

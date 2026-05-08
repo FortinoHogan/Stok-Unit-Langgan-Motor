@@ -5,6 +5,7 @@ import AppTextField from "@/components/app-components/app-text-field/AppTextFiel
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import type { AuthenticatedUser, MsRole } from "@/interfaces/IModel.interface"
+import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
 import { UserService } from "@/helpers/services/UserService"
 import { RoleService } from "@/helpers/services/RoleService"
 import {
@@ -25,6 +26,8 @@ import { Pencil, Trash } from "lucide-react"
 import { MANAGE_USER_PAGE_SIZE_OPTIONS, type PendingActionManageUser } from "./ManageUserPage.constant"
 
 const ManageUserPage = () => {
+    const manageUserAccess = usePrivillegeAccess("Manage Users")
+
     const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
     const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
@@ -70,22 +73,26 @@ const ManageUserPage = () => {
             header: "Actions",
             cell: ({ row }) => (
                 <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        title="Edit user"
-                        onClick={() => handleEditUser(row.original)}
-                    >
-                        <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        title="Delete user"
-                        onClick={() => handleOpenDeleteConfirmation(row.original)}
-                    >
-                        <Trash className="size-4" />
-                    </Button>
+                    {manageUserAccess.canUpdate ? (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            title="Edit user"
+                            onClick={() => handleEditUser(row.original)}
+                        >
+                            <Pencil className="size-4" />
+                        </Button>
+                    ) : null}
+                    {manageUserAccess.canDelete ? (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            title="Delete user"
+                            onClick={() => handleOpenDeleteConfirmation(row.original)}
+                        >
+                            <Trash className="size-4" />
+                        </Button>
+                    ) : null}
                 </div>
             ),
         }
@@ -331,7 +338,7 @@ const ManageUserPage = () => {
                 <p className="text-muted-foreground">Manage email and role access for this application</p>
             </div>
             <AppModal
-                trigger={<Button className="mb-4" onClick={handleOpenCreateModal}>Add Email Access</Button>}
+                trigger={manageUserAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Email Access</Button> : undefined}
                 title={editingUserId ? "Edit User Access" : "Add New User Access"}
                 description={editingUserId ? "Update email access for AuthenticatedUser" : "Add a new email access for AuthenticatedUser"}
                 open={isUpsertModalOpen}
@@ -364,6 +371,7 @@ const ManageUserPage = () => {
 
                                 handleOpenInsertConfirmation()
                             }}
+                            disabled={editingUserId ? !manageUserAccess.canUpdate : !manageUserAccess.canInsert}
                         >
                             {editingUserId ? "Update" : "Save"}
                         </Button>

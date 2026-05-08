@@ -7,4 +7,8 @@ export interface TransactionTableSectionProps {
   onDetailOpenChange: (open: boolean) => void;
   detailTitle: string;
   detailRows: TransactionDetailRow[];
+  canUpdateDetail?: boolean;
+  canDeleteDetail?: boolean;
+  onEditDetailRow?: (row: TransactionDetailRow) => void;
+  onDeleteDetailRow?: (row: TransactionDetailRow) => void;
 }
