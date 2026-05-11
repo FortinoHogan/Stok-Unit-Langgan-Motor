@@ -43,10 +43,7 @@ export const sidebarMenu: SidebarMenuGroup[] = [
       {
         title: "Transaction",
         icon: ShoppingCart,
-        subItems: [
-          { title: "Delivery Order", url: routes.deliveryOrder },
-          { title: "Selling", url: routes.selling },
-        ],
+        url: routes.transaction,
       },
     ],
   },

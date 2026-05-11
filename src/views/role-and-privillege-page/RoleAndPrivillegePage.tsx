@@ -91,6 +91,9 @@ const RoleAndPrivillegePage = () => {
     {
       accessorKey: "roleName",
       header: "Role Name",
+      cell: ({ row }) => (
+        <p className="font-medium text-foreground">{row.original.roleName}</p>
+      ),
     },
     {
       id: "privillege",
@@ -105,7 +108,10 @@ const RoleAndPrivillegePage = () => {
           const { actionName, groupName } = splitPrivillegeName(privillegeName)
           const previous = accumulator.get(groupName) || []
 
-          accumulator.set(groupName, [...previous, actionName])
+          if (!previous.includes(actionName)) {
+            accumulator.set(groupName, [...previous, actionName])
+          }
+
           return accumulator
         }, new Map<string, string[]>())
 
@@ -117,17 +123,29 @@ const RoleAndPrivillegePage = () => {
           .sort((a, b) => a.groupName.localeCompare(b.groupName))
 
         if (!privillegeNames.length) {
-          return "-"
+          return <p className="text-sm text-muted-foreground">No privillege assigned</p>
         }
 
         return (
-          <div className="space-y-2">
+          <div className="grid gap-2 md:grid-cols-2">
             {groupedPrivilleges.map((group) => (
-              <div key={group.groupName} className="space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground">{group.groupName}</p>
-                {group.actionNames.map((actionName) => (
-                  <p key={`${group.groupName}-${actionName}`}>- {actionName}</p>
-                ))}
+              <div
+                key={group.groupName}
+                className="rounded-md border border-border/60 bg-muted/20 p-2"
+              >
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.groupName}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {group.actionNames.map((actionName) => (
+                    <span
+                      key={`${group.groupName}-${actionName}`}
+                      className="rounded-full border border-border/70 bg-background px-2 py-0.5 text-xs"
+                    >
+                      {actionName}
+                    </span>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -138,12 +156,13 @@ const RoleAndPrivillegePage = () => {
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <div className="flex gap-2">
+        <div className="flex justify-center">
           {canUpdateRolePrivillege ? (
             <Button
               variant="outline"
               size="sm"
               title="Add privilleges"
+              className="h-8 w-8 p-0"
               onClick={() => handleOpenAddPrivillegeModal(row.original)}
             >
               <Pencil className="size-4" />
@@ -214,7 +233,7 @@ const RoleAndPrivillegePage = () => {
         setRolePrivillegeList(res.data || [])
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -235,7 +254,7 @@ const RoleAndPrivillegePage = () => {
         handleFetchRolePrivilleges(nextRoleList)
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -254,7 +273,7 @@ const RoleAndPrivillegePage = () => {
         setPrivillegeList(sorted)
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -315,7 +334,7 @@ const RoleAndPrivillegePage = () => {
         handleFetchRoles()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
       .finally(() => {
@@ -356,6 +375,12 @@ const RoleAndPrivillegePage = () => {
         showNumberColumn
         columnsCount={roleAndPrivillegeTableColumns.length}
         emptyMessage="No roles found."
+        classNames={{
+          tableContainer: "rounded-xl border-border/70 bg-card",
+          headerCell: "bg-muted/30 text-xs font-semibold uppercase tracking-wide",
+          bodyCell: "align-top py-3",
+          bodyRow: "hover:bg-muted/20",
+        }}
         showPagination
         page={page}
         pageSize={pageSize}

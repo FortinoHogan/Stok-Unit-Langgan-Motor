@@ -200,7 +200,7 @@ const TypeAndColorPage = () => {
         setTypeColorList(res.data || [])
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -221,7 +221,7 @@ const TypeAndColorPage = () => {
         handleFetchTypeColors(nextTypeList)
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -236,7 +236,7 @@ const TypeAndColorPage = () => {
         setCategoryList(res.data || [])
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -255,7 +255,7 @@ const TypeAndColorPage = () => {
         setColorList(sorted);
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -316,7 +316,7 @@ const TypeAndColorPage = () => {
         handleFetchTypes()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
       .finally(() => {

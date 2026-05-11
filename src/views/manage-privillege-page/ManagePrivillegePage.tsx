@@ -215,7 +215,7 @@ const ManagePrivillegePage = () => {
         handleFetchPrivilleges()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -255,7 +255,7 @@ const ManagePrivillegePage = () => {
         handleFetchPrivilleges()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -288,7 +288,7 @@ const ManagePrivillegePage = () => {
         handleFetchPrivilleges()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -323,7 +323,7 @@ const ManagePrivillegePage = () => {
         setTotalCount(res.count ?? 0)
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -338,7 +338,7 @@ const ManagePrivillegePage = () => {
         setExistingPrivillegeList(res.data || [])
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }

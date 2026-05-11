@@ -1,5 +1,4 @@
 import LoginPage from "@/views/auth-page/LoginPage";
-import DeliveryOrderPage from "@/views/transaction-page/components/delivery-order/delivery-order-page/DeliveryOrderPage";
 import HomePage from "@/views/home-page/HomePage";
 import ManageCategoryPage from "@/views/manage-category-page/ManageCategoryPage";
 import ManageColorPage from "@/views/manage-color-page/ManageColorPage";
@@ -8,9 +7,9 @@ import ManageRolePage from "@/views/manage-role-page/ManageRolePage";
 import ManageTypePage from "@/views/manage-type-page/ManageTypePage";
 import ManageUserPage from "@/views/manage-user-page/ManageUserPage";
 import RoleAndPrivillegePage from "@/views/role-and-privillege-page/RoleAndPrivillegePage";
-import SellingPage from "@/views/transaction-page/components/selling/selling-page/SellingPage";
 import TypeAndColorPage from "@/views/type-and-color-page/TypeAndColorPage";
 import { routes } from "./routeValues";
+import TransactionPage from "@/views/transaction-page/TransactionPage";
 
 export { routes };
 
@@ -25,6 +24,5 @@ export const routePaths = [
   { path: routes.manageMasterDataPrivillege, Component: ManagePrivillegePage },
   { path: routes.typeAndColor, Component: TypeAndColorPage },
   { path: routes.roleAndPrivillege, Component: RoleAndPrivillegePage },
-  { path: routes.deliveryOrder, Component: DeliveryOrderPage },
-  { path: routes.selling, Component: SellingPage },
+  { path: routes.transaction, Component: TransactionPage },
 ];

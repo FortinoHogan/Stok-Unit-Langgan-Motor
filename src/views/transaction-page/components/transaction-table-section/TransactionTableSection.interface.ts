@@ -9,6 +9,8 @@ export interface TransactionTableSectionProps {
   detailRows: TransactionDetailRow[];
   canUpdateDetail?: boolean;
   canDeleteDetail?: boolean;
+  canSellDetail?: boolean;
   onEditDetailRow?: (row: TransactionDetailRow) => void;
   onDeleteDetailRow?: (row: TransactionDetailRow) => void;
+  onSellDetailRow?: (row: TransactionDetailRow) => void;
 }

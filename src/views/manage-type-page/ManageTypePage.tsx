@@ -275,7 +275,7 @@ const ManageTypePage = () => {
         handleFetchTypes()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -328,7 +328,7 @@ const ManageTypePage = () => {
         handleFetchTypes()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -361,7 +361,7 @@ const ManageTypePage = () => {
         handleFetchTypes()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -396,7 +396,7 @@ const ManageTypePage = () => {
         setTotalCount(res.count ?? 0)
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -411,7 +411,7 @@ const ManageTypePage = () => {
         setExistingTypeList(res.data || [])
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -429,7 +429,7 @@ const ManageTypePage = () => {
         // setSelectedCategoryId((currentValue) => currentValue || String(nextCategoryList[0]?.categoryId || ""))
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }

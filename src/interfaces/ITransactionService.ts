@@ -5,7 +5,23 @@ export interface TransactionYearRow {
   dateOUT: string | null;
 }
 
-export interface GetDistinctTransactionYearsRequest extends IRequestWithLoading {}
+export interface GetTypeColorOptionsRequest extends IRequestWithLoading {}
+
+export interface GetCategoryOptionsRequest extends IRequestWithLoading {}
+
+export interface GetTypeOptionsByCategoryRequest extends IRequestWithLoading {
+  categoryId: string;
+}
+
+export interface GetColorOptionsByTypeRequest extends IRequestWithLoading {
+  typeId: string;
+}
+
+export interface GetYearOptionsRequest extends IRequestWithLoading {
+  categoryId?: string;
+  typeId?: string;
+  colorId?: string;
+}
 
 export interface TransactionDetailRow {
   transactionId: number;
@@ -70,8 +86,7 @@ export interface TransactionTypeColorOption {
   colorName: string | null;
 }
 
-export interface GetTransactionsByModeYearRequest extends IRequestWithLoading {
-  mode: "DO" | "SELLING";
+export interface GetTransactionsByYearRequest extends IRequestWithLoading {
   year: number;
   month?: number;
   day?: number;

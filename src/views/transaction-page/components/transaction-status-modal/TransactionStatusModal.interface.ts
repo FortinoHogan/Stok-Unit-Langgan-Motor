@@ -1,6 +1,7 @@
-export interface TransactionErrorModalProps {
+export interface TransactionStatusModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  errorMessage: string;
+  title: string;
+  message: string;
   onClose: () => void;
 }

@@ -1,18 +1,34 @@
-import type { TransactionMode } from "./TransactionPage.constant";
+import type { TransactionDetailRow } from "@/interfaces/ITransactionService";
 
-export interface TransactionPageProps {
-  mode: TransactionMode;
-}
-
-export interface TransactionDistinctYears {
-  dateDOYears: number[];
-  dateOUTYears: number[];
-  dateDOYearQuantity: Record<number, number>;
-  dateOUTYearQuantity: Record<number, number>;
-}
-
-export type TransactionModeWording = {
+export type TransactionWording = {
   title: string;
   description: string;
   cardAction: string;
+  addModalTitle: string;
+  addModalDescription: string;
+  confirmAddModalTitle: string;
+  confirmAddQuestionActionText: string;
+  editModalTitle: string;
+  editDateLabel: string;
+  editDatePlaceholder: string;
+  confirmUpdateModalTitle: string;
+  confirmDeleteModalTitle: string;
 };
+
+export interface TransactionDayGroupedRow {
+  key: string;
+  categoryName: string;
+  typeName: string;
+  typeCode: string;
+  year: number;
+  quantity: number;
+  details: TransactionDetailRow[];
+};
+
+export interface IFormData {
+  category: string;
+  type: string;
+  color: string;
+  year: string;
+  status: string;
+}

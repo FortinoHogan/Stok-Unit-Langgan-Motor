@@ -17,14 +17,5 @@ export const routes = {
   // Configuration
   typeAndColor: "/configuration/type-and-color",
   roleAndPrivillege: "/configuration/role-and-privillege",
-
-  // Configuration - Transaction
-  deliveryOrder: "/configuration/transaction/delivery-order",
-  deliveryOrderDetail: "/configuration/transaction/delivery-order/:year",
-  deliveryOrderMonthDetail: "/configuration/transaction/delivery-order/:year/:month",
-  deliveryOrderDayDetail: "/configuration/transaction/delivery-order/:year/:month/:day",
-  selling: "/configuration/transaction/selling",
-  sellingDetail: "/configuration/transaction/selling/:year",
-  sellingMonthDetail: "/configuration/transaction/selling/:year/:month",
-  sellingDayDetail: "/configuration/transaction/selling/:year/:month/:day",
+  transaction: "/configuration/transaction",
 };

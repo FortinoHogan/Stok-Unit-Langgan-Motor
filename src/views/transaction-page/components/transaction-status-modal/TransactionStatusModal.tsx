@@ -1,18 +1,19 @@
 import AppModal from "@/components/app-components/app-modal/AppModal";
 import { Button } from "@/components/ui/button";
-import type { TransactionErrorModalProps } from "./TransactionErrorModal.interface";
+import type { TransactionStatusModalProps } from "./TransactionStatusModal.interface";
 
-const TransactionErrorModal = ({
+const TransactionStatusModal = ({
   open,
   onOpenChange,
-  errorMessage,
+  title,
+  message,
   onClose,
-}: TransactionErrorModalProps) => {
+}: TransactionStatusModalProps) => {
   return (
     <AppModal
       open={open}
       onOpenChange={onOpenChange}
-      title="Error"
+      title={title}
       showCloseButton={true}
       classNames={{
         content: "sm:max-w-sm",
@@ -30,9 +31,9 @@ const TransactionErrorModal = ({
         </div>
       }
     >
-      <p>{errorMessage}</p>
+      <p>{message}</p>
     </AppModal>
   );
 };
 
-export default TransactionErrorModal;
+export default TransactionStatusModal;

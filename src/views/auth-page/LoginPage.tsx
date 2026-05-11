@@ -52,7 +52,7 @@ export default function LoginPage() {
             })
             .catch((error) => {
                 setIsShowError(true);
-                setErrorMessage(error.message);
+                setErrorMessage(error.error.message);
             });
     };
 

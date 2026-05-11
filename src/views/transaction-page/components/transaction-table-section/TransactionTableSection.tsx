@@ -4,7 +4,7 @@ import {
   type ColumnDef,
   useReactTable,
 } from "@tanstack/react-table";
-import { Pencil, Trash } from "lucide-react";
+import { CircleDollarSign, Pencil, Trash } from "lucide-react";
 import AppModal from "@/components/app-components/app-modal/AppModal";
 import AppTable from "@/components/app-components/app-table/AppTable";
 import { Button } from "@/components/ui/button";
@@ -21,8 +21,10 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
     detailRows,
     canUpdateDetail = false,
     canDeleteDetail = false,
+    canSellDetail = false,
     onEditDetailRow,
     onDeleteDetailRow,
+    onSellDetailRow,
   } = props;
 
   const detailColumns: ColumnDef<TransactionDetailRow>[] = [
@@ -66,14 +68,39 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
           : "-";
       },
     },
+    {
+      accessorKey: "dateOUT",
+      header: "Date OUT",
+      cell: ({ row }) => {
+        const value = row.original.dateOUT;
+        return value
+          ? new Intl.DateTimeFormat("en-US", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            }).format(new Date(value))
+          : "-";
+      },
+    },
   ];
 
-  if (onEditDetailRow || onDeleteDetailRow) {
+  if (onEditDetailRow || onDeleteDetailRow || onSellDetailRow) {
     detailColumns.push({
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
+          {canSellDetail && onSellDetailRow && row.original.isRFS && !row.original.dateOUT ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              title="Mark as sold"
+              onClick={() => onSellDetailRow(row.original)}
+            >
+              <CircleDollarSign className="size-4" />
+            </Button>
+          ) : null}
           {canUpdateDetail && onEditDetailRow ? (
             <Button
               type="button"

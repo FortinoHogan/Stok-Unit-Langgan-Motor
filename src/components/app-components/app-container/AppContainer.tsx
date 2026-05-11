@@ -9,6 +9,7 @@ import SidebarProvider from "@/helpers/provider/SidebarProvider"
 
 const AppContainer = () => {
     const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
+    const loadedRoleId = usePrivillegeStore((state) => state.loadedRoleId)
     const setPrivillegeList = usePrivillegeStore((state) => state.setPrivillegeList)
     const setIsLoading = usePrivillegeStore((state) => state.setIsLoading)
     const clearPrivilleges = usePrivillegeStore((state) => state.clearPrivilleges)
@@ -18,6 +19,11 @@ const AppContainer = () => {
 
         if (!roleId) {
             clearPrivilleges()
+            return
+        }
+
+        // Reuse cached privilege mapping for the same role across page refreshes.
+        if (loadedRoleId === roleId) {
             return
         }
 
@@ -55,7 +61,7 @@ const AppContainer = () => {
         }
 
         void fetchPrivilleges()
-    }, [authenticatedUser?.roleId, clearPrivilleges, setIsLoading, setPrivillegeList])
+    }, [authenticatedUser?.roleId, loadedRoleId, clearPrivilleges, setIsLoading, setPrivillegeList])
 
     return (
         <SidebarProvider>

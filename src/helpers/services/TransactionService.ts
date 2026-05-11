@@ -1,8 +1,16 @@
-import type { IResponse, TrTransaction } from "@/interfaces/IModel.interface";
 import type {
-  GetTransactionsByModeYearRequest,
-  GetDistinctTransactionYearsRequest,
+  IResponse,
+  MsCategory,
+  MsType,
+  TrTransaction,
+} from "@/interfaces/IModel.interface";
+import type {
+  GetYearOptionsRequest,
+  GetColorOptionsByTypeRequest,
+  GetTransactionsByYearRequest,
+  GetCategoryOptionsRequest,
   GetSellableTransactionsByDateRequest,
+  GetTypeOptionsByCategoryRequest,
   InsertTransactionRequest,
   TransactionCategoryMapRow,
   TransactionColorMapRow,
@@ -10,58 +18,18 @@ import type {
   TransactionTypeColorOption,
   TransactionTypeColorMapRow,
   TransactionTypeMapRow,
-  TransactionYearRow,
   RawTransactionDetailRow,
-  RawTypeColorOptionRow,
   UpdateTransactionAsSoldRequest,
   UpdateTransactionRequest,
   DeleteTransactionRequest,
+  GetTypeColorOptionsRequest,
 } from "@/interfaces/ITransactionService";
 import { ApiService } from "@/utilities/ApiService";
-import type { TransactionDistinctYears } from "@/views/transaction-page/TransactionPage.interface";
 import { supabase } from "../supabase/client";
+import type { AutoCompleteOption } from "@/components/app-components/app-auto-complete/AppAutoComplete.interface";
 
-const getTransactionYearRows = async (
-  params?: GetDistinctTransactionYearsRequest,
-): Promise<IResponse<TransactionYearRow[]>> => {
-  const { setIsLoading } = params || {};
-  setIsLoading?.(true);
-
-  try {
-    return {
-      data: [],
-      error: null,
-      status: 200,
-      statusText: "OK",
-      count: 0,
-    };
-  } catch (error) {
-    throw error;
-  } finally {
-    setIsLoading?.(false);
-  }
-};
-
-const getDistinctTransactionYears = async (
-  params?: GetDistinctTransactionYearsRequest,
-): Promise<TransactionDistinctYears> => {
-  const { setIsLoading } = params || {};
-  setIsLoading?.(true);
-
-  try {
-    return {
-      dateDOYears: [],
-      dateOUTYears: [],
-      dateDOYearQuantity: {},
-      dateOUTYearQuantity: {},
-    };
-  } finally {
-    setIsLoading?.(false);
-  }
-};
-
-const getTransactionsByModeYear = async (
-  params: GetTransactionsByModeYearRequest,
+const getTransactionsByYear = async (
+  params: GetTransactionsByYearRequest,
 ): Promise<IResponse<TransactionDetailRow[]>> => {
   const { setIsLoading } = params;
 
@@ -126,86 +94,254 @@ const insertTransaction = async (
 };
 
 const getTypeColorOptions = async (
-  params?: GetDistinctTransactionYearsRequest,
+  params?: GetTypeColorOptionsRequest,
 ): Promise<IResponse<TransactionTypeColorOption[]>> => {
   const { setIsLoading } = params || {};
 
   setIsLoading?.(true);
 
   try {
-    const typeColorResponse = await ApiService.request<RawTypeColorOptionRow[]>(() =>
-      supabase
+    const response = await ApiService.request<any[]>(async () => {
+      const res = await supabase
         .from("TrTypeColor")
-        .select("typeColorId, typeId, colorId")
+        .select(
+          `
+    typeColorId,
+    MsType!inner (
+      typeName,
+      typeCode,
+      isDeleted,
+      MsCategory!inner (
+        categoryName,
+        isDeleted
+      )
+    ),
+    MsColor!inner (
+      colorName,
+      isDeleted
+    )
+  `,
+        )
         .eq("isDeleted", false)
-        .order("typeColorId", { ascending: true }),
-    );
+        .eq("MsType.isDeleted", false)
+        .eq("MsType.MsCategory.isDeleted", false)
+        .eq("MsColor.isDeleted", false);
 
-    const typeColorRows = typeColorResponse.data || [];
-    const typeIds = [...new Set(typeColorRows.map((item) => item.typeId))];
-    const colorIds = [...new Set(typeColorRows.map((item) => item.colorId))];
+      return res;
+    });
 
-    const typeMapRows = typeIds.length
-      ? (await ApiService.request<TransactionTypeMapRow[]>(() =>
-          supabase
-            .from("MsType")
-            .select("typeId, typeName, typeCode, categoryId")
-            .eq("isDeleted", false)
-            .in("typeId", typeIds),
-        )).data || []
-      : [];
-
-    const categoryIds = [...new Set(typeMapRows.map((item) => item.categoryId))];
-
-    const categoryMapRows = categoryIds.length
-      ? (await ApiService.request<TransactionCategoryMapRow[]>(() =>
-          supabase
-            .from("MsCategory")
-            .select("categoryId, categoryName")
-            .eq("isDeleted", false)
-            .in("categoryId", categoryIds),
-        )).data || []
-      : [];
-
-    const colorMapRows = colorIds.length
-      ? (await ApiService.request<TransactionColorMapRow[]>(() =>
-          supabase
-            .from("MsColor")
-            .select("colorId, colorName")
-            .eq("isDeleted", false)
-            .in("colorId", colorIds),
-        )).data || []
-      : [];
-
-    const typeByTypeId = new Map<number, TransactionTypeMapRow>(
-      typeMapRows.map((item) => [item.typeId, item]),
-    );
-    const categoryByCategoryId = new Map<number, TransactionCategoryMapRow>(
-      categoryMapRows.map((item) => [item.categoryId, item]),
-    );
-    const colorByColorId = new Map<number, TransactionColorMapRow>(
-      colorMapRows.map((item) => [item.colorId, item]),
-    );
-
-    const optionRows: TransactionTypeColorOption[] = typeColorRows.map((item) => {
-      const typeData = typeByTypeId.get(item.typeId);
-      const categoryData = typeData
-        ? categoryByCategoryId.get(typeData.categoryId)
-        : undefined;
-      const colorData = colorByColorId.get(item.colorId);
-
-      return {
+    const optionRows: TransactionTypeColorOption[] = (response.data || []).map(
+      (item) => ({
         typeColorId: item.typeColorId,
-        categoryName: categoryData?.categoryName || null,
-        typeName: typeData?.typeName || null,
-        typeCode: typeData?.typeCode || null,
-        colorName: colorData?.colorName || null,
-      };
+        categoryName: item.MsType?.MsCategory?.categoryName || null,
+        typeName: item.MsType?.typeName || null,
+        typeCode: item.MsType?.typeCode || null,
+        colorName: item.MsColor?.colorName || null,
+      }),
+    );
+
+    return {
+      ...response,
+      data: optionRows,
+    };
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
+const getCategoryOptions = async (
+  params?: GetCategoryOptionsRequest,
+): Promise<IResponse<AutoCompleteOption[]>> => {
+  const { setIsLoading } = params || {};
+
+  setIsLoading?.(true);
+
+  try {
+    const response = await ApiService.request<MsCategory[]>(() =>
+      supabase
+        .from("MsCategory")
+        .select("*", { count: "exact" })
+        .eq("isDeleted", false)
+        .order("createdAt", { ascending: false })
+        .order("categoryId", { ascending: false }),
+    );
+
+    const optionRows = (response.data || []).map((item) => ({
+      value: item.categoryId.toString(),
+      label: item.categoryName,
+    }));
+
+    return {
+      ...response,
+      data: optionRows,
+    };
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
+const getTypeOptionsByCategory = async (
+  params: GetTypeOptionsByCategoryRequest,
+): Promise<IResponse<AutoCompleteOption[]>> => {
+  const { categoryId, setIsLoading } = params;
+
+  setIsLoading?.(true);
+
+  try {
+    const res = await ApiService.request<MsType[]>(() => {
+      let query = supabase
+        .from("MsType")
+        .select("*", { count: "exact" })
+        .eq("isDeleted", false)
+        .order("typeName", { ascending: true });
+
+      if (categoryId !== "All") {
+        query = query.eq("categoryId", categoryId);
+      }
+
+      return query;
+    });
+
+    const optionRows = (res.data || []).map((item) => ({
+      value: item.typeId.toString(),
+      label: item.typeName,
+    }));
+
+    return {
+      ...res,
+      data: optionRows,
+    };
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
+const getColorOptionsByType = async (
+  params: GetColorOptionsByTypeRequest,
+): Promise<IResponse<AutoCompleteOption[]>> => {
+  const { typeId, setIsLoading } = params;
+
+  setIsLoading?.(true);
+
+  try {
+    const response = await ApiService.request<any[]>(async () => {
+      let query = supabase
+        .from("TrTypeColor")
+        .select(
+          `
+          MsColor!inner (
+            colorId,
+            colorName,
+            isDeleted
+          )
+        `,
+        )
+        .eq("isDeleted", false)
+        .eq("MsColor.isDeleted", false);
+
+      if (typeId !== "All") {
+        query = query.eq("typeId", typeId);
+      }
+
+      const res = await query;
+
+      return res;
+    });
+
+    const uniqueMap = new Map<string, AutoCompleteOption>();
+
+    (response.data || []).forEach((item) => {
+      const color = item.MsColor;
+
+      if (!color) return;
+
+      uniqueMap.set(color.colorId.toString(), {
+        value: color.colorId.toString(),
+        label: color.colorName,
+      });
     });
 
     return {
-      ...typeColorResponse,
-      data: optionRows,
+      ...response,
+      data: [...uniqueMap.values()].sort((a, b) =>
+        a.label.localeCompare(b.label),
+      ),
+    };
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
+const getYearFilterOptions = async (
+  params?: GetYearOptionsRequest,
+): Promise<IResponse<AutoCompleteOption[]>> => {
+  const { categoryId, typeId, colorId, setIsLoading } = params || {};
+
+  setIsLoading?.(true);
+
+  try {
+    const response = await ApiService.request<any[]>(async () => {
+      let query = supabase
+        .from("TrTransaction")
+        .select(
+          `
+          year,
+          TrTypeColor!inner (
+            typeId,
+            colorId,
+            isDeleted,
+            MsType!inner (
+              categoryId,
+              isDeleted,
+              MsCategory!inner (isDeleted)
+            ),
+            MsColor!inner (isDeleted)
+          )
+        `,
+        )
+        .eq("isDeleted", false)
+        .eq("TrTypeColor.isDeleted", false)
+        .eq("TrTypeColor.MsType.isDeleted", false)
+        .eq("TrTypeColor.MsType.MsCategory.isDeleted", false)
+        .eq("TrTypeColor.MsColor.isDeleted", false)
+        .order("year", { ascending: true });
+
+      if (categoryId) {
+        query = query.eq("TrTypeColor.MsType.categoryId", categoryId);
+      }
+
+      if (typeId) {
+        query = query.eq("TrTypeColor.typeId", typeId);
+      }
+
+      if (colorId) {
+        query = query.eq("TrTypeColor.colorId", colorId);
+      }
+
+      const res = await query;
+
+      return res;
+    });
+
+    const yearOptions = Array.from(
+      new Set((response.data || []).map((item) => String(item.year))),
+    )
+      .filter((yearValue) => yearValue !== "null" && yearValue !== "undefined")
+      .sort((a, b) => Number(a) - Number(b))
+      .map((yearValue) => ({
+        value: yearValue,
+        label: yearValue,
+      }));
+
+    return {
+      ...response,
+      data: yearOptions,
     };
   } catch (error) {
     throw error;
@@ -224,7 +360,9 @@ const getSellableTransactionsByDate = async (
     const response = await ApiService.request<RawTransactionDetailRow[]>(() =>
       supabase
         .from("TrTransaction")
-        .select("transactionId, typeColorId, noMesin, noRangka, year, isRFS, dateDO, dateOUT")
+        .select(
+          "transactionId, typeColorId, noMesin, noRangka, year, isRFS, dateDO, dateOUT",
+        )
         .eq("isDeleted", false)
         .not("dateDO", "is", null)
         .lte("dateDO", date)
@@ -233,7 +371,9 @@ const getSellableTransactionsByDate = async (
     );
 
     const transactionRows = response.data || [];
-    const typeColorIds = [...new Set(transactionRows.map((item) => item.typeColorId))];
+    const typeColorIds = [
+      ...new Set(transactionRows.map((item) => item.typeColorId)),
+    ];
 
     if (!typeColorIds.length) {
       return {
@@ -242,7 +382,9 @@ const getSellableTransactionsByDate = async (
       };
     }
 
-    const typeColorMapResponse = await ApiService.request<TransactionTypeColorMapRow[]>(() =>
+    const typeColorMapResponse = await ApiService.request<
+      TransactionTypeColorMapRow[]
+    >(() =>
       supabase
         .from("TrTypeColor")
         .select("typeColorId, typeId, colorId")
@@ -267,35 +409,42 @@ const getSellableTransactionsByDate = async (
       };
     }
 
-    const typeMapResponse = await ApiService.request<TransactionTypeMapRow[]>(() =>
-      supabase
-        .from("MsType")
-        .select("typeId, typeName, typeCode, categoryId")
-        .eq("isDeleted", false)
-        .in("typeId", typeIds),
+    const typeMapResponse = await ApiService.request<TransactionTypeMapRow[]>(
+      () =>
+        supabase
+          .from("MsType")
+          .select("typeId, typeName, typeCode, categoryId")
+          .eq("isDeleted", false)
+          .in("typeId", typeIds),
     );
 
     const typeMapRows = typeMapResponse.data || [];
-    const categoryIds = [...new Set(typeMapRows.map((item) => item.categoryId))];
+    const categoryIds = [
+      ...new Set(typeMapRows.map((item) => item.categoryId)),
+    ];
 
     const categoryMapRows: TransactionCategoryMapRow[] = categoryIds.length
-      ? (await ApiService.request<TransactionCategoryMapRow[]>(() =>
-          supabase
-            .from("MsCategory")
-            .select("categoryId, categoryName")
-            .eq("isDeleted", false)
-            .in("categoryId", categoryIds),
-        )).data || []
+      ? (
+          await ApiService.request<TransactionCategoryMapRow[]>(() =>
+            supabase
+              .from("MsCategory")
+              .select("categoryId, categoryName")
+              .eq("isDeleted", false)
+              .in("categoryId", categoryIds),
+          )
+        ).data || []
       : [];
 
     const colorMapRows: TransactionColorMapRow[] = colorIds.length
-      ? (await ApiService.request<TransactionColorMapRow[]>(() =>
-          supabase
-            .from("MsColor")
-            .select("colorId, colorName")
-            .eq("isDeleted", false)
-            .in("colorId", colorIds),
-        )).data || []
+      ? (
+          await ApiService.request<TransactionColorMapRow[]>(() =>
+            supabase
+              .from("MsColor")
+              .select("colorId, colorName")
+              .eq("isDeleted", false)
+              .in("colorId", colorIds),
+          )
+        ).data || []
       : [];
 
     const typeColorByTypeColorId = new Map<number, TransactionTypeColorMapRow>(
@@ -438,10 +587,12 @@ const deleteTransaction = async (
 };
 
 export const TransactionService = {
-  getDistinctTransactionYears,
-  getTransactionYearRows,
-  getTransactionsByModeYear,
+  getTransactionsByYear,
   getTypeColorOptions,
+  getCategoryOptions,
+  getTypeOptionsByCategory,
+  getColorOptionsByType,
+  getYearFilterOptions,
   getSellableTransactionsByDate,
   updateTransactionAsSold,
   updateTransaction,

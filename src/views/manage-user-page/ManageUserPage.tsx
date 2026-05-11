@@ -208,7 +208,7 @@ const ManageUserPage = () => {
                 handleFetchUsers()
             })
             .catch((error) => {
-                setErrorMessage(error.message);
+                setErrorMessage(error.error.message);
                 setIsShowError(true);
             })
     }
@@ -241,7 +241,7 @@ const ManageUserPage = () => {
                 handleFetchUsers()
             })
             .catch((error) => {
-                setErrorMessage(error.message)
+                setErrorMessage(error.error.message)
                 setIsShowError(true)
             })
     }
@@ -266,7 +266,7 @@ const ManageUserPage = () => {
                 handleFetchUsers()
             })
             .catch((error) => {
-                setErrorMessage(error.message)
+                setErrorMessage(error.error.message)
                 setIsShowError(true)
             })
     }
@@ -301,7 +301,7 @@ const ManageUserPage = () => {
                 setTotalCount(res.count ?? 0)
             })
             .catch((error) => {
-                setErrorMessage(error.message);
+                setErrorMessage(error.error.message);
                 setIsShowError(true);
             })
     }
@@ -316,7 +316,7 @@ const ManageUserPage = () => {
                 setRoleList(res.data || [])
             })
             .catch((error) => {
-                setErrorMessage(error.message)
+                setErrorMessage(error.error.message)
                 setIsShowError(true)
             })
     }

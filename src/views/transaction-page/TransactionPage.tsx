@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getCoreRowModel,
   getSortedRowModel,
@@ -20,39 +20,38 @@ import type {
   TransactionDetailRow,
   TransactionTypeColorOption,
 } from "@/interfaces/ITransactionService";
-import { transactionModeWordingList } from "./TransactionPage.constant";
-import TransactionErrorModal from "./components/transaction-error-modal/TransactionErrorModal";
+import { FormDataInitial, transactionWording } from "./TransactionPage.constant";
+import TransactionStatusModal from "./components/transaction-status-modal/TransactionStatusModal";
 import TransactionTableSection from "./components/transaction-table-section/TransactionTableSection";
 import { monthFormatter } from "./utilities";
-import type { TransactionPageProps } from "./TransactionPage.interface";
+import type { IFormData, TransactionDayGroupedRow } from "./TransactionPage.interface";
 import AppBackButton from "@/components/app-layout/app-back-button/AppBackButton";
+import AppSpinner from "@/components/app-components/app-spinner/AppSpinner";
+import type { AutoCompleteOption } from "@/components/app-components/app-auto-complete/AppAutoComplete.interface";
 
-type TransactionDayGroupedRow = {
-  key: string;
-  categoryName: string;
-  typeName: string;
-  typeCode: string;
-  year: number;
-  quantity: number;
-  details: TransactionDetailRow[];
-};
-
-const TransactionPage = (props: TransactionPageProps) => {
-  const { mode } = props;
+const TransactionPage = () => {
+  // Base / Access
+  const pageWording = transactionWording;
 
   const today = useMemo(() => new Date(), []);
   const initialYear = today.getFullYear();
   const initialMonth = today.getMonth() + 1;
   const initialDay = today.getDate();
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser);
-  const transactionAccess = usePrivillegeAccess(
-    mode === "DO" ? "Delivery Order" : "Selling",
-  );
+  const transactionAccess = usePrivillegeAccess("Delivery Order");
+  const sellingAccess = usePrivillegeAccess("Selling");
   const canInsertTransaction = transactionAccess.canInsert;
   const canUpdateTransaction = transactionAccess.canUpdate;
   const canDeleteTransaction = transactionAccess.canDelete;
+  const canSellTransaction = sellingAccess.canUpdate;
 
+  // State
   const [isTableLoading, setIsTableLoading] = useState(false);
+  const [isTypeColorOptionsLoading, setIsTypeColorOptionsLoading] = useState(false);
+  const [isCategoryOptionsLoading, setIsCategoryOptionsLoading] = useState(false);
+  const [isTypeOptionsLoading, setIsTypeOptionsLoading] = useState(false);
+  const [isColorOptionsLoading, setIsColorOptionsLoading] = useState(false);
+  const [isYearOptionsLoading, setIsYearOptionsLoading] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isShowSuccess, setIsShowSuccess] = useState(false);
@@ -65,6 +64,8 @@ const TransactionPage = (props: TransactionPageProps) => {
     useState(false);
   const [isConfirmDeleteDetailModalOpen, setIsConfirmDeleteDetailModalOpen] =
     useState(false);
+  const [isConfirmSellDetailModalOpen, setIsConfirmSellDetailModalOpen] =
+    useState(false);
   const [transactionList, setTransactionList] = useState<
     TransactionDetailRow[]
   >([]);
@@ -75,9 +76,6 @@ const TransactionPage = (props: TransactionPageProps) => {
   const [selectedDetailTitle, setSelectedDetailTitle] = useState("");
   const [typeColorOptionList, setTypeColorOptionList] = useState<
     TransactionTypeColorOption[]
-  >([]);
-  const [sellableTransactionList, setSellableTransactionList] = useState<
-    TransactionDetailRow[]
   >([]);
   const [typeColorIdInput, setTypeColorIdInput] = useState("");
   const [noMesinInput, setNoMesinInput] = useState("");
@@ -94,30 +92,36 @@ const TransactionPage = (props: TransactionPageProps) => {
   const [selectedPeriodDay, setSelectedPeriodDay] = useState(
     String(initialDay),
   );
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("");
-  const [selectedTypeFilter, setSelectedTypeFilter] = useState("");
-  const [selectedColorFilter, setSelectedColorFilter] = useState("");
-  const [selectedYearFilter, setSelectedYearFilter] = useState("");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("All");
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState("All");
+  const [selectedColorFilter, setSelectedColorFilter] = useState("All");
+  const [selectedYearFilter, setSelectedYearFilter] = useState("All");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
+  const [categoryFilterOptions, setCategoryFilterOptions] = useState<AutoCompleteOption[]>([
+    { value: "All", label: "All" },
+  ]);
+  const [typeFilterOptions, setTypeFilterOptions] = useState<AutoCompleteOption[]>([
+    { value: "All", label: "All" },
+  ]);
+  const [colorFilterOptions, setColorFilterOptions] = useState<AutoCompleteOption[]>([
+    { value: "All", label: "All" },
+  ]);
+  const [yearFilterOptions, setYearFilterOptions] = useState<AutoCompleteOption[]>([
+    { value: "All", label: "All" },
+  ]);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
-  const [appliedFilter, setAppliedFilter] = useState({
-    category: "",
-    type: "",
-    color: "",
-    year: "",
-    status: "",
-  });
+  const [appliedFilter, setAppliedFilter] = useState<IFormData>(FormDataInitial);
   const [appliedPeriodFilter, setAppliedPeriodFilter] = useState({
     year: String(initialYear),
     month: String(initialMonth),
     day: String(initialDay),
   });
-  const [selectedSellTransactionId, setSelectedSellTransactionId] =
-    useState("");
   const [editingTransactionId, setEditingTransactionId] = useState<number | null>(
     null,
   );
   const [deletingTransaction, setDeletingTransaction] =
+    useState<TransactionDetailRow | null>(null);
+  const [sellingTransaction, setSellingTransaction] =
     useState<TransactionDetailRow | null>(null);
   const [editNoMesinInput, setEditNoMesinInput] = useState("");
   const [editNoRangkaInput, setEditNoRangkaInput] = useState("");
@@ -125,9 +129,48 @@ const TransactionPage = (props: TransactionPageProps) => {
   const [editDateInput, setEditDateInput] = useState<Date | undefined>(undefined);
   const [editIsRFSInput, setEditIsRFSInput] = useState(true);
 
+  // Utility
   const handleCloseErrorModal = () => {
     setErrorMessage("");
     setIsShowError(false);
+  };
+
+  const handleCloseSuccessModal = () => {
+    setSuccessMessage("");
+    setIsShowSuccess(false);
+  };
+
+  const formatDateAsYmd = (value: Date) => {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+  };
+
+  const getSelectedDateString = () => {
+    const currentYear = Number(selectedPeriodYear) || today.getFullYear();
+    const parsedMonth = Number(selectedPeriodMonth);
+    const resolvedMonth =
+      Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12
+        ? parsedMonth
+        : today.getMonth() + 1;
+    const parsedDay = Number(selectedPeriodDay);
+    const maxDay = new Date(currentYear, resolvedMonth, 0).getDate();
+    const resolvedDay =
+      Number.isInteger(parsedDay) && parsedDay >= 1 && parsedDay <= maxDay
+        ? parsedDay
+        : today.getDate();
+
+    return `${currentYear}-${String(resolvedMonth).padStart(2, "0")}-${String(resolvedDay).padStart(2, "0")}`;
+  };
+
+  // Reset Form
+  const resetInsertForm = () => {
+    const now = new Date();
+
+    setTypeColorIdInput("");
+    setNoMesinInput("");
+    setNoRangkaInput("");
+    setYearInput(String(now.getFullYear()));
+    setDateDOInput(now);
+    setIsRFSInput(true);
   };
 
   const resetEditDetailForm = () => {
@@ -154,185 +197,90 @@ const TransactionPage = (props: TransactionPageProps) => {
     setEditIsRFSInput(Boolean(transaction.isRFS));
   };
 
-  const formatDateAsYmd = (value: Date) => {
-    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
-  };
-
-  const getSelectedDateString = () => {
-    const currentYear = Number(selectedPeriodYear) || today.getFullYear();
-    const parsedMonth = Number(selectedPeriodMonth);
-    const resolvedMonth =
-      Number.isInteger(parsedMonth) && parsedMonth >= 1 && parsedMonth <= 12
-        ? parsedMonth
-        : today.getMonth() + 1;
-    const parsedDay = Number(selectedPeriodDay);
-    const maxDay = new Date(currentYear, resolvedMonth, 0).getDate();
-    const resolvedDay =
-      Number.isInteger(parsedDay) && parsedDay >= 1 && parsedDay <= maxDay
-        ? parsedDay
-        : today.getDate();
-
-    return `${currentYear}-${String(resolvedMonth).padStart(2, "0")}-${String(resolvedDay).padStart(2, "0")}`;
-  };
-
-  const handleFetchTypeColorOptions = async () => {
-    await TransactionService.getTypeColorOptions()
+  // API Call
+  const handleFetchTypeColorOptions = useCallback(async () => {
+    await TransactionService.getTypeColorOptions({
+      setIsLoading: setIsTypeColorOptionsLoading,
+    })
       .then((res) => {
         setTypeColorOptionList(res.data || []);
       })
       .catch((error) => {
-        setErrorMessage(error.message);
+        setErrorMessage(error.error.message);
         setIsShowError(true);
       });
-  };
+  }, []);
 
-  const handleFetchSellableTransactions = async () => {
-    await TransactionService.getSellableTransactionsByDate({
-      date: getSelectedDateString(),
+  const handleFetchCategoryFilterOptions = useCallback(async () => {
+    await TransactionService.getCategoryOptions({
+      setIsLoading: setIsCategoryOptionsLoading,
     })
       .then((res) => {
-        setSellableTransactionList(res.data || []);
+        setCategoryFilterOptions([{ value: "All", label: "All" }, ...(res.data || [])]);
       })
       .catch((error) => {
-        setErrorMessage(error.message);
+        setErrorMessage(error.error.message);
         setIsShowError(true);
       });
-  };
+  }, []);
 
-  const resetInsertForm = () => {
-    const now = new Date();
-
-    setTypeColorIdInput("");
-    setNoMesinInput("");
-    setNoRangkaInput("");
-    setYearInput(String(now.getFullYear()));
-    setDateDOInput(now);
-    setIsRFSInput(true);
-    setSelectedSellTransactionId("");
-  };
-
-  const handleOpenAddModal = async () => {
-    if (!canInsertTransaction) {
-      setErrorMessage("You do not have permission to insert this transaction.");
-      setIsShowError(true);
+  const handleFetchTypeFilterOptions = useCallback(async (categoryId: string) => {
+    if (!categoryId) {
+      setTypeFilterOptions([{ value: "All", label: "All" }]);
       return;
     }
 
-    resetInsertForm();
-
-    if (mode === "DO") {
-      await handleFetchTypeColorOptions();
-    }
-
-    if (mode === "SELLING") {
-      await handleFetchSellableTransactions();
-    }
-
-    setIsAddModalOpen(true);
-  };
-
-  const handleOpenEditDetailRow = (row: TransactionDetailRow) => {
-    if (!canUpdateTransaction) {
-      setErrorMessage("You do not have permission to update this transaction.");
-      setIsShowError(true);
-      return;
-    }
-
-    fillEditDetailForm(row);
-    setIsEditDetailModalOpen(true);
-  };
-
-  const validateEditDetailForm = () => {
-    if (!editingTransactionId) {
-      setErrorMessage("No transaction selected to update.");
-      setIsShowError(true);
-      return false;
-    }
-
-    if (
-      !editNoMesinInput.trim() ||
-      !editNoRangkaInput.trim() ||
-      !editYearInput.trim() ||
-      !editDateInput
-    ) {
-      setErrorMessage(
-        "Please fill No Mesin, No Rangka, Year, and transaction date.",
-      );
-      setIsShowError(true);
-      return false;
-    }
-
-    const parsedYear = Number(editYearInput);
-
-    if (!Number.isInteger(parsedYear) || parsedYear <= 0) {
-      setErrorMessage("Year must be a valid number");
-      setIsShowError(true);
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleOpenConfirmUpdateDetailModal = () => {
-    if (!validateEditDetailForm()) {
-      return;
-    }
-
-    setIsConfirmUpdateDetailModalOpen(true);
-  };
-
-  const handleOpenDeleteDetailRow = (row: TransactionDetailRow) => {
-    if (!canDeleteTransaction) {
-      setErrorMessage("You do not have permission to delete this transaction.");
-      setIsShowError(true);
-      return;
-    }
-
-    setDeletingTransaction(row);
-    setIsConfirmDeleteDetailModalOpen(true);
-  };
-
-  const handleOpenConfirmAddModal = () => {
-    if (mode === "DO") {
-      if (
-        !typeColorIdInput.trim() ||
-        !noMesinInput.trim() ||
-        !noRangkaInput.trim() ||
-        !yearInput.trim() ||
-        !dateDOInput
-      ) {
-        setErrorMessage(
-          "Please fill Type and Color, No Mesin, No Rangka, Year, and Date DO",
-        );
+    await TransactionService.getTypeOptionsByCategory({
+      categoryId,
+      setIsLoading: setIsTypeOptionsLoading,
+    })
+      .then((res) => {
+        setTypeFilterOptions([{ value: "All", label: "All" }, ...(res.data || [])]);
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
         setIsShowError(true);
-        return;
-      }
-    }
+      });
+  }, []);
 
-    if (mode === "SELLING" && !selectedSellTransactionId.trim()) {
-      setErrorMessage("Please select transaction to sell");
-      setIsShowError(true);
+  const handleFetchColorFilterOptions = useCallback(async (typeId: string) => {
+    if (!typeId) {
+      setColorFilterOptions([{ value: "All", label: "All" }]);
       return;
     }
 
-    setIsConfirmAddModalOpen(true);
-  };
+    await TransactionService.getColorOptionsByType({
+      typeId: typeId,
+      setIsLoading: setIsColorOptionsLoading,
+    })
+      .then((res) => {
+        setColorFilterOptions([{ value: "All", label: "All" }, ...(res.data || [])]);
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
+  }, []);
 
-  const handleApplyFilters = () => {
-    setAppliedPeriodFilter({
-      year: selectedPeriodYear,
-      month: selectedPeriodMonth,
-      day: selectedPeriodDay,
-    });
-    setAppliedFilter({
-      category: selectedCategoryFilter,
-      type: selectedTypeFilter,
-      color: selectedColorFilter,
-      year: selectedYearFilter,
-      status: selectedStatusFilter,
-    });
-    setIsFilterApplied(true);
-  };
+  const handleFetchYearFilterOptions = useCallback(async (
+    categoryId: string,
+    typeId: string,
+    colorId: string,
+  ) => {
+    await TransactionService.getYearFilterOptions({
+      categoryId: categoryId && categoryId !== "All" ? categoryId : undefined,
+      typeId: typeId && typeId !== "All" ? typeId : undefined,
+      colorId: colorId && colorId !== "All" ? colorId : undefined,
+      setIsLoading: setIsYearOptionsLoading,
+    })
+      .then((res) => {
+        setYearFilterOptions([{ value: "All", label: "All" }, ...(res.data || [])]);
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
+  }, []);
 
   const handleInsertTransaction = async () => {
     const userId = authenticatedUser?.userId;
@@ -343,92 +291,50 @@ const TransactionPage = (props: TransactionPageProps) => {
       return;
     }
 
-    if (mode === "DO") {
-      const parsedTypeColorId = Number(typeColorIdInput);
-      const parsedYear = Number(yearInput);
+    const parsedTypeColorId = Number(typeColorIdInput);
+    const parsedYear = Number(yearInput);
 
-      if (!Number.isInteger(parsedTypeColorId) || parsedTypeColorId <= 0) {
-        setErrorMessage("Type and Color must be selected");
-        setIsShowError(true);
-        return;
-      }
-
-      if (!Number.isInteger(parsedYear) || parsedYear <= 0) {
-        setErrorMessage("Year must be a valid number");
-        setIsShowError(true);
-        return;
-      }
-
-      if (!dateDOInput) {
-        setErrorMessage("Date DO is required");
-        setIsShowError(true);
-        return;
-      }
-
-      await TransactionService.insertTransaction({
-        typeColorId: parsedTypeColorId,
-        noMesin: noMesinInput.trim(),
-        noRangka: noRangkaInput.trim(),
-        year: parsedYear,
-        isRFS: isRFSInput,
-        dateDO: formatDateAsYmd(dateDOInput),
-        dateOUT: null,
-        userIn: userId,
-        setIsLoading: setIsActionLoading,
-      })
-        .then(() => {
-          setSuccessMessage("Delivery Order has been added successfully.");
-          setIsShowSuccess(true);
-          setIsConfirmAddModalOpen(false);
-          setIsAddModalOpen(false);
-          resetInsertForm();
-          handleFetchTransactionByDay();
-        })
-        .catch((error) => {
-          setErrorMessage(error.message);
-          setIsShowError(true);
-        });
-
+    if (!Number.isInteger(parsedTypeColorId) || parsedTypeColorId <= 0) {
+      setErrorMessage("Type and Color must be selected");
+      setIsShowError(true);
       return;
     }
 
-    if (mode === "SELLING") {
-      const parsedTransactionId = Number(selectedSellTransactionId);
-
-      if (!Number.isInteger(parsedTransactionId) || parsedTransactionId <= 0) {
-        setErrorMessage("Transaction to sell must be selected");
-        setIsShowError(true);
-        return;
-      }
-
-      await TransactionService.updateTransactionAsSold({
-        transactionId: parsedTransactionId,
-        dateOUT: getSelectedDateString(),
-        userUp: userId,
-        updatedAt: new Date().toISOString(),
-        setIsLoading: setIsActionLoading,
-      })
-        .then(() => {
-          setSuccessMessage("Transaction has been marked as sold successfully.");
-          setIsShowSuccess(true);
-          setIsConfirmAddModalOpen(false);
-          setIsAddModalOpen(false);
-          resetInsertForm();
-          handleFetchTransactionByDay();
-        })
-        .catch((error) => {
-          setErrorMessage(error.message);
-          setIsShowError(true);
-        });
+    if (!Number.isInteger(parsedYear) || parsedYear <= 0) {
+      setErrorMessage("Year must be a valid number");
+      setIsShowError(true);
+      return;
     }
-  };
 
-  const handleOpenDetailModal = (row: TransactionDayGroupedRow) => {
-    setSelectedDetailRows(row.details);
-    setSelectedDetailTitle(
-      `${row.categoryName} - ${row.typeName} (${row.typeCode})`,
-    );
-    setIsDetailModalOpen(true);
+    if (!dateDOInput) {
+      setErrorMessage("Date DO is required");
+      setIsShowError(true);
+      return;
+    }
+
+    await TransactionService.insertTransaction({
+      typeColorId: parsedTypeColorId,
+      noMesin: noMesinInput.trim(),
+      noRangka: noRangkaInput.trim(),
+      year: parsedYear,
+      isRFS: isRFSInput,
+      dateDO: formatDateAsYmd(dateDOInput),
+      dateOUT: null,
+      userIn: userId,
+      setIsLoading: setIsActionLoading,
+    })
+      .then(() => {
+        setSuccessMessage("Delivery Order has been added successfully.");
+        setIsShowSuccess(true);
+        setIsConfirmAddModalOpen(false);
+        setIsAddModalOpen(false);
+        resetInsertForm();
+        handleFetchTransactionByDay();
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
   };
 
   const handleUpdateDetailTransaction = async () => {
@@ -463,8 +369,8 @@ const TransactionPage = (props: TransactionPageProps) => {
       noRangka: editNoRangkaInput.trim(),
       year: parsedYear,
       isRFS: editIsRFSInput,
-      dateDO: mode === "DO" ? dateValue : null,
-      dateOUT: mode === "SELLING" ? dateValue : null,
+      dateDO: dateValue,
+      dateOUT: null,
       userUp: userId,
       updatedAt: new Date().toISOString(),
       setIsLoading: setIsActionLoading,
@@ -478,7 +384,7 @@ const TransactionPage = (props: TransactionPageProps) => {
         handleFetchTransactionByDay();
       })
       .catch((error) => {
-        setErrorMessage(error.message);
+        setErrorMessage(error.error.message);
         setIsShowError(true);
       });
   };
@@ -512,7 +418,54 @@ const TransactionPage = (props: TransactionPageProps) => {
         handleFetchTransactionByDay();
       })
       .catch((error) => {
-        setErrorMessage(error.message);
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
+  };
+
+  const handleSellDetailTransaction = async () => {
+    const userId = authenticatedUser?.userId;
+
+    if (!userId) {
+      setErrorMessage("Authenticated user not found. Please login again.");
+      setIsShowError(true);
+      return;
+    }
+
+    if (!sellingTransaction) {
+      setErrorMessage("No transaction selected to sell.");
+      setIsShowError(true);
+      return;
+    }
+
+    if (!sellingTransaction.isRFS) {
+      setErrorMessage("Only RFS transaction can be sold.");
+      setIsShowError(true);
+      return;
+    }
+
+    if (sellingTransaction.dateOUT) {
+      setErrorMessage("Transaction is already sold.");
+      setIsShowError(true);
+      return;
+    }
+
+    await TransactionService.updateTransactionAsSold({
+      transactionId: sellingTransaction.transactionId,
+      dateOUT: getSelectedDateString(),
+      userUp: userId,
+      updatedAt: new Date().toISOString(),
+      setIsLoading: setIsActionLoading,
+    })
+      .then(() => {
+        setSuccessMessage("Transaction has been marked as sold successfully.");
+        setIsShowSuccess(true);
+        setIsConfirmSellDetailModalOpen(false);
+        setSellingTransaction(null);
+        handleFetchTransactionByDay();
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
         setIsShowError(true);
       });
   };
@@ -542,20 +495,19 @@ const TransactionPage = (props: TransactionPageProps) => {
       : today.getFullYear();
     const periodMonth =
       Number.isInteger(parsedPeriodMonth)
-      && parsedPeriodMonth >= 1
-      && parsedPeriodMonth <= 12
+        && parsedPeriodMonth >= 1
+        && parsedPeriodMonth <= 12
         ? parsedPeriodMonth
         : undefined;
     const periodDay =
       periodMonth
-      && Number.isInteger(parsedPeriodDay)
-      && parsedPeriodDay >= 1
-      && parsedPeriodDay <= new Date(periodYear, periodMonth, 0).getDate()
+        && Number.isInteger(parsedPeriodDay)
+        && parsedPeriodDay >= 1
+        && parsedPeriodDay <= new Date(periodYear, periodMonth, 0).getDate()
         ? parsedPeriodDay
         : undefined;
 
-    await TransactionService.getTransactionsByModeYear({
-      mode,
+    await TransactionService.getTransactionsByYear({
       year: periodYear,
       month: periodMonth,
       day: periodDay,
@@ -576,12 +528,151 @@ const TransactionPage = (props: TransactionPageProps) => {
         setTransactionList(res.data || []);
       })
       .catch((error) => {
-        setErrorMessage(error.message);
+        setErrorMessage(error.error.message);
         setIsShowError(true);
       });
   };
 
-  const modeWording = useMemo(() => transactionModeWordingList[mode], [mode]);
+  // Modal / Action Handler
+  const handleOpenAddModal = async () => {
+    if (!canInsertTransaction) {
+      setErrorMessage("You do not have permission to insert this transaction.");
+      setIsShowError(true);
+      return;
+    }
+
+    resetInsertForm();
+    setIsAddModalOpen(true);
+  };
+
+  const handleOpenEditDetailRow = (row: TransactionDetailRow) => {
+    if (!canUpdateTransaction) {
+      setErrorMessage("You do not have permission to update this transaction.");
+      setIsShowError(true);
+      return;
+    }
+
+    fillEditDetailForm(row);
+    setIsEditDetailModalOpen(true);
+  };
+
+  const handleOpenConfirmUpdateDetailModal = () => {
+    if (!validateEditDetailForm()) {
+      return;
+    }
+
+    setIsConfirmUpdateDetailModalOpen(true);
+  };
+
+  const handleOpenDeleteDetailRow = (row: TransactionDetailRow) => {
+    if (!canDeleteTransaction) {
+      setErrorMessage("You do not have permission to delete this transaction.");
+      setIsShowError(true);
+      return;
+    }
+
+    setDeletingTransaction(row);
+    setIsConfirmDeleteDetailModalOpen(true);
+  };
+
+  const handleOpenSellDetailRow = (row: TransactionDetailRow) => {
+    if (!canSellTransaction) {
+      setErrorMessage("You do not have permission to sell this transaction.");
+      setIsShowError(true);
+      return;
+    }
+
+    if (!row.isRFS) {
+      setErrorMessage("Only RFS transaction can be sold.");
+      setIsShowError(true);
+      return;
+    }
+
+    if (row.dateOUT) {
+      setErrorMessage("Transaction is already sold.");
+      setIsShowError(true);
+      return;
+    }
+
+    setSellingTransaction(row);
+    setIsConfirmSellDetailModalOpen(true);
+  };
+
+  const handleOpenConfirmAddModal = () => {
+    if (
+      !typeColorIdInput.trim() ||
+      !noMesinInput.trim() ||
+      !noRangkaInput.trim() ||
+      !yearInput.trim() ||
+      !dateDOInput
+    ) {
+      setErrorMessage(
+        "Please fill Type and Color, No Mesin, No Rangka, Year, and Date DO",
+      );
+      setIsShowError(true);
+      return;
+    }
+
+    setIsConfirmAddModalOpen(true);
+  };
+
+  const handleOpenDetailModal = (row: TransactionDayGroupedRow) => {
+    setSelectedDetailRows(row.details);
+    setSelectedDetailTitle(
+      `${row.categoryName} - ${row.typeName} (${row.typeCode})`,
+    );
+    setIsDetailModalOpen(true);
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedPeriodFilter({
+      year: selectedPeriodYear,
+      month: selectedPeriodMonth,
+      day: selectedPeriodDay,
+    });
+    setAppliedFilter({
+      category: selectedCategoryFilter === "All" ? "" : selectedCategoryFilter,
+      type: selectedTypeFilter === "All" ? "" : selectedTypeFilter,
+      color: selectedColorFilter === "All" ? "" : selectedColorFilter,
+      year: selectedYearFilter === "All" ? "" : selectedYearFilter,
+      status: selectedStatusFilter,
+    });
+    setIsFilterApplied(true);
+  };
+
+  // Validation
+  const validateEditDetailForm = () => {
+    if (!editingTransactionId) {
+      setErrorMessage("No transaction selected to update.");
+      setIsShowError(true);
+      return false;
+    }
+
+    if (
+      !editNoMesinInput.trim() ||
+      !editNoRangkaInput.trim() ||
+      !editYearInput.trim() ||
+      !editDateInput
+    ) {
+      setErrorMessage(
+        "Please fill No Mesin, No Rangka, Year, and transaction date.",
+      );
+      setIsShowError(true);
+      return false;
+    }
+
+    const parsedYear = Number(editYearInput);
+
+    if (!Number.isInteger(parsedYear) || parsedYear <= 0) {
+      setErrorMessage("Year must be a valid number");
+      setIsShowError(true);
+      return false;
+    }
+
+    return true;
+  };
+
+  // useMemo
   const parsedSelectedPeriodMonth = useMemo(
     () => Number(selectedPeriodMonth),
     [selectedPeriodMonth],
@@ -646,129 +737,15 @@ const TransactionPage = (props: TransactionPageProps) => {
     }));
   }, [typeColorOptionList]);
 
-  const sellableTransactionOptions = useMemo(() => {
-    return sellableTransactionList.map((transaction) => ({
-      value: String(transaction.transactionId),
-      label: `${transaction.noMesin} / ${transaction.noRangka} - ${transaction.typeName || "-"} (${transaction.typeCode || "-"})`,
-    }));
-  }, [sellableTransactionList]);
-
   const dayTransactionList = useMemo(() => {
-    if (mode === "SELLING") {
-      return transactionList.filter((transaction) => transaction.isRFS);
-    }
-
     return transactionList;
-  }, [mode, transactionList]);
+  }, [transactionList]);
 
-  const categoryOptions = useMemo(() => {
-    const uniqueCategories = Array.from(
-      new Set(dayTransactionList.map((item) => item.categoryName || "-")),
-    ).sort((a, b) => a.localeCompare(b));
-
-    return [
-      { value: "", label: "All" },
-      ...uniqueCategories.map((category) => ({
-      value: category,
-      label: category,
-      })),
-    ];
-  }, [dayTransactionList]);
-
-  const typeOptions = useMemo(() => {
-    const filteredByCategory = dayTransactionList.filter((item) => {
-      if (!selectedCategoryFilter) {
-        return true;
-      }
-
-      return (item.categoryName || "-") === selectedCategoryFilter;
-    });
-
-    const uniqueTypes = Array.from(
-      new Set(filteredByCategory.map((item) => item.typeName || "-")),
-    ).sort((a, b) => a.localeCompare(b));
-
-    return [
-      { value: "", label: "All" },
-      ...uniqueTypes.map((typeName) => ({
-      value: typeName,
-      label: typeName,
-      })),
-    ];
-  }, [dayTransactionList, selectedCategoryFilter]);
-
-  const colorOptions = useMemo(() => {
-    const filteredRows = dayTransactionList.filter((item) => {
-      if (
-        selectedCategoryFilter
-        && (item.categoryName || "-") !== selectedCategoryFilter
-      ) {
-        return false;
-      }
-
-      if (selectedTypeFilter && (item.typeName || "-") !== selectedTypeFilter) {
-        return false;
-      }
-
-      return true;
-    });
-
-    const uniqueColors = Array.from(
-      new Set(filteredRows.map((item) => item.colorName || "-")),
-    ).sort((a, b) => a.localeCompare(b));
-
-    return [
-      { value: "", label: "All" },
-      ...uniqueColors.map((colorName) => ({
-      value: colorName,
-      label: colorName,
-      })),
-    ];
-  }, [dayTransactionList, selectedCategoryFilter, selectedTypeFilter]);
-
-  const yearOptions = useMemo(() => {
-    const filteredRows = dayTransactionList.filter((item) => {
-      if (
-        selectedCategoryFilter
-        && (item.categoryName || "-") !== selectedCategoryFilter
-      ) {
-        return false;
-      }
-
-      if (selectedTypeFilter && (item.typeName || "-") !== selectedTypeFilter) {
-        return false;
-      }
-
-      if (selectedColorFilter && (item.colorName || "-") !== selectedColorFilter) {
-        return false;
-      }
-
-      return true;
-    });
-
-    const uniqueYears = Array.from(
-      new Set(filteredRows.map((item) => String(item.year))),
-    ).sort((a, b) => Number(a) - Number(b));
-
-    return [
-      { value: "", label: "All" },
-      ...uniqueYears.map((yearValue) => ({
-      value: yearValue,
-      label: yearValue,
-      })),
-    ];
-  }, [dayTransactionList, selectedCategoryFilter, selectedTypeFilter, selectedColorFilter]);
-
-  const statusOptions = mode === "SELLING"
-    ? [
-      { value: "", label: "All" },
-      { value: "RFS", label: "RFS" },
-    ]
-    : [
-      { value: "", label: "All" },
-      { value: "RFS", label: "RFS" },
-      { value: "NRFS", label: "NRFS" },
-    ];
+  const statusOptions = [
+    { value: "", label: "All" },
+    { value: "RFS", label: "RFS" },
+    { value: "NRFS", label: "NRFS" },
+  ];
 
   const isTypeFilterDisabled = !selectedCategoryFilter;
   const isColorFilterDisabled = !selectedTypeFilter;
@@ -888,10 +865,10 @@ const TransactionPage = (props: TransactionPageProps) => {
     getSortedRowModel: getSortedRowModel(),
   });
 
+  // useEffect
   useEffect(() => {
     handleFetchTransactionByDay();
   }, [
-    mode,
     isFilterApplied,
     appliedFilter,
     appliedPeriodFilter,
@@ -899,7 +876,7 @@ const TransactionPage = (props: TransactionPageProps) => {
 
   useEffect(() => {
     setIsFilterApplied(false);
-  }, [mode, selectedPeriodYear, selectedPeriodMonth, selectedPeriodDay]);
+  }, [selectedPeriodYear, selectedPeriodMonth, selectedPeriodDay]);
 
   useEffect(() => {
     if (isMonthSelected) {
@@ -921,13 +898,37 @@ const TransactionPage = (props: TransactionPageProps) => {
     selectedStatusFilter,
   ]);
 
+  useEffect(() => {
+    if (!isAddModalOpen) {
+      return;
+    }
+
+    void handleFetchTypeColorOptions();
+  }, [handleFetchTypeColorOptions, isAddModalOpen]);
+
+  useEffect(() => {
+    const initializeFilterOptions = async () => {
+      await handleFetchCategoryFilterOptions();
+      await handleFetchTypeFilterOptions("All");
+      await handleFetchColorFilterOptions("All");
+      await handleFetchYearFilterOptions("All", "All", "All");
+    };
+
+    void initializeFilterOptions();
+  }, [
+    handleFetchCategoryFilterOptions,
+    handleFetchTypeFilterOptions,
+    handleFetchColorFilterOptions,
+    handleFetchYearFilterOptions,
+  ]);
+
   return (
     <div>
       <div className="mb-4">
         <div className="mb-2 flex items-center gap-3">
           <AppBackButton />
           <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-            {modeWording.title}
+            {pageWording.title}
           </h1>
         </div>
         <p className="mb-3 text-muted-foreground">
@@ -943,7 +944,6 @@ const TransactionPage = (props: TransactionPageProps) => {
             placeholder="Select year"
             searchPlaceholder="Search year"
             emptyMessage="No year found"
-            isLoading={isTableLoading}
             value={selectedPeriodYear}
             options={periodYearOptions}
             onValueChange={setSelectedPeriodYear}
@@ -953,7 +953,6 @@ const TransactionPage = (props: TransactionPageProps) => {
             placeholder="Select month"
             searchPlaceholder="Search month"
             emptyMessage="No month found"
-            isLoading={isTableLoading}
             value={selectedPeriodMonth}
             options={periodMonthOptions}
             onValueChange={(value) => {
@@ -966,7 +965,6 @@ const TransactionPage = (props: TransactionPageProps) => {
             placeholder={isDayPickerDisabled ? "Choose month first" : "Select day"}
             searchPlaceholder="Search day"
             emptyMessage={isDayPickerDisabled ? "Choose month first" : "No day found"}
-            isLoading={isTableLoading}
             disabled={isDayPickerDisabled}
             value={selectedPeriodDay}
             options={periodDayOptions}
@@ -980,14 +978,21 @@ const TransactionPage = (props: TransactionPageProps) => {
             placeholder="Select category"
             searchPlaceholder="Search category"
             emptyMessage="No category found"
-            isLoading={isTableLoading}
+            isLoading={isCategoryOptionsLoading}
             value={selectedCategoryFilter}
-            options={categoryOptions}
+            options={categoryFilterOptions}
             onValueChange={(value) => {
-              setSelectedCategoryFilter(value);
-              setSelectedTypeFilter("");
-              setSelectedColorFilter("");
-              setSelectedYearFilter("");
+              const nextCategoryValue = value || "All";
+
+              setSelectedCategoryFilter(nextCategoryValue);
+              setSelectedTypeFilter("All");
+              setSelectedColorFilter("All");
+              setSelectedYearFilter("All");
+              setTypeFilterOptions([{ value: "All", label: "All" }]);
+              setColorFilterOptions([{ value: "All", label: "All" }]);
+              void handleFetchTypeFilterOptions(nextCategoryValue);
+              void handleFetchColorFilterOptions("All");
+              void handleFetchYearFilterOptions(nextCategoryValue, "All", "All");
             }}
           />
           <AppAutoComplete
@@ -995,14 +1000,23 @@ const TransactionPage = (props: TransactionPageProps) => {
             placeholder={isTypeFilterDisabled ? "Choose category first" : "Select type"}
             searchPlaceholder="Search type"
             emptyMessage={isTypeFilterDisabled ? "Choose category first" : "No type found"}
-            isLoading={isTableLoading}
+            isLoading={isTypeOptionsLoading}
             disabled={isTypeFilterDisabled}
             value={selectedTypeFilter}
-            options={typeOptions}
+            options={typeFilterOptions}
             onValueChange={(value) => {
-              setSelectedTypeFilter(value);
-              setSelectedColorFilter("");
-              setSelectedYearFilter("");
+              const nextTypeValue = value || "All";
+
+              setSelectedTypeFilter(nextTypeValue);
+              setSelectedColorFilter("All");
+              setSelectedYearFilter("All");
+              setColorFilterOptions([{ value: "All", label: "All" }]);
+              void handleFetchColorFilterOptions(nextTypeValue);
+              void handleFetchYearFilterOptions(
+                selectedCategoryFilter,
+                nextTypeValue,
+                "All",
+              );
             }}
           />
           <AppAutoComplete
@@ -1010,13 +1024,20 @@ const TransactionPage = (props: TransactionPageProps) => {
             placeholder={isColorFilterDisabled ? "Choose type first" : "Select color"}
             searchPlaceholder="Search color"
             emptyMessage={isColorFilterDisabled ? "Choose type first" : "No color found"}
-            isLoading={isTableLoading}
+            isLoading={isColorOptionsLoading}
             disabled={isColorFilterDisabled}
             value={selectedColorFilter}
-            options={colorOptions}
+            options={colorFilterOptions}
             onValueChange={(value) => {
-              setSelectedColorFilter(value);
-              setSelectedYearFilter("");
+              const nextColorValue = value || "All";
+
+              setSelectedColorFilter(nextColorValue);
+              setSelectedYearFilter("All");
+              void handleFetchYearFilterOptions(
+                selectedCategoryFilter,
+                selectedTypeFilter,
+                nextColorValue,
+              );
             }}
           />
           <AppAutoComplete
@@ -1024,17 +1045,18 @@ const TransactionPage = (props: TransactionPageProps) => {
             placeholder="Select year"
             searchPlaceholder="Search year"
             emptyMessage="No year found"
-            isLoading={isTableLoading}
+            isLoading={isYearOptionsLoading}
             value={selectedYearFilter}
-            options={yearOptions}
-            onValueChange={setSelectedYearFilter}
+            options={yearFilterOptions}
+            onValueChange={(value) => {
+              setSelectedYearFilter(value || "All");
+            }}
           />
           <AppAutoComplete
             label="Status"
             placeholder="Select status"
             searchPlaceholder="Search status"
             emptyMessage="No status found"
-            isLoading={isTableLoading}
             value={selectedStatusFilter}
             options={statusOptions}
             onValueChange={setSelectedStatusFilter}
@@ -1063,24 +1085,30 @@ const TransactionPage = (props: TransactionPageProps) => {
         </div>
       </div>
 
-      <TransactionTableSection
-        table={table}
-        emptyMessage={
-          isTableLoading
-            ? "Loading transactions..."
-            : isFilterApplied
+      {isTableLoading ? (
+        <div className="py-10">
+          <AppSpinner />
+        </div>
+      ) : (
+        <TransactionTableSection
+          table={table}
+          emptyMessage={
+            isFilterApplied
               ? "No transaction found for selected filters."
               : "Please set filters and click Apply."
-        }
-        detailOpen={isDetailModalOpen}
-        onDetailOpenChange={setIsDetailModalOpen}
-        detailTitle={selectedDetailTitle}
-        detailRows={selectedDetailRows}
-        canUpdateDetail={canUpdateTransaction}
-        canDeleteDetail={canDeleteTransaction}
-        onEditDetailRow={handleOpenEditDetailRow}
-        onDeleteDetailRow={handleOpenDeleteDetailRow}
-      />
+          }
+          detailOpen={isDetailModalOpen}
+          onDetailOpenChange={setIsDetailModalOpen}
+          detailTitle={selectedDetailTitle}
+          detailRows={selectedDetailRows}
+          canUpdateDetail={canUpdateTransaction}
+          canDeleteDetail={canDeleteTransaction}
+          canSellDetail={canSellTransaction}
+          onEditDetailRow={handleOpenEditDetailRow}
+          onDeleteDetailRow={handleOpenDeleteDetailRow}
+          onSellDetailRow={handleOpenSellDetailRow}
+        />
+      )}
 
       <AppModal
         open={isAddModalOpen}
@@ -1091,8 +1119,8 @@ const TransactionPage = (props: TransactionPageProps) => {
             resetInsertForm();
           }
         }}
-        title={mode === "DO" ? "Add Delivery Order" : "Add Selling"}
-        description={mode === "DO" ? "Fill the form below to add delivery order" : "Select transaction to mark as sold"}
+        title={pageWording.addModalTitle}
+        description={pageWording.addModalDescription}
         classNames={{
           content: "sm:max-w-2xl",
         }}
@@ -1115,14 +1143,15 @@ const TransactionPage = (props: TransactionPageProps) => {
           </div>
         }
       >
-        {mode === "DO" ? (
-          <>
+        <>
+          <div className="grid md:grid-cols-2 gap-4">
             <AppAutoComplete
               label="Type and Color"
               placeholder="Select type and color"
               searchPlaceholder="Search type and color"
               emptyMessage="No type and color found"
               required={true}
+              isLoading={isTypeColorOptionsLoading}
               value={typeColorIdInput}
               options={typeColorAutoCompleteOptions}
               onValueChange={(value) => {
@@ -1160,46 +1189,24 @@ const TransactionPage = (props: TransactionPageProps) => {
               value={dateDOInput}
               onValueChange={setDateDOInput}
             />
-            <AppSwitch
-              label={
-                isRFSInput
-                  ? "Ready For Sale (RFS)"
-                  : "Not Ready For Sale (NRFS)"
-              }
-              checked={isRFSInput}
-              onCheckedChange={setIsRFSInput}
-              withoutMargin
-            />
-          </>
-        ) : (
-          <>
-            <AppAutoComplete
-              label="Transaction to Sell"
-              placeholder="Select transaction"
-              searchPlaceholder="Search no mesin / no rangka"
-              emptyMessage="No transaction available to sell"
-              required={true}
-              value={selectedSellTransactionId}
-              options={sellableTransactionOptions}
-              onValueChange={(value) => {
-                setSelectedSellTransactionId(value);
-              }}
-            />
-            {!sellableTransactionOptions.length ? (
-              <p className="text-sm text-muted-foreground">
-                No available transaction can be sold on this date.
-              </p>
-            ) : null}
-          </>
-        )}
+          </div>
+          <AppSwitch
+            label={
+              isRFSInput
+                ? "Ready For Sale (RFS)"
+                : "Not Ready For Sale (NRFS)"
+            }
+            checked={isRFSInput}
+            onCheckedChange={setIsRFSInput}
+            withoutMargin
+          />
+        </>
       </AppModal>
 
       <AppModal
         open={isConfirmAddModalOpen}
         onOpenChange={setIsConfirmAddModalOpen}
-        title={
-          mode === "DO" ? "Confirm Add Delivery Order" : "Confirm Selling"
-        }
+        title={pageWording.confirmAddModalTitle}
         showCloseButton={true}
         footer={
           <div className="flex gap-1">
@@ -1222,9 +1229,7 @@ const TransactionPage = (props: TransactionPageProps) => {
         }
       >
         <p className="text-sm">
-          {mode === "DO"
-            ? "Add Delivery Order"
-            : "Mark selected transaction as sold"}{" "}
+          {pageWording.confirmAddQuestionActionText}{" "}
           for <strong>{getSelectedDateString()}</strong>?
         </p>
       </AppModal>
@@ -1239,7 +1244,7 @@ const TransactionPage = (props: TransactionPageProps) => {
             resetEditDetailForm();
           }
         }}
-        title={mode === "DO" ? "Edit Delivery Order" : "Edit Selling"}
+        title={pageWording.editModalTitle}
         showCloseButton={true}
         classNames={{
           content: "sm:max-w-2xl",
@@ -1293,8 +1298,8 @@ const TransactionPage = (props: TransactionPageProps) => {
           onChange={setEditYearInput}
         />
         <AppDatePicker
-          label={mode === "DO" ? "Date DO" : "Date OUT"}
-          placeholder={mode === "DO" ? "Pick date DO" : "Pick date OUT"}
+          label={pageWording.editDateLabel}
+          placeholder={pageWording.editDatePlaceholder}
           required={true}
           value={editDateInput}
           onValueChange={setEditDateInput}
@@ -1314,7 +1319,7 @@ const TransactionPage = (props: TransactionPageProps) => {
       <AppModal
         open={isConfirmUpdateDetailModalOpen}
         onOpenChange={setIsConfirmUpdateDetailModalOpen}
-        title={mode === "DO" ? "Confirm Update Delivery Order" : "Confirm Update Selling"}
+        title={pageWording.confirmUpdateModalTitle}
         showCloseButton={true}
         footer={
           <div className="flex gap-1">
@@ -1343,9 +1348,50 @@ const TransactionPage = (props: TransactionPageProps) => {
       </AppModal>
 
       <AppModal
+        open={isConfirmSellDetailModalOpen}
+        onOpenChange={(open) => {
+          setIsConfirmSellDetailModalOpen(open);
+
+          if (!open) {
+            setSellingTransaction(null);
+          }
+        }}
+        title="Confirm Sell Transaction"
+        showCloseButton={true}
+        footer={
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isActionLoading}
+              onClick={() => {
+                setIsConfirmSellDetailModalOpen(false);
+                setSellingTransaction(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={isActionLoading}
+              onClick={handleSellDetailTransaction}
+            >
+              {isActionLoading ? "Saving..." : "Confirm"}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm">
+          Mark transaction <strong>{sellingTransaction?.noMesin || "-"}</strong> /{" "}
+          <strong>{sellingTransaction?.noRangka || "-"}</strong> as sold for{" "}
+          <strong>{getSelectedDateString()}</strong>?
+        </p>
+      </AppModal>
+
+      <AppModal
         open={isConfirmDeleteDetailModalOpen}
         onOpenChange={setIsConfirmDeleteDetailModalOpen}
-        title={mode === "DO" ? "Confirm Delete Delivery Order" : "Confirm Delete Selling"}
+        title={pageWording.confirmDeleteModalTitle}
         showCloseButton={true}
         footer={
           <div className="flex gap-1">
@@ -1377,34 +1423,21 @@ const TransactionPage = (props: TransactionPageProps) => {
         </p>
       </AppModal>
 
-      <TransactionErrorModal
+      <TransactionStatusModal
         open={isShowError}
         onOpenChange={setIsShowError}
-        errorMessage={errorMessage}
+        title="Error"
+        message={errorMessage}
         onClose={handleCloseErrorModal}
       />
 
-      <AppModal
+      <TransactionStatusModal
         open={isShowSuccess}
         onOpenChange={setIsShowSuccess}
         title="Success"
-        showCloseButton={true}
-        footer={
-          <div className="flex w-full justify-center">
-            <Button
-              type="button"
-              onClick={() => {
-                setSuccessMessage("");
-                setIsShowSuccess(false);
-              }}
-            >
-              OK
-            </Button>
-          </div>
-        }
-      >
-        <p>{successMessage}</p>
-      </AppModal>
+        message={successMessage}
+        onClose={handleCloseSuccessModal}
+      />
     </div>
   );
 };

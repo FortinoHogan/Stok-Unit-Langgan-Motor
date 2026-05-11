@@ -214,7 +214,7 @@ const ManageCategoryPage = () => {
         handleFetchCategories()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -254,7 +254,7 @@ const ManageCategoryPage = () => {
         handleFetchCategories()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -287,7 +287,7 @@ const ManageCategoryPage = () => {
         handleFetchCategories()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -322,7 +322,7 @@ const ManageCategoryPage = () => {
         setTotalCount(res.count ?? 0)
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -337,7 +337,7 @@ const ManageCategoryPage = () => {
         setExistingCategoryList(res.data || [])
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }

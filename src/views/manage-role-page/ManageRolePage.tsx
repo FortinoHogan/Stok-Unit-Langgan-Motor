@@ -213,7 +213,7 @@ const ManageRolePage = () => {
         handleFetchRoles()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -253,7 +253,7 @@ const ManageRolePage = () => {
         handleFetchRoles()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -286,7 +286,7 @@ const ManageRolePage = () => {
         handleFetchRoles()
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -321,7 +321,7 @@ const ManageRolePage = () => {
         setTotalCount(res.count ?? 0)
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
@@ -336,7 +336,7 @@ const ManageRolePage = () => {
         setExistingRoleList(res.data || [])
       })
       .catch((error) => {
-        setErrorMessage(error.message)
+        setErrorMessage(error.error.message)
         setIsShowError(true)
       })
   }
