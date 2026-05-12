@@ -1,9 +1,4 @@
-import type { IRequestWithLoading } from "./IModel.interface";
-
-export interface TransactionYearRow {
-  dateDO: string | null;
-  dateOUT: string | null;
-}
+import type { IGetListRequest, IRequestWithLoading } from "./IModel.interface";
 
 export interface GetTypeColorOptionsRequest extends IRequestWithLoading {}
 
@@ -14,13 +9,26 @@ export interface GetTypeOptionsByCategoryRequest extends IRequestWithLoading {
 }
 
 export interface GetColorOptionsByTypeRequest extends IRequestWithLoading {
+  categoryId: string;
   typeId: string;
 }
 
 export interface GetYearOptionsRequest extends IRequestWithLoading {
-  categoryId?: string;
-  typeId?: string;
-  colorId?: string;
+  categoryId: string;
+  typeId: string;
+  colorId: string;
+}
+
+export interface GetTableTransactionDataRequest extends IGetListRequest {
+  transactionYear: string;
+  transactionMonth: string;
+  transactionDay: string;
+  categoryId: string;
+  typeId: string;
+  colorId: string;
+  year: string;
+  isRFS: boolean;
+  isSold: boolean;
 }
 
 export interface TransactionDetailRow {
@@ -38,67 +46,12 @@ export interface TransactionDetailRow {
   dateOUT: string | null;
 }
 
-export interface RawTransactionDetailRow {
-  transactionId: number;
-  typeColorId: number;
-  noMesin: string;
-  noRangka: string;
-  year: number;
-  isRFS: boolean;
-  dateDO: string | null;
-  dateOUT: string | null;
-}
-
-export interface TransactionTypeColorMapRow {
-  typeColorId: number;
-  typeId: number;
-  colorId: number;
-}
-
-export interface TransactionTypeMapRow {
-  typeId: number;
-  typeName: string;
-  typeCode: string;
-  categoryId: number;
-}
-
-export interface TransactionCategoryMapRow {
-  categoryId: number;
-  categoryName: string;
-}
-
-export interface TransactionColorMapRow {
-  colorId: number;
-  colorName: string;
-}
-
-export interface RawTypeColorOptionRow {
-  typeColorId: number;
-  typeId: number;
-  colorId: number;
-}
-
 export interface TransactionTypeColorOption {
   typeColorId: number;
   categoryName: string | null;
   typeName: string | null;
   typeCode: string | null;
   colorName: string | null;
-}
-
-export interface GetTransactionsByYearRequest extends IRequestWithLoading {
-  year: number;
-  month?: number;
-  day?: number;
-  categoryName?: string;
-  typeName?: string;
-  colorName?: string;
-  transactionYear?: number;
-  status?: "RFS" | "NRFS";
-}
-
-export interface GetSellableTransactionsByDateRequest extends IRequestWithLoading {
-  date: string;
 }
 
 export interface UpdateTransactionAsSoldRequest extends IRequestWithLoading {
@@ -110,6 +63,7 @@ export interface UpdateTransactionAsSoldRequest extends IRequestWithLoading {
 
 export interface UpdateTransactionRequest extends IRequestWithLoading {
   transactionId: number;
+  typeColorId: number;
   noMesin: string;
   noRangka: string;
   year: number;

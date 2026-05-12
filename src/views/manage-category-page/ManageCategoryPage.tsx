@@ -330,7 +330,7 @@ const ManageCategoryPage = () => {
   const handleFetchExistingCategories = async () => {
     await CategoryService.getCategoryList({
       page: 1,
-      pageSize: 1000,
+      pageSize: 9999,
       search: "",
     })
       .then((res) => {

@@ -30,6 +30,8 @@ export interface AppTablePaginationContext {
 
 export interface AppTableProps<TData> {
   table: TanStackTable<TData>;
+  isLoading?: boolean;
+  loadingRowCount?: number;
   columnsCount?: number;
   showNumberColumn?: boolean;
   numberColumnHeader?: React.ReactNode;

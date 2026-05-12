@@ -331,7 +331,7 @@ const ManagePrivillegePage = () => {
   const handleFetchExistingPrivilleges = async () => {
     await PrivillegeService.getPrivillegeList({
       page: 1,
-      pageSize: 1000,
+      pageSize: 9999,
       search: "",
     })
       .then((res) => {

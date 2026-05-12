@@ -329,7 +329,7 @@ const ManageRolePage = () => {
   const handleFetchExistingRoles = async () => {
     await RoleService.getRoleList({
       page: 1,
-      pageSize: 1000,
+      pageSize: 9999,
       search: "",
     })
       .then((res) => {

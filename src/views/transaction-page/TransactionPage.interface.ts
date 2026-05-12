@@ -23,7 +23,7 @@ export interface TransactionDayGroupedRow {
   year: number;
   quantity: number;
   details: TransactionDetailRow[];
-};
+}
 
 export interface IFormData {
   category: string;
@@ -31,4 +31,5 @@ export interface IFormData {
   color: string;
   year: string;
   status: string;
+  isSold: boolean;
 }

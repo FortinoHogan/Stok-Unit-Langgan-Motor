@@ -229,7 +229,7 @@ const TypeAndColorPage = () => {
   const handleFetchCategories = async () => {
     await CategoryService.getCategoryList({
       page: 1,
-      pageSize: 1000,
+      pageSize: 9999,
       search: "",
     })
       .then((res) => {
@@ -244,7 +244,7 @@ const TypeAndColorPage = () => {
   const handleFetchColors = async () => {
     await ColorService.getColorList({
       page: 1,
-      pageSize: 1000,
+      pageSize: 9999,
       search: "",
     })
       .then((res) => {

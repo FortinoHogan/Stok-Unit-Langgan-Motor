@@ -46,7 +46,7 @@ const AppSwitch = (props: AppSwitchProps) => {
                     size={size}
                     aria-invalid={!!error}
                     aria-required={required}
-                    className={cn(classNames?.switchRoot)}
+                    className={cn(classNames?.switchRoot, "cursor-pointer")}
                     {...switchProps}
                 />
             </div>

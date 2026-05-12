@@ -16,7 +16,7 @@ const TransactionStatusModal = ({
       title={title}
       showCloseButton={true}
       classNames={{
-        content: "sm:max-w-sm",
+        content: "z-[70] sm:max-w-sm",
         header: "gap-1",
         title: "text-lg",
         description: "text-xs",

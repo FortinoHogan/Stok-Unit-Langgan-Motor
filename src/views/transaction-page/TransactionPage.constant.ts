@@ -1,3 +1,4 @@
+import type { AutoCompleteOption } from "@/components/app-components/app-auto-complete/AppAutoComplete.interface";
 import type {
   IFormData,
   TransactionWording,
@@ -24,4 +25,10 @@ export const FormDataInitial: IFormData = {
   color: "",
   year: "",
   status: "",
+  isSold: false,
 };
+
+export const statusOptions: AutoCompleteOption[] = [
+  { value: "RFS", label: "RFS" },
+  { value: "NRFS", label: "NRFS" },
+];

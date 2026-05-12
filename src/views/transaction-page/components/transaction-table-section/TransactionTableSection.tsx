@@ -14,6 +14,14 @@ import type { TransactionTableSectionProps } from "./TransactionTableSection.int
 const TransactionTableSection = (props: TransactionTableSectionProps) => {
   const {
     table,
+    isLoading = false,
+    page = 1,
+    pageSize = 10,
+    rowCount = 0,
+    hasNextPage = false,
+    onPreviousPage,
+    onNextPage,
+    onPageSizeChange,
     emptyMessage,
     detailOpen,
     onDetailOpenChange,
@@ -61,10 +69,10 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
         const value = row.original.dateDO;
         return value
           ? new Intl.DateTimeFormat("en-US", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }).format(new Date(value))
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }).format(new Date(value))
           : "-";
       },
     },
@@ -75,10 +83,10 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
         const value = row.original.dateOUT;
         return value
           ? new Intl.DateTimeFormat("en-US", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            }).format(new Date(value))
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }).format(new Date(value))
           : "-";
       },
     },
@@ -137,7 +145,21 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
 
   return (
     <>
-      <AppTable table={table} showNumberColumn emptyMessage={emptyMessage} />
+      <AppTable
+        table={table}
+        isLoading={isLoading}
+        loadingRowCount={6}
+        showNumberColumn
+        emptyMessage={emptyMessage}
+        showPagination
+        page={page}
+        pageSize={pageSize}
+        rowCount={rowCount}
+        hasNextPage={hasNextPage}
+        onPreviousPage={onPreviousPage}
+        onNextPage={onNextPage}
+        onPageSizeChange={onPageSizeChange}
+      />
 
       <AppModal
         open={detailOpen}

@@ -12,6 +12,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 
 import type { AppTableProps } from "./AppTable.interface"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -19,6 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const AppTable = <TData,>(props: AppTableProps<TData>) => {
     const {
         table,
+        isLoading = false,
+        loadingRowCount = 6,
         columnsCount,
         showNumberColumn = false,
         numberColumnHeader = "No",
@@ -112,7 +115,22 @@ const AppTable = <TData,>(props: AppTableProps<TData>) => {
                     </TableHeader>
 
                     <TableBody>
-                        {rowModel.rows.length ? (
+                        {isLoading ? (
+                            Array.from({ length: loadingRowCount }).map((_, rowIndex) => (
+                                <TableRow key={`loading-${rowIndex}`} className={cn(classNames?.bodyRow)}>
+                                    {showNumberColumn ? (
+                                        <TableCell className={cn(classNames?.bodyCell)}>
+                                            <Skeleton className="h-4 w-6" />
+                                        </TableCell>
+                                    ) : null}
+                                    {Array.from({ length: visibleColumnLength }).map((__, cellIndex) => (
+                                        <TableCell key={`loading-cell-${rowIndex}-${cellIndex}`} className={cn(classNames?.bodyCell)}>
+                                            <Skeleton className="h-4 w-full" />
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))
+                        ) : rowModel.rows.length ? (
                             rowModel.rows.map((row, rowIndex) => (
                                 <TableRow key={row.id} className={cn(classNames?.bodyRow)}>
                                     {showNumberColumn ? (

@@ -309,7 +309,7 @@ const ManageUserPage = () => {
     const handleFetchRoles = async () => {
         await RoleService.getRoleList({
             page: 1,
-            pageSize: 1000,
+            pageSize: 9999,
             search: "",
         })
             .then((res) => {

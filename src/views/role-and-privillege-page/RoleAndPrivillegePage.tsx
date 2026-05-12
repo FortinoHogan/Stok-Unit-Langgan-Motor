@@ -262,7 +262,7 @@ const RoleAndPrivillegePage = () => {
   const handleFetchPrivilleges = async () => {
     await PrivillegeService.getPrivillegeList({
       page: 1,
-      pageSize: 1000,
+      pageSize: 9999,
       search: "",
     })
       .then((res) => {

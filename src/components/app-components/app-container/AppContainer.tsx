@@ -36,7 +36,7 @@ const AppContainer = () => {
                     RolePrivillegeService.getRolePrivillegeListByRoleIds({ roleIds: [roleId] }),
                     PrivillegeService.getPrivillegeList({
                         page: 1,
-                        pageSize: 1000,
+                        pageSize: 9999,
                         search: "",
                     }),
                 ])

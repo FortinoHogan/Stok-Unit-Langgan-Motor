@@ -20,14 +20,14 @@ import type {
   TransactionDetailRow,
   TransactionTypeColorOption,
 } from "@/interfaces/ITransactionService";
-import { FormDataInitial, transactionWording } from "./TransactionPage.constant";
+import { FormDataInitial, statusOptions, transactionWording } from "./TransactionPage.constant";
 import TransactionStatusModal from "./components/transaction-status-modal/TransactionStatusModal";
 import TransactionTableSection from "./components/transaction-table-section/TransactionTableSection";
 import { monthFormatter } from "./utilities";
 import type { IFormData, TransactionDayGroupedRow } from "./TransactionPage.interface";
 import AppBackButton from "@/components/app-layout/app-back-button/AppBackButton";
-import AppSpinner from "@/components/app-components/app-spinner/AppSpinner";
 import type { AutoCompleteOption } from "@/components/app-components/app-auto-complete/AppAutoComplete.interface";
+import { useIsMobile } from "@/helpers/hooks/useMobile/useMobile";
 
 const TransactionPage = () => {
   // Base / Access
@@ -96,7 +96,8 @@ const TransactionPage = () => {
   const [selectedTypeFilter, setSelectedTypeFilter] = useState("All");
   const [selectedColorFilter, setSelectedColorFilter] = useState("All");
   const [selectedYearFilter, setSelectedYearFilter] = useState("All");
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("RFS");
+  const [isSoldFilter, setIsSoldFilter] = useState(false);
   const [categoryFilterOptions, setCategoryFilterOptions] = useState<AutoCompleteOption[]>([
     { value: "All", label: "All" },
   ]);
@@ -110,6 +111,9 @@ const TransactionPage = () => {
     { value: "All", label: "All" },
   ]);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
+  const [tablePage, setTablePage] = useState(1);
+  const [tablePageSize, setTablePageSize] = useState(10);
+  const [tableRowCount, setTableRowCount] = useState(0);
   const [appliedFilter, setAppliedFilter] = useState<IFormData>(FormDataInitial);
   const [appliedPeriodFilter, setAppliedPeriodFilter] = useState({
     year: String(initialYear),
@@ -125,6 +129,7 @@ const TransactionPage = () => {
     useState<TransactionDetailRow | null>(null);
   const [editNoMesinInput, setEditNoMesinInput] = useState("");
   const [editNoRangkaInput, setEditNoRangkaInput] = useState("");
+  const [editTypeColorIdInput, setEditTypeColorIdInput] = useState("");
   const [editYearInput, setEditYearInput] = useState("");
   const [editDateInput, setEditDateInput] = useState<Date | undefined>(undefined);
   const [editIsRFSInput, setEditIsRFSInput] = useState(true);
@@ -138,6 +143,10 @@ const TransactionPage = () => {
   const handleCloseSuccessModal = () => {
     setSuccessMessage("");
     setIsShowSuccess(false);
+    setIsConfirmUpdateDetailModalOpen(false);
+    setIsEditDetailModalOpen(false);
+    setIsDetailModalOpen(false);
+    resetEditDetailForm();
   };
 
   const formatDateAsYmd = (value: Date) => {
@@ -177,6 +186,7 @@ const TransactionPage = () => {
     setEditingTransactionId(null);
     setEditNoMesinInput("");
     setEditNoRangkaInput("");
+    setEditTypeColorIdInput("");
     setEditYearInput("");
     setEditDateInput(undefined);
     setEditIsRFSInput(true);
@@ -186,6 +196,7 @@ const TransactionPage = () => {
     setEditingTransactionId(transaction.transactionId);
     setEditNoMesinInput(transaction.noMesin || "");
     setEditNoRangkaInput(transaction.noRangka || "");
+    setEditTypeColorIdInput(String(transaction.typeColorId || ""));
     setEditYearInput(String(transaction.year || ""));
     setEditDateInput(
       transaction.dateDO
@@ -243,13 +254,14 @@ const TransactionPage = () => {
       });
   }, []);
 
-  const handleFetchColorFilterOptions = useCallback(async (typeId: string) => {
+  const handleFetchColorFilterOptions = useCallback(async (typeId: string, categoryId: string) => {
     if (!typeId) {
       setColorFilterOptions([{ value: "All", label: "All" }]);
       return;
     }
 
     await TransactionService.getColorOptionsByType({
+      categoryId: categoryId,
       typeId: typeId,
       setIsLoading: setIsColorOptionsLoading,
     })
@@ -268,9 +280,9 @@ const TransactionPage = () => {
     colorId: string,
   ) => {
     await TransactionService.getYearFilterOptions({
-      categoryId: categoryId && categoryId !== "All" ? categoryId : undefined,
-      typeId: typeId && typeId !== "All" ? typeId : undefined,
-      colorId: colorId && colorId !== "All" ? colorId : undefined,
+      categoryId: categoryId,
+      typeId: typeId,
+      colorId: colorId,
       setIsLoading: setIsYearOptionsLoading,
     })
       .then((res) => {
@@ -281,6 +293,44 @@ const TransactionPage = () => {
         setIsShowError(true);
       });
   }, []);
+
+  const handleFetchTableTransactionData = useCallback(async () => {
+    if (!isFilterApplied) {
+      setTransactionList([]);
+      setTableRowCount(0);
+      return;
+    }
+
+    await TransactionService.getTableTransactionData({
+      page: tablePage,
+      pageSize: tablePageSize,
+      search: "",
+      transactionYear: appliedPeriodFilter.year,
+      transactionMonth: appliedPeriodFilter.month,
+      transactionDay: appliedPeriodFilter.day,
+      categoryId: appliedFilter.category || "All",
+      typeId: appliedFilter.type || "All",
+      colorId: appliedFilter.color || "All",
+      year: appliedFilter.year || "All",
+      isRFS: appliedFilter.status === "RFS",
+      isSold: appliedFilter.isSold,
+      setIsLoading: setIsTableLoading,
+    })
+      .then((res) => {
+        setTransactionList(res.data || []);
+        setTableRowCount(res.count || 0);
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
+  }, [
+    appliedFilter,
+    appliedPeriodFilter,
+    isFilterApplied,
+    tablePage,
+    tablePageSize,
+  ]);
 
   const handleInsertTransaction = async () => {
     const userId = authenticatedUser?.userId;
@@ -329,7 +379,7 @@ const TransactionPage = () => {
         setIsConfirmAddModalOpen(false);
         setIsAddModalOpen(false);
         resetInsertForm();
-        handleFetchTransactionByDay();
+        void handleFetchTableTransactionData();
       })
       .catch((error) => {
         setErrorMessage(error.error.message);
@@ -352,6 +402,7 @@ const TransactionPage = () => {
 
     const transactionId = editingTransactionId;
     const dateInput = editDateInput;
+    const parsedTypeColorId = Number(editTypeColorIdInput);
 
     if (!transactionId || !dateInput) {
       setErrorMessage("No transaction selected to update.");
@@ -359,29 +410,39 @@ const TransactionPage = () => {
       return;
     }
 
+    if (!Number.isInteger(parsedTypeColorId) || parsedTypeColorId <= 0) {
+      setErrorMessage("Type and Color must be selected");
+      setIsShowError(true);
+      return;
+    }
+
     const parsedYear = Number(editYearInput);
 
     const dateValue = formatDateAsYmd(dateInput);
+    const existingTransaction = selectedDetailRows.find(
+      (item) => item.transactionId === transactionId,
+    );
 
     await TransactionService.updateTransaction({
       transactionId,
+      typeColorId: parsedTypeColorId,
       noMesin: editNoMesinInput.trim(),
       noRangka: editNoRangkaInput.trim(),
       year: parsedYear,
       isRFS: editIsRFSInput,
       dateDO: dateValue,
-      dateOUT: null,
+      dateOUT: existingTransaction?.dateOUT || null,
       userUp: userId,
       updatedAt: new Date().toISOString(),
       setIsLoading: setIsActionLoading,
     })
       .then(() => {
         setSuccessMessage("Transaction updated successfully.");
+        setIsDetailModalOpen(false);
+        setIsEditDetailModalOpen(false);
         setIsShowSuccess(true);
         setIsConfirmUpdateDetailModalOpen(false);
-        setIsEditDetailModalOpen(false);
-        resetEditDetailForm();
-        handleFetchTransactionByDay();
+        void handleFetchTableTransactionData();
       })
       .catch((error) => {
         setErrorMessage(error.error.message);
@@ -412,10 +473,11 @@ const TransactionPage = () => {
     })
       .then(() => {
         setSuccessMessage("Transaction deleted successfully.");
+        setIsDetailModalOpen(false);
         setIsShowSuccess(true);
         setIsConfirmDeleteDetailModalOpen(false);
         setDeletingTransaction(null);
-        handleFetchTransactionByDay();
+        void handleFetchTableTransactionData();
       })
       .catch((error) => {
         setErrorMessage(error.error.message);
@@ -459,73 +521,11 @@ const TransactionPage = () => {
     })
       .then(() => {
         setSuccessMessage("Transaction has been marked as sold successfully.");
+        setIsDetailModalOpen(false);
         setIsShowSuccess(true);
         setIsConfirmSellDetailModalOpen(false);
         setSellingTransaction(null);
-        handleFetchTransactionByDay();
-      })
-      .catch((error) => {
-        setErrorMessage(error.error.message);
-        setIsShowError(true);
-      });
-  };
-
-  const handleFetchTransactionByDay = async () => {
-    if (!isFilterApplied) {
-      setTransactionList([]);
-      return;
-    }
-
-    const activeFilter = isFilterApplied
-      ? appliedFilter
-      : {
-        category: "",
-        type: "",
-        color: "",
-        year: "",
-        status: "",
-      };
-    const parsedTransactionYear = Number(activeFilter.year);
-    const parsedPeriodYear = Number(appliedPeriodFilter.year);
-    const parsedPeriodMonth = Number(appliedPeriodFilter.month);
-    const parsedPeriodDay = Number(appliedPeriodFilter.day);
-
-    const periodYear = Number.isInteger(parsedPeriodYear) && parsedPeriodYear > 0
-      ? parsedPeriodYear
-      : today.getFullYear();
-    const periodMonth =
-      Number.isInteger(parsedPeriodMonth)
-        && parsedPeriodMonth >= 1
-        && parsedPeriodMonth <= 12
-        ? parsedPeriodMonth
-        : undefined;
-    const periodDay =
-      periodMonth
-        && Number.isInteger(parsedPeriodDay)
-        && parsedPeriodDay >= 1
-        && parsedPeriodDay <= new Date(periodYear, periodMonth, 0).getDate()
-        ? parsedPeriodDay
-        : undefined;
-
-    await TransactionService.getTransactionsByYear({
-      year: periodYear,
-      month: periodMonth,
-      day: periodDay,
-      categoryName: activeFilter.category || undefined,
-      typeName: activeFilter.type || undefined,
-      colorName: activeFilter.color || undefined,
-      transactionYear:
-        activeFilter.year && Number.isInteger(parsedTransactionYear)
-          ? parsedTransactionYear
-          : undefined,
-      status:
-        activeFilter.status === "RFS" || activeFilter.status === "NRFS"
-          ? activeFilter.status
-          : undefined,
-      setIsLoading: setIsTableLoading,
-    })
-      .then((res) => {
-        setTransactionList(res.data || []);
+        void handleFetchTableTransactionData();
       })
       .catch((error) => {
         setErrorMessage(error.error.message);
@@ -624,7 +624,29 @@ const TransactionPage = () => {
     setIsDetailModalOpen(true);
   };
 
+  const hasNextTablePage = useMemo(() => {
+    return tablePage * tablePageSize < tableRowCount;
+  }, [tablePage, tablePageSize, tableRowCount]);
+
+  const handlePreviousTablePage = () => {
+    setTablePage((previous) => Math.max(previous - 1, 1));
+  };
+
+  const handleNextTablePage = () => {
+    if (!hasNextTablePage) {
+      return;
+    }
+
+    setTablePage((previous) => previous + 1);
+  };
+
+  const handleTablePageSizeChange = (nextPageSize: number) => {
+    setTablePageSize(nextPageSize);
+    setTablePage(1);
+  };
+
   const handleApplyFilters = () => {
+    setTablePage(1);
     setAppliedPeriodFilter({
       year: selectedPeriodYear,
       month: selectedPeriodMonth,
@@ -636,6 +658,7 @@ const TransactionPage = () => {
       color: selectedColorFilter === "All" ? "" : selectedColorFilter,
       year: selectedYearFilter === "All" ? "" : selectedYearFilter,
       status: selectedStatusFilter,
+      isSold: isSoldFilter,
     });
     setIsFilterApplied(true);
   };
@@ -649,13 +672,14 @@ const TransactionPage = () => {
     }
 
     if (
+      !editTypeColorIdInput.trim() ||
       !editNoMesinInput.trim() ||
       !editNoRangkaInput.trim() ||
       !editYearInput.trim() ||
       !editDateInput
     ) {
       setErrorMessage(
-        "Please fill No Mesin, No Rangka, Year, and transaction date.",
+        "Please fill Type and Color, No Mesin, No Rangka, Year, and transaction date.",
       );
       setIsShowError(true);
       return false;
@@ -741,12 +765,6 @@ const TransactionPage = () => {
     return transactionList;
   }, [transactionList]);
 
-  const statusOptions = [
-    { value: "", label: "All" },
-    { value: "RFS", label: "RFS" },
-    { value: "NRFS", label: "NRFS" },
-  ];
-
   const isTypeFilterDisabled = !selectedCategoryFilter;
   const isColorFilterDisabled = !selectedTypeFilter;
   const isDayPickerDisabled = !isMonthSelected;
@@ -756,43 +774,8 @@ const TransactionPage = () => {
       return [];
     }
 
-    return dayTransactionList.filter((transaction) => {
-      if (
-        appliedFilter.category
-        && (transaction.categoryName || "-") !== appliedFilter.category
-      ) {
-        return false;
-      }
-
-      if (
-        appliedFilter.type
-        && (transaction.typeName || "-") !== appliedFilter.type
-      ) {
-        return false;
-      }
-
-      if (
-        appliedFilter.color
-        && (transaction.colorName || "-") !== appliedFilter.color
-      ) {
-        return false;
-      }
-
-      if (appliedFilter.year && String(transaction.year) !== appliedFilter.year) {
-        return false;
-      }
-
-      if (appliedFilter.status === "RFS" && !transaction.isRFS) {
-        return false;
-      }
-
-      if (appliedFilter.status === "NRFS" && transaction.isRFS) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [appliedFilter, dayTransactionList, isFilterApplied]);
+    return dayTransactionList;
+  }, [dayTransactionList, isFilterApplied]);
 
   const groupedTransactionRows = useMemo<TransactionDayGroupedRow[]>(() => {
     const groupedMap = new Map<string, TransactionDayGroupedRow>();
@@ -867,8 +850,9 @@ const TransactionPage = () => {
 
   // useEffect
   useEffect(() => {
-    handleFetchTransactionByDay();
+    void handleFetchTableTransactionData();
   }, [
+    handleFetchTableTransactionData,
     isFilterApplied,
     appliedFilter,
     appliedPeriodFilter,
@@ -876,6 +860,7 @@ const TransactionPage = () => {
 
   useEffect(() => {
     setIsFilterApplied(false);
+    setTablePage(1);
   }, [selectedPeriodYear, selectedPeriodMonth, selectedPeriodDay]);
 
   useEffect(() => {
@@ -890,27 +875,29 @@ const TransactionPage = () => {
 
   useEffect(() => {
     setIsFilterApplied(false);
+    setTablePage(1);
   }, [
     selectedCategoryFilter,
     selectedTypeFilter,
     selectedColorFilter,
     selectedYearFilter,
     selectedStatusFilter,
+    isSoldFilter,
   ]);
 
   useEffect(() => {
-    if (!isAddModalOpen) {
+    if (!isAddModalOpen && !isEditDetailModalOpen) {
       return;
     }
 
     void handleFetchTypeColorOptions();
-  }, [handleFetchTypeColorOptions, isAddModalOpen]);
+  }, [handleFetchTypeColorOptions, isAddModalOpen, isEditDetailModalOpen]);
 
   useEffect(() => {
     const initializeFilterOptions = async () => {
       await handleFetchCategoryFilterOptions();
       await handleFetchTypeFilterOptions("All");
-      await handleFetchColorFilterOptions("All");
+      await handleFetchColorFilterOptions("All", "All");
       await handleFetchYearFilterOptions("All", "All", "All");
     };
 
@@ -991,7 +978,7 @@ const TransactionPage = () => {
               setTypeFilterOptions([{ value: "All", label: "All" }]);
               setColorFilterOptions([{ value: "All", label: "All" }]);
               void handleFetchTypeFilterOptions(nextCategoryValue);
-              void handleFetchColorFilterOptions("All");
+              void handleFetchColorFilterOptions("All", nextCategoryValue);
               void handleFetchYearFilterOptions(nextCategoryValue, "All", "All");
             }}
           />
@@ -1011,7 +998,7 @@ const TransactionPage = () => {
               setSelectedColorFilter("All");
               setSelectedYearFilter("All");
               setColorFilterOptions([{ value: "All", label: "All" }]);
-              void handleFetchColorFilterOptions(nextTypeValue);
+              void handleFetchColorFilterOptions(nextTypeValue, selectedCategoryFilter);
               void handleFetchYearFilterOptions(
                 selectedCategoryFilter,
                 nextTypeValue,
@@ -1061,6 +1048,14 @@ const TransactionPage = () => {
             options={statusOptions}
             onValueChange={setSelectedStatusFilter}
           />
+          <AppSwitch
+            classNames={{
+              field: useIsMobile() ? "" : "mt-8",
+            }}
+            label={isSoldFilter ? "Sold" : "Not Sold"}
+            checked={isSoldFilter}
+            onCheckedChange={setIsSoldFilter}
+          />
         </div>
 
         <p className="mt-2 text-sm text-muted-foreground">
@@ -1085,30 +1080,32 @@ const TransactionPage = () => {
         </div>
       </div>
 
-      {isTableLoading ? (
-        <div className="py-10">
-          <AppSpinner />
-        </div>
-      ) : (
-        <TransactionTableSection
-          table={table}
-          emptyMessage={
-            isFilterApplied
-              ? "No transaction found for selected filters."
-              : "Please set filters and click Apply."
-          }
-          detailOpen={isDetailModalOpen}
-          onDetailOpenChange={setIsDetailModalOpen}
-          detailTitle={selectedDetailTitle}
-          detailRows={selectedDetailRows}
-          canUpdateDetail={canUpdateTransaction}
-          canDeleteDetail={canDeleteTransaction}
-          canSellDetail={canSellTransaction}
-          onEditDetailRow={handleOpenEditDetailRow}
-          onDeleteDetailRow={handleOpenDeleteDetailRow}
-          onSellDetailRow={handleOpenSellDetailRow}
-        />
-      )}
+      <TransactionTableSection
+        table={table}
+        isLoading={isTableLoading}
+        page={tablePage}
+        pageSize={tablePageSize}
+        rowCount={tableRowCount}
+        hasNextPage={hasNextTablePage}
+        onPreviousPage={handlePreviousTablePage}
+        onNextPage={handleNextTablePage}
+        onPageSizeChange={handleTablePageSizeChange}
+        emptyMessage={
+          isFilterApplied
+            ? "No transaction found for selected filters."
+            : "Please set filters and click Apply."
+        }
+        detailOpen={isDetailModalOpen}
+        onDetailOpenChange={setIsDetailModalOpen}
+        detailTitle={selectedDetailTitle}
+        detailRows={selectedDetailRows}
+        canUpdateDetail={canUpdateTransaction}
+        canDeleteDetail={canDeleteTransaction}
+        canSellDetail={canSellTransaction}
+        onEditDetailRow={handleOpenEditDetailRow}
+        onDeleteDetailRow={handleOpenDeleteDetailRow}
+        onSellDetailRow={handleOpenSellDetailRow}
+      />
 
       <AppModal
         open={isAddModalOpen}
@@ -1273,6 +1270,19 @@ const TransactionPage = () => {
           </div>
         }
       >
+        <AppAutoComplete
+          label="Type and Color"
+          placeholder="Select type and color"
+          searchPlaceholder="Search type and color"
+          emptyMessage="No type and color found"
+          required={true}
+          isLoading={isTypeColorOptionsLoading}
+          value={editTypeColorIdInput}
+          options={typeColorAutoCompleteOptions}
+          onValueChange={(value) => {
+            setEditTypeColorIdInput(value);
+          }}
+        />
         <AppTextField
           label="No Rangka"
           placeholder="Input no rangka"

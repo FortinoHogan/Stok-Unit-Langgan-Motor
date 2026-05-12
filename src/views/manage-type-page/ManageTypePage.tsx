@@ -404,7 +404,7 @@ const ManageTypePage = () => {
   const handleFetchExistingTypes = async () => {
     await TypeService.getTypeList({
       page: 1,
-      pageSize: 1000,
+      pageSize: 9999,
       search: "",
     })
       .then((res) => {
@@ -419,7 +419,7 @@ const ManageTypePage = () => {
   const handleFetchCategories = async () => {
     await CategoryService.getCategoryList({
       page: 1,
-      pageSize: 1000,
+      pageSize: 9999,
       search: "",
     })
       .then((res) => {

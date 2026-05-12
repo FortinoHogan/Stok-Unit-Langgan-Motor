@@ -330,7 +330,7 @@ const ManageColorPage = () => {
   const handleFetchExistingColors = async () => {
     await ColorService.getColorList({
       page: 1,
-      pageSize: 1000,
+      pageSize: 9999,
       search: "",
     })
       .then((res) => {
