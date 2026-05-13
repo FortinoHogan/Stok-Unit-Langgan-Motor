@@ -71,7 +71,7 @@ const AppTable = <TData,>(props: AppTableProps<TData>) => {
             <div className={cn("min-w-0 rounded-lg border overflow-x-auto", classNames?.tableContainer)} {...tableContainerProps}>
                 <Table
                     className={cn(
-                        "table-fixed w-full md:table-auto [&_th]:whitespace-normal [&_td]:whitespace-normal [&_th]:break-words [&_td]:break-all md:[&_th]:whitespace-nowrap md:[&_td]:whitespace-nowrap",
+                        "min-w-full w-max table-auto [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap",
                         classNames?.table,
                     )}
                     {...tableProps}

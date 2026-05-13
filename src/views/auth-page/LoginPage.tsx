@@ -14,11 +14,21 @@ export default function LoginPage() {
     const [errorMessage, setErrorMessage] = useState("");
     const [isShowError, setIsShowError] = useState(false);
 
+    const configuredAuthRedirectUrl = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim()
+
+    function getAuthRedirectUrl() {
+        if (configuredAuthRedirectUrl) {
+            return configuredAuthRedirectUrl
+        }
+
+        return window.location.origin
+    }
+
     const authenticateUser = async (email: string) => {
         const res = await supabase.auth.signInWithOtp({
             email: email,
             options: {
-                emailRedirectTo: `${window.location.origin}${routes.home}`,
+                emailRedirectTo: getAuthRedirectUrl(),
             },
         })
 

@@ -167,8 +167,8 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
         title={detailTitle || "Detail"}
         showCloseButton={true}
         classNames={{
-          content: "sm:max-w-5xl",
-          body: "space-y-2",
+          content: "sm:max-w-5xl max-h-[calc(100dvh-2rem)] overflow-hidden",
+          body: "space-y-2 max-h-[calc(100dvh-12rem)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
           footer: "bg-muted/30",
         }}
         footer={
