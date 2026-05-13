@@ -32,12 +32,15 @@ export default function LoginPage() {
         })
 
         if (res.error) {
-            setIsShowError(true);
             setErrorMessage(res.error.message);
+            setIsShowError(true);
+            setStatusMessage("");
         } else {
             setStatusMessage("Verification link sent! Please check your email.");
+            setErrorMessage("");
+            setIsShowError(true);
         }
-    }
+    };
 
     const onSubmit = async () => {
 
@@ -47,21 +50,26 @@ export default function LoginPage() {
             return;
         }
 
-        await UserService.getUserByEmail({
-            email: normalizedEmail,
-            setIsLoading,
-        })
-            .then((res) => {
-                if (res.data) {
-                    authenticateUser(normalizedEmail);
-                } else {
-                    setIsShowError(true);
+        setIsLoading(true);
+
+        await UserService.getUserByEmail({ email: normalizedEmail })
+            .then(async (res) => {
+                if (!res.data) {
+                    setStatusMessage("");
                     setErrorMessage("Account is not authenticated. Please contact administrator to authenticate your account.");
+                    setIsShowError(true);
+                    return;
                 }
+
+                await authenticateUser(normalizedEmail);
             })
             .catch((error) => {
+                setStatusMessage("");
                 setIsShowError(true);
                 setErrorMessage(error.error.message);
+            })
+            .finally(() => {
+                setIsLoading(false);
             });
     };
 
@@ -116,6 +124,7 @@ export default function LoginPage() {
                         <Button
                             type="button"
                             onClick={() => {
+                                setStatusMessage("");
                                 setErrorMessage("");
                                 setIsShowError(false);
                             }}
