@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { routes } from "@/constants/paths";
 import { UserService } from "@/helpers/services/UserService";
 import { supabase } from "@/helpers/supabase/client";
 import AppTextField from "@/components/app-components/app-text-field/AppTextField";
