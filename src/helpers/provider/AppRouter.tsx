@@ -10,6 +10,63 @@ import NotFoundPage from "@/views/not-found-page/NotFoundPage";
 import AppContainer from "@/components/app-components/app-container/AppContainer";
 import AppSpinner from "@/components/app-components/app-spinner/AppSpinner";
 
+const USED_MAGIC_LINK_STORAGE_KEY = "used-magic-links";
+
+const getMagicLinkSignatureFromHash = () => {
+    const hash = window.location.hash;
+
+    if (!hash.startsWith("#")) {
+        return null;
+    }
+
+    const params = new URLSearchParams(hash.slice(1));
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+
+    if (!accessToken || !refreshToken) {
+        return null;
+    }
+
+    return `${accessToken}:${refreshToken}`;
+};
+
+const getUsedMagicLinks = () => {
+    const raw = localStorage.getItem(USED_MAGIC_LINK_STORAGE_KEY);
+
+    if (!raw) {
+        return [] as string[];
+    }
+
+    try {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string") : [];
+    } catch {
+        return [] as string[];
+    }
+};
+
+const markMagicLinkAsUsed = (signature: string) => {
+    const usedLinks = getUsedMagicLinks();
+
+    if (usedLinks.includes(signature)) {
+        return;
+    }
+
+    localStorage.setItem(
+        USED_MAGIC_LINK_STORAGE_KEY,
+        JSON.stringify([...usedLinks, signature]),
+    );
+};
+
+const replaceUrlWithoutHash = () => {
+    const nextUrl = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState({}, document.title, nextUrl);
+};
+
+const redirectToLogin = () => {
+    window.history.replaceState({}, document.title, routes.login);
+};
+
 function ProtectedRoute({
     isAuthenticated,
     isReady,
@@ -85,9 +142,29 @@ export default function AppRouter() {
         };
 
         const initializeAuth = async () => {
+            const magicLinkSignature = getMagicLinkSignatureFromHash();
+
+            if (magicLinkSignature) {
+                const usedLinks = getUsedMagicLinks();
+
+                if (usedLinks.includes(magicLinkSignature)) {
+                    await supabase.auth.signOut();
+                    clearAuthenticatedUser();
+                    replaceUrlWithoutHash();
+                    redirectToLogin();
+                    setIsReady(true);
+                    return;
+                }
+            }
+
             const {
                 data: { session },
             } = await supabase.auth.getSession();
+
+            if (magicLinkSignature && session?.user?.email) {
+                markMagicLinkAsUsed(magicLinkSignature);
+                replaceUrlWithoutHash();
+            }
 
             await syncAuthState(session?.user?.email);
         };

@@ -27,4 +27,5 @@ export interface AppModalProps {
     "children" | "className"
   >;
   classNames?: AppModalClassNames;
+  canCloseOnOverlayClick?: boolean;
 }

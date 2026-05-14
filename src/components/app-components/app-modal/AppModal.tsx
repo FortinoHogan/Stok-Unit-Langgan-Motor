@@ -24,7 +24,24 @@ const AppModal = (props: AppModalProps) => {
         showCloseButton = true,
         contentProps,
         classNames,
+        canCloseOnOverlayClick = false,
     } = props
+
+    const handlePointerDownOutside: NonNullable<typeof contentProps>['onPointerDownOutside'] = (event) => {
+        if (!canCloseOnOverlayClick) {
+            event.preventDefault()
+        }
+
+        contentProps?.onPointerDownOutside?.(event)
+    }
+
+    const handleInteractOutside: NonNullable<typeof contentProps>['onInteractOutside'] = (event) => {
+        if (!canCloseOnOverlayClick) {
+            event.preventDefault()
+        }
+
+        contentProps?.onInteractOutside?.(event)
+    }
 
     return (
         <Dialog
@@ -38,9 +55,11 @@ const AppModal = (props: AppModalProps) => {
             ) : null}
 
             <DialogContent
+                {...contentProps}
                 showCloseButton={showCloseButton}
                 className={cn(classNames?.content)}
-                {...contentProps}
+                onPointerDownOutside={handlePointerDownOutside}
+                onInteractOutside={handleInteractOutside}
             >
                 {title || description ? (
                     <DialogHeader className={cn(classNames?.header)}>

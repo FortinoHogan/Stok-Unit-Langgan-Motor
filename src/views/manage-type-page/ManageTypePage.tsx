@@ -73,6 +73,7 @@ const ManageTypePage = () => {
     {
       id: "categoryName",
       header: "Category",
+      accessorFn: (row) => categoryNameById.get(row.categoryId) || "-",
       cell: ({ row }) => categoryNameById.get(row.original.categoryId) || "-",
     },
     {
@@ -213,39 +214,15 @@ const ManageTypePage = () => {
     })
   }
 
-  const isDuplicateTypeDescription = () => {
-    const normalizedTypeDescription = newTypeDescription.trim().toLowerCase()
-
-    return existingTypeList.some((type) => {
-      const isSameRecord = editingTypeId
-        ? type.typeId === editingTypeId
-        : false
-
-      if (isSameRecord) {
-        return false
-      }
-
-      return type.typeDescription?.trim().toLowerCase() === normalizedTypeDescription
-    })
-  }
-
   const handleInsert = async () => {
     if (!newTypeName.trim() || !newTypeCode.trim() || !newTypeDescription.trim() || !selectedCategoryId) {
       return
     }
 
     const hasDuplicateTypeCode = isDuplicateTypeCode()
-    const hasDuplicateTypeDescription = isDuplicateTypeDescription()
 
-    if (hasDuplicateTypeCode || hasDuplicateTypeDescription) {
-      if (hasDuplicateTypeCode && hasDuplicateTypeDescription) {
-        setErrorMessage("Type code and description already exist")
-      } else if (hasDuplicateTypeCode) {
-        setErrorMessage("Type code already exists")
-      } else {
-        setErrorMessage("Type description already exists")
-      }
-
+    if (hasDuplicateTypeCode) {
+      setErrorMessage("Type code already exists")
       setIsShowError(true)
       return
     }
@@ -286,17 +263,9 @@ const ManageTypePage = () => {
     }
 
     const hasDuplicateTypeCode = isDuplicateTypeCode()
-    const hasDuplicateTypeDescription = isDuplicateTypeDescription()
 
-    if (hasDuplicateTypeCode || hasDuplicateTypeDescription) {
-      if (hasDuplicateTypeCode && hasDuplicateTypeDescription) {
-        setErrorMessage("Type code and description already exist")
-      } else if (hasDuplicateTypeCode) {
-        setErrorMessage("Type code already exists")
-      } else {
-        setErrorMessage("Type description already exists")
-      }
-
+    if (hasDuplicateTypeCode) {
+      setErrorMessage("Type code already exists")
       setIsShowError(true)
       return
     }
@@ -436,9 +405,8 @@ const ManageTypePage = () => {
 
   const filteredExistingTypeList = useMemo(() => {
     const typeCodeKeyword = newTypeCode.trim().toLowerCase()
-    const typeDescriptionKeyword = newTypeDescription.trim().toLowerCase()
 
-    if (!typeCodeKeyword && !typeDescriptionKeyword) {
+    if (!typeCodeKeyword) {
       return existingTypeList
     }
 
@@ -447,13 +415,9 @@ const ManageTypePage = () => {
         ? type.typeCode.toLowerCase().includes(typeCodeKeyword)
         : false
 
-      const matchesTypeDescription = typeDescriptionKeyword
-        ? (type.typeDescription || "").toLowerCase().includes(typeDescriptionKeyword)
-        : false
-
-      return matchesTypeCode || matchesTypeDescription
+      return matchesTypeCode
     })
-  }, [existingTypeList, newTypeCode, newTypeDescription])
+  }, [existingTypeList, newTypeCode])
 
   useEffect(() => {
     handleFetchTypes()
