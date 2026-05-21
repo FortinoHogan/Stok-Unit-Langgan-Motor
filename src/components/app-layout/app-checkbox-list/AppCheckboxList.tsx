@@ -124,7 +124,7 @@ const AppCheckboxList = (props: AppCheckboxListProps) => {
                     </Button>
                 </PopoverTrigger>
 
-                <PopoverContent className={cn("w-(--radix-popover-trigger-width) max-h-80 overflow-hidden p-0", classNames?.content)} align="start">
+                <PopoverContent className={cn("w-(--radix-popover-trigger-width) max-h-80 overflow-hidden p-0 touch-pan-y", classNames?.content)} align="start">
                     <Command
                         className="max-h-80"
                         filter={(value, search, keywords) => {
@@ -144,8 +144,11 @@ const AppCheckboxList = (props: AppCheckboxListProps) => {
                     >
                         <CommandInput placeholder={searchPlaceholder} disabled={resolvedDisabled} {...inputProps} />
                         <CommandList
-                            className={cn("max-h-64 overflow-y-auto overscroll-contain", classNames?.list)}
+                            className={cn("max-h-64 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]", classNames?.list)}
                             onWheel={(event) => {
+                                event.stopPropagation()
+                            }}
+                            onTouchMove={(event) => {
                                 event.stopPropagation()
                             }}
                         >
