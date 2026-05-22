@@ -397,10 +397,11 @@ const ManageColorPage = () => {
       >
         <AppTextField
           label="Color Name"
-          placeholder="Red"
+          placeholder="RED"
           required={true}
           value={newColorName}
           onChange={(value) => setNewColorName(value)}
+          isCapital
         />
         <AppExistingList
           title="Existing Color List"
