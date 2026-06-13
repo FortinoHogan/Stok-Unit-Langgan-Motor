@@ -382,10 +382,18 @@ const getTableTransactionData = async (
         ? new Date(resolvedYear, parsedMonth, 0, 23, 59, 59)
         : new Date(resolvedYear, 11, 31, 23, 59, 59);
     const selectedDateIso = selectedDate.toISOString();
-    const selectedDayStart = new Date(selectedDate);
-    selectedDayStart.setHours(0, 0, 0, 0);
-    const selectedDayEnd = new Date(selectedDate);
-    selectedDayEnd.setHours(23, 59, 59, 999);
+    const selectedDayStart = hasDay
+      ? new Date(Date.UTC(resolvedYear, parsedMonth - 1, parsedDay, 0, 0, 0, 0))
+      : hasMonth
+        ? new Date(Date.UTC(resolvedYear, parsedMonth - 1, 1, 0, 0, 0, 0))
+        : new Date(Date.UTC(resolvedYear, 0, 1, 0, 0, 0, 0));
+    const selectedDayEnd = hasDay
+      ? new Date(
+          Date.UTC(resolvedYear, parsedMonth - 1, parsedDay, 23, 59, 59, 999),
+        )
+      : hasMonth
+        ? new Date(Date.UTC(resolvedYear, parsedMonth, 0, 23, 59, 59, 999))
+        : new Date(Date.UTC(resolvedYear, 11, 31, 23, 59, 59, 999));
     const selectedDayStartIso = selectedDayStart.toISOString();
     const selectedDayEndIso = selectedDayEnd.toISOString();
 
