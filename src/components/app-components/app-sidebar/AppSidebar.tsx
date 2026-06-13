@@ -72,6 +72,8 @@ const AppSidebar = () => {
 
     const handleLogout = async () => {
         await supabase.auth.signOut()
+        localStorage.clear()
+        sessionStorage.clear()
         clearAuthenticatedUser()
         navigate(routes.login)
     }
