@@ -37,12 +37,11 @@ const TransactionPage = () => {
   const initialMonth = today.getMonth() + 1;
   const initialDay = today.getDate();
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser);
-  const transactionAccess = usePrivillegeAccess("Delivery Order");
-  const sellingAccess = usePrivillegeAccess("Selling");
+  const transactionAccess = usePrivillegeAccess("Transaction");
   const canInsertTransaction = transactionAccess.canInsert;
   const canUpdateTransaction = transactionAccess.canUpdate;
   const canDeleteTransaction = transactionAccess.canDelete;
-  const canSellTransaction = sellingAccess.canUpdate;
+  const canSellTransaction = transactionAccess.canUpdate;
 
   // State
   const [isTableLoading, setIsTableLoading] = useState(false);

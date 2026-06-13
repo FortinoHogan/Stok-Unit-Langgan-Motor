@@ -511,10 +511,6 @@ const ReportPage = () => {
                     />
                 </div>
 
-                <p className="mt-2 text-sm text-muted-foreground">
-                    Month has no All option. Day has All Day option.
-                </p>
-
                 <div className="mt-3 flex justify-end gap-2">
                     <Button type="button" onClick={handleApplyFilters}>
                         Apply
