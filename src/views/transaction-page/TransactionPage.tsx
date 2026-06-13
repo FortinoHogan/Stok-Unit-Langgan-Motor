@@ -25,7 +25,6 @@ import TransactionStatusModal from "./components/transaction-status-modal/Transa
 import TransactionTableSection from "./components/transaction-table-section/TransactionTableSection";
 import { monthFormatter } from "./utilities";
 import type { IFormData, TransactionDayGroupedRow } from "./TransactionPage.interface";
-import AppBackButton from "@/components/app-layout/app-back-button/AppBackButton";
 import type { AutoCompleteOption } from "@/components/app-components/app-auto-complete/AppAutoComplete.interface";
 import { useIsMobile } from "@/helpers/hooks/useMobile/useMobile";
 
@@ -924,7 +923,6 @@ const TransactionPage = () => {
     <div>
       <div className="mb-4">
         <div className="mb-2 flex items-center gap-3">
-          <AppBackButton />
           <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
             {pageWording.title}
           </h1>

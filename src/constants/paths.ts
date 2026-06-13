@@ -10,6 +10,7 @@ import RoleAndPrivillegePage from "@/views/role-and-privillege-page/RoleAndPrivi
 import TypeAndColorPage from "@/views/type-and-color-page/TypeAndColorPage";
 import { routes } from "./routeValues";
 import TransactionPage from "@/views/transaction-page/TransactionPage";
+import ReportPage from "@/views/report-page/ReportPage";
 
 export { routes };
 
@@ -25,4 +26,5 @@ export const routePaths = [
   { path: routes.typeAndColor, Component: TypeAndColorPage },
   { path: routes.roleAndPrivillege, Component: RoleAndPrivillegePage },
   { path: routes.transaction, Component: TransactionPage },
+  { path: routes.report, Component: ReportPage },
 ];
