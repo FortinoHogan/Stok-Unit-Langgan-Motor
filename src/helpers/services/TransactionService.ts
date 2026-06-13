@@ -342,8 +342,6 @@ const getTableTransactionData = async (
   params: GetTableTransactionDataRequest,
 ): Promise<IResponse<TransactionDetailRow[]>> => {
   const {
-    page,
-    pageSize,
     search,
     transactionYear,
     transactionMonth,
@@ -390,10 +388,6 @@ const getTableTransactionData = async (
     selectedDayEnd.setHours(23, 59, 59, 999);
     const selectedDayStartIso = selectedDayStart.toISOString();
     const selectedDayEndIso = selectedDayEnd.toISOString();
-    const currentPage = Number.isInteger(page) && page > 0 ? page : 1;
-    const currentPageSize = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : 10;
-    const from = (currentPage - 1) * currentPageSize;
-    const to = from + currentPageSize - 1;
 
     let query = supabase
       .from("TrTransaction")
@@ -434,9 +428,7 @@ const getTableTransactionData = async (
         .gte("dateOUT", selectedDayStartIso)
         .lte("dateOUT", selectedDayEndIso);
     } else {
-      query = query
-      .lte("dateDO", selectedDateIso)
-      .is("dateOUT", null);
+      query = query.lte("dateDO", selectedDateIso).is("dateOUT", null);
     }
 
     if (categoryId !== "All") {
@@ -459,10 +451,10 @@ const getTableTransactionData = async (
 
     if (search?.trim()) {
       const escapedSearch = search.trim().replace(/,/g, "\\,");
-      query = query.or(`noMesin.ilike.%${escapedSearch}%,noRangka.ilike.%${escapedSearch}%`);
+      query = query.or(
+        `noMesin.ilike.%${escapedSearch}%,noRangka.ilike.%${escapedSearch}%`,
+      );
     }
-
-    query = query.range(from, to);
 
     const response = await ApiService.request<any[]>(() => query);
 

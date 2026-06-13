@@ -113,7 +113,6 @@ const TransactionPage = () => {
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [tablePage, setTablePage] = useState(1);
   const [tablePageSize, setTablePageSize] = useState(10);
-  const [tableRowCount, setTableRowCount] = useState(0);
   const [appliedFilter, setAppliedFilter] = useState<IFormData>(FormDataInitial);
   const [appliedPeriodFilter, setAppliedPeriodFilter] = useState({
     year: String(initialYear),
@@ -297,13 +296,12 @@ const TransactionPage = () => {
   const handleFetchTableTransactionData = useCallback(async () => {
     if (!isFilterApplied) {
       setTransactionList([]);
-      setTableRowCount(0);
       return;
     }
 
     await TransactionService.getTableTransactionData({
-      page: tablePage,
-      pageSize: tablePageSize,
+      page: 1,
+      pageSize: 1,
       search: "",
       transactionYear: appliedPeriodFilter.year,
       transactionMonth: appliedPeriodFilter.month,
@@ -318,19 +316,12 @@ const TransactionPage = () => {
     })
       .then((res) => {
         setTransactionList(res.data || []);
-        setTableRowCount(res.count || 0);
       })
       .catch((error) => {
         setErrorMessage(error.error.message);
         setIsShowError(true);
       });
-  }, [
-    appliedFilter,
-    appliedPeriodFilter,
-    isFilterApplied,
-    tablePage,
-    tablePageSize,
-  ]);
+  }, [appliedFilter, appliedPeriodFilter, isFilterApplied]);
 
   const handleInsertTransaction = async () => {
     const userId = authenticatedUser?.userId;
@@ -624,10 +615,6 @@ const TransactionPage = () => {
     setIsDetailModalOpen(true);
   };
 
-  const hasNextTablePage = useMemo(() => {
-    return tablePage * tablePageSize < tableRowCount;
-  }, [tablePage, tablePageSize, tableRowCount]);
-
   const handlePreviousTablePage = () => {
     setTablePage((previous) => Math.max(previous - 1, 1));
   };
@@ -808,6 +795,19 @@ const TransactionPage = () => {
     return Array.from(groupedMap.values());
   }, [filteredTransactionList]);
 
+  const groupedTransactionRowCount = groupedTransactionRows.length;
+
+  const paginatedGroupedTransactionRows = useMemo(() => {
+    const from = (tablePage - 1) * tablePageSize;
+    const to = from + tablePageSize;
+
+    return groupedTransactionRows.slice(from, to);
+  }, [groupedTransactionRows, tablePage, tablePageSize]);
+
+  const hasNextTablePage = useMemo(() => {
+    return tablePage * tablePageSize < groupedTransactionRowCount;
+  }, [groupedTransactionRowCount, tablePage, tablePageSize]);
+
   const transactionColumns: ColumnDef<TransactionDayGroupedRow>[] = [
     {
       accessorKey: "categoryName",
@@ -842,7 +842,7 @@ const TransactionPage = () => {
   ];
 
   const table = useReactTable({
-    data: groupedTransactionRows,
+    data: paginatedGroupedTransactionRows,
     columns: transactionColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -857,6 +857,17 @@ const TransactionPage = () => {
     appliedFilter,
     appliedPeriodFilter,
   ]);
+
+  useEffect(() => {
+    const maxPage = Math.max(
+      1,
+      Math.ceil(groupedTransactionRowCount / tablePageSize),
+    );
+
+    if (tablePage > maxPage) {
+      setTablePage(maxPage);
+    }
+  }, [groupedTransactionRowCount, tablePage, tablePageSize]);
 
   useEffect(() => {
     setIsFilterApplied(false);
@@ -1085,7 +1096,7 @@ const TransactionPage = () => {
         isLoading={isTableLoading}
         page={tablePage}
         pageSize={tablePageSize}
-        rowCount={tableRowCount}
+        rowCount={groupedTransactionRowCount}
         hasNextPage={hasNextTablePage}
         onPreviousPage={handlePreviousTablePage}
         onNextPage={handleNextTablePage}
@@ -1227,7 +1238,7 @@ const TransactionPage = () => {
       >
         <p className="text-sm">
           {pageWording.confirmAddQuestionActionText}{" "}
-          for <strong>{getSelectedDateString()}</strong>?
+          for <strong>{dateDOInput ? formatDateAsYmd(dateDOInput) : getSelectedDateString()}</strong>?
         </p>
       </AppModal>
 
