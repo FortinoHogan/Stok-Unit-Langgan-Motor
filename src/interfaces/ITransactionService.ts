@@ -31,6 +31,10 @@ export interface GetTableTransactionDataRequest extends IGetListRequest {
   isSold: boolean;
 }
 
+export interface GetTransactionDetailByTransactionIdRequest extends IRequestWithLoading {
+  transactionId: number;
+}
+
 export interface TransactionDetailRow {
   transactionId: number;
   typeColorId: number;
@@ -44,6 +48,13 @@ export interface TransactionDetailRow {
   isRFS: boolean;
   dateDO: string | null;
   dateOUT: string | null;
+  transactionDetailId: number | null;
+  volume: number | null;
+  sellingType: string | null;
+  number: number | null;
+  name: string | null;
+  address: string | null;
+  phone: string | null;
 }
 
 export interface TransactionTypeColorOption {
@@ -89,4 +100,27 @@ export interface InsertTransactionRequest extends IRequestWithLoading {
   dateDO: string | null;
   dateOUT: string | null;
   userIn: number;
+}
+
+export interface InsertTransactionDetailRequest extends IRequestWithLoading {
+  transactionId: number;
+  volume: number;
+  sellingType: string;
+  number: number;
+  name: string;
+  address: string;
+  phone: string;
+  userIn: number;
+}
+
+export interface UpdateTransactionDetailRequest extends IRequestWithLoading {
+  transactionId: number;
+  volume: number;
+  sellingType: string;
+  number: number;
+  name: string;
+  address: string;
+  phone: string;
+  userUp: number;
+  updatedAt: string;
 }

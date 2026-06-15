@@ -5,14 +5,15 @@ import {
     useReactTable,
 } from "@tanstack/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Eye } from "lucide-react";
 
 import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAutoComplete";
-import AppTable from "@/components/app-components/app-table/AppTable";
 import { Button } from "@/components/ui/button";
 import { ReportService } from "@/helpers/services/ReportService";
 import { TransactionService } from "@/helpers/services/TransactionService";
 import { monthFormatter } from "@/views/transaction-page/utilities";
 import TransactionStatusModal from "@/views/transaction-page/components/transaction-status-modal/TransactionStatusModal";
+import ReportTableSection from "./components/report-table-section/ReportTableSection";
 import {
     reportEventOptions,
     reportFilterInitial,
@@ -40,6 +41,9 @@ const ReportPage = () => {
     const [isShowError, setIsShowError] = useState(false);
 
     const [transactionList, setTransactionList] = useState<ReportTransactionSummaryRow[]>([]);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedDetailRows, setSelectedDetailRows] = useState<ReportTransactionSummaryRow[]>([]);
+    const [selectedDetailTitle, setSelectedDetailTitle] = useState("");
 
     const [selectedPeriodYear, setSelectedPeriodYear] = useState(String(initialYear));
     const [selectedPeriodMonth, setSelectedPeriodMonth] = useState(String(initialMonth));
@@ -77,6 +81,12 @@ const ReportPage = () => {
     const handleCloseErrorModal = () => {
         setErrorMessage("");
         setIsShowError(false);
+    };
+
+    const handleOpenDetailModal = (row: ReportRow) => {
+        setSelectedDetailRows(row.details);
+        setSelectedDetailTitle(`${row.categoryName} - ${row.typeName} (${row.typeCode})`);
+        setIsDetailModalOpen(true);
     };
 
     const handleFetchCategoryFilterOptions = useCallback(async () => {
@@ -226,6 +236,7 @@ const ReportPage = () => {
 
             if (existing) {
                 existing.quantity += 1;
+                existing.details.push(transaction);
                 return;
             }
 
@@ -235,6 +246,7 @@ const ReportPage = () => {
                 typeName,
                 typeCode,
                 quantity: 1,
+                details: [transaction],
             });
         });
 
@@ -307,6 +319,20 @@ const ReportPage = () => {
         {
             accessorKey: "quantity",
             header: "Quantity",
+        },
+        {
+            id: "actions",
+            header: "Action",
+            cell: ({ row }) => (
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenDetailModal(row.original)}
+                >
+                    <Eye className="size-4" />
+                </Button>
+            ),
         },
     ];
 
@@ -518,7 +544,7 @@ const ReportPage = () => {
                 </div>
             </div>
 
-            <AppTable
+            <ReportTableSection
                 table={table}
                 isLoading={isTableLoading}
                 page={tablePage}
@@ -528,8 +554,10 @@ const ReportPage = () => {
                 onPreviousPage={handlePreviousTablePage}
                 onNextPage={handleNextTablePage}
                 onPageSizeChange={handleTablePageSizeChange}
-                showPagination
-                showNumberColumn
+                detailOpen={isDetailModalOpen}
+                onDetailOpenChange={setIsDetailModalOpen}
+                detailTitle={selectedDetailTitle}
+                detailRows={selectedDetailRows}
                 emptyMessage={
                     isFilterApplied
                         ? "No transaction found for selected filters."

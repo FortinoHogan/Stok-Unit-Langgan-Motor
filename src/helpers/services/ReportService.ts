@@ -64,7 +64,16 @@ const getTableReportData = async (
       .from("TrTransaction")
       .select(
         `
+          transactionId,
+          typeColorId,
+          noMesin,
+          noRangka,
+          year,
+          isRFS,
+          dateDO,
+          dateOUT,
 					TrTypeColor!inner (
+            typeColorId,
 						typeId,
 						colorId,
 						isDeleted,
@@ -79,7 +88,8 @@ const getTableReportData = async (
 							)
 						),
 						MsColor!inner (
-							colorId,
+              colorId,
+              colorName,
 							isDeleted
 						)
 					)
@@ -114,9 +124,18 @@ const getTableReportData = async (
         const category = pickFirst(type?.MsCategory);
 
         return {
+          transactionId: item.transactionId,
+          typeColorId: item.typeColorId,
           categoryName: category?.categoryName || null,
           typeName: type?.typeName || null,
           typeCode: type?.typeCode || null,
+          colorName: pickFirst(typeColor?.MsColor)?.colorName || null,
+          noMesin: item.noMesin,
+          noRangka: item.noRangka,
+          year: item.year,
+          isRFS: item.isRFS,
+          dateDO: item.dateDO,
+          dateOUT: item.dateOUT,
         };
       },
     );

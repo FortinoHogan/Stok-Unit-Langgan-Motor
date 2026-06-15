@@ -3,6 +3,7 @@ import type {
   MsCategory,
   MsType,
   TrTransaction,
+  TrTransactionDetail,
 } from "@/interfaces/IModel.interface";
 import type {
   GetYearOptionsRequest,
@@ -17,6 +18,9 @@ import type {
   DeleteTransactionRequest,
   GetTypeColorOptionsRequest,
   GetTableTransactionDataRequest,
+  GetTransactionDetailByTransactionIdRequest,
+  InsertTransactionDetailRequest,
+  UpdateTransactionDetailRequest,
 } from "@/interfaces/ITransactionService";
 import { ApiService } from "@/utilities/ApiService";
 import { supabase } from "../supabase/client";
@@ -180,7 +184,7 @@ const getTypeOptionsByCategory = async (
 
     const optionRows = (res.data || []).map((item) => ({
       value: item.typeId.toString(),
-      label: item.typeName,
+      label: item.typeCode + " - " + item.typeName,
     }));
 
     return {
@@ -467,27 +471,61 @@ const getTableTransactionData = async (
     const response = await ApiService.request<any[]>(() => query);
 
     const mappedRows: TransactionDetailRow[] = (response.data || []).map(
-      (item) => ({
-        transactionId: item.transactionId,
-        typeColorId: item.typeColorId,
-        categoryName:
-          item.TrTypeColor?.MsType?.MsCategory?.categoryName || null,
-        typeName: item.TrTypeColor?.MsType?.typeName || null,
-        typeCode: item.TrTypeColor?.MsType?.typeCode || null,
-        colorName: item.TrTypeColor?.MsColor?.colorName || null,
-        noMesin: item.noMesin,
-        noRangka: item.noRangka,
-        year: item.year,
-        isRFS: item.isRFS,
-        dateDO: item.dateDO,
-        dateOUT: item.dateOUT,
-      }),
+      (item) => {
+        return {
+          transactionId: item.transactionId,
+          typeColorId: item.typeColorId,
+          categoryName:
+            item.TrTypeColor?.MsType?.MsCategory?.categoryName || null,
+          typeName: item.TrTypeColor?.MsType?.typeName || null,
+          typeCode: item.TrTypeColor?.MsType?.typeCode || null,
+          colorName: item.TrTypeColor?.MsColor?.colorName || null,
+          noMesin: item.noMesin,
+          noRangka: item.noRangka,
+          year: item.year,
+          isRFS: item.isRFS,
+          dateDO: item.dateDO,
+          dateOUT: item.dateOUT,
+          transactionDetailId: null,
+          volume: null,
+          sellingType: null,
+          number: null,
+          name: null,
+          address: null,
+          phone: null,
+        };
+      },
     );
 
     return {
       ...response,
       data: mappedRows,
     };
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
+const getTransactionDetailByTransactionId = async (
+  params: GetTransactionDetailByTransactionIdRequest,
+): Promise<IResponse<TrTransactionDetail>> => {
+  const { transactionId, setIsLoading } = params;
+
+  setIsLoading?.(true);
+
+  try {
+    const res = await ApiService.request<TrTransactionDetail>(() =>
+      supabase
+        .from("TrTransactionDetail")
+        .select("*")
+        .eq("transactionId", transactionId)
+        .eq("isDeleted", false)
+        .maybeSingle(),
+    );
+
+    return res;
   } catch (error) {
     throw error;
   } finally {
@@ -507,6 +545,95 @@ const updateTransactionAsSold = async (
         .from("TrTransaction")
         .update({ dateOUT, userUp, updatedAt })
         .eq("transactionId", transactionId)
+        .select()
+        .single(),
+    );
+
+    return res;
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
+const insertTransactionDetail = async (
+  params: InsertTransactionDetailRequest,
+): Promise<IResponse<TrTransactionDetail>> => {
+  const {
+    transactionId,
+    volume,
+    sellingType,
+    number,
+    name,
+    address,
+    phone,
+    userIn,
+    setIsLoading,
+  } = params;
+
+  setIsLoading?.(true);
+
+  try {
+    const res = await ApiService.request<TrTransactionDetail>(() =>
+      supabase
+        .from("TrTransactionDetail")
+        .insert({
+          transactionId,
+          volume,
+          sellingType,
+          number,
+          name,
+          address,
+          phone,
+          userIn,
+        })
+        .select()
+        .single(),
+    );
+
+    return res;
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
+const updateTransactionDetail = async (
+  params: UpdateTransactionDetailRequest,
+): Promise<IResponse<TrTransactionDetail>> => {
+  const {
+    transactionId,
+    volume,
+    sellingType,
+    number,
+    name,
+    address,
+    phone,
+    userUp,
+    updatedAt,
+    setIsLoading,
+  } = params;
+
+  setIsLoading?.(true);
+
+  try {
+    const res = await ApiService.request<TrTransactionDetail>(() =>
+      supabase
+        .from("TrTransactionDetail")
+        .update({
+          volume,
+          sellingType,
+          number,
+          name,
+          address,
+          phone,
+          userUp,
+          updatedAt,
+        })
+        .eq("transactionId", transactionId)
+        .eq("isDeleted", false)
         .select()
         .single(),
     );
@@ -596,8 +723,11 @@ export const TransactionService = {
   getColorOptionsByType,
   getYearFilterOptions,
   getTableTransactionData,
+  getTransactionDetailByTransactionId,
 
   updateTransactionAsSold,
+  insertTransactionDetail,
+  updateTransactionDetail,
   updateTransaction,
   deleteTransaction,
   insertTransaction,

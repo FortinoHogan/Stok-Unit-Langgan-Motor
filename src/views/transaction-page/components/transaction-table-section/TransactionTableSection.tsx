@@ -4,7 +4,7 @@ import {
   type ColumnDef,
   useReactTable,
 } from "@tanstack/react-table";
-import { CircleDollarSign, Pencil, Trash } from "lucide-react";
+import { CircleDollarSign, FilePen, Pencil, Trash } from "lucide-react";
 import AppModal from "@/components/app-components/app-modal/AppModal";
 import AppTable from "@/components/app-components/app-table/AppTable";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
     onEditDetailRow,
     onDeleteDetailRow,
     onSellDetailRow,
+    onEditSellingDetailRow,
   } = props;
 
   const detailColumns: ColumnDef<TransactionDetailRow>[] = [
@@ -107,6 +108,17 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
               onClick={() => onSellDetailRow(row.original)}
             >
               <CircleDollarSign className="size-4" />
+            </Button>
+          ) : null}
+          {canSellDetail && onEditSellingDetailRow && row.original.dateOUT ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              title="Edit selling detail"
+              onClick={() => onEditSellingDetailRow(row.original)}
+            >
+              <FilePen className="size-4" />
             </Button>
           ) : null}
           {canUpdateDetail && onEditDetailRow ? (

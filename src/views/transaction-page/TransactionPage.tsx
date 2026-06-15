@@ -64,6 +64,9 @@ const TransactionPage = () => {
     useState(false);
   const [isConfirmSellDetailModalOpen, setIsConfirmSellDetailModalOpen] =
     useState(false);
+  const [isSellingDetailModalOpen, setIsSellingDetailModalOpen] =
+    useState(false);
+  const [isEditingSellingDetail, setIsEditingSellingDetail] = useState(false);
   const [transactionList, setTransactionList] = useState<
     TransactionDetailRow[]
   >([]);
@@ -130,6 +133,12 @@ const TransactionPage = () => {
   const [editYearInput, setEditYearInput] = useState("");
   const [editDateInput, setEditDateInput] = useState<Date | undefined>(undefined);
   const [editIsRFSInput, setEditIsRFSInput] = useState(true);
+  const [sellingVolumeInput, setSellingVolumeInput] = useState("");
+  const [sellingTypeInput, setSellingTypeInput] = useState("");
+  const [sellingNumberInput, setSellingNumberInput] = useState("");
+  const [sellingNameInput, setSellingNameInput] = useState("");
+  const [sellingAddressInput, setSellingAddressInput] = useState("");
+  const [sellingPhoneInput, setSellingPhoneInput] = useState("");
 
   // Utility
   const handleCloseErrorModal = () => {
@@ -141,9 +150,12 @@ const TransactionPage = () => {
     setSuccessMessage("");
     setIsShowSuccess(false);
     setIsConfirmUpdateDetailModalOpen(false);
+    setIsConfirmSellDetailModalOpen(false);
+    setIsSellingDetailModalOpen(false);
     setIsEditDetailModalOpen(false);
     setIsDetailModalOpen(false);
     resetEditDetailForm();
+    resetSellingDetailForm();
   };
 
   const formatDateAsYmd = (value: Date) => {
@@ -187,6 +199,25 @@ const TransactionPage = () => {
     setEditYearInput("");
     setEditDateInput(undefined);
     setEditIsRFSInput(true);
+  };
+
+  const resetSellingDetailForm = () => {
+    setSellingVolumeInput("");
+    setSellingTypeInput("");
+    setSellingNumberInput("");
+    setSellingNameInput("");
+    setSellingAddressInput("");
+    setSellingPhoneInput("");
+    setIsEditingSellingDetail(false);
+  };
+
+  const fillSellingDetailForm = (transaction: TransactionDetailRow) => {
+    setSellingVolumeInput(transaction.volume ? String(transaction.volume) : "");
+    setSellingTypeInput(transaction.sellingType || "");
+    setSellingNumberInput(transaction.number ? String(transaction.number) : "");
+    setSellingNameInput(transaction.name || "");
+    setSellingAddressInput(transaction.address || "");
+    setSellingPhoneInput(transaction.phone || "");
   };
 
   const fillEditDetailForm = (transaction: TransactionDetailRow) => {
@@ -474,7 +505,7 @@ const TransactionPage = () => {
       });
   };
 
-  const handleSellDetailTransaction = async () => {
+  const handleSubmitSellingDetail = async () => {
     const userId = authenticatedUser?.userId;
 
     if (!userId) {
@@ -489,37 +520,156 @@ const TransactionPage = () => {
       return;
     }
 
-    if (!sellingTransaction.isRFS) {
-      setErrorMessage("Only RFS transaction can be sold.");
+    if (
+      !sellingVolumeInput.trim() ||
+      !sellingTypeInput.trim() ||
+      !sellingNumberInput.trim() ||
+      !sellingNameInput.trim() ||
+      !sellingAddressInput.trim() ||
+      !sellingPhoneInput.trim()
+    ) {
+      setErrorMessage(
+        "Please fill Volume, Selling Type, Number, Name, Address, and Phone.",
+      );
       setIsShowError(true);
       return;
     }
 
-    if (sellingTransaction.dateOUT) {
-      setErrorMessage("Transaction is already sold.");
+    const parsedVolume = Number(sellingVolumeInput);
+    const parsedNumber = Number(sellingNumberInput);
+
+    if (!Number.isFinite(parsedVolume) || parsedVolume <= 0) {
+      setErrorMessage("Volume must be a valid number greater than 0.");
       setIsShowError(true);
       return;
     }
 
-    await TransactionService.updateTransactionAsSold({
+    if (!Number.isFinite(parsedNumber) || parsedNumber <= 0) {
+      setErrorMessage("Number must be a valid number greater than 0.");
+      setIsShowError(true);
+      return;
+    }
+
+    const payload = {
       transactionId: sellingTransaction.transactionId,
-      dateOUT: getSelectedDateString(),
-      userUp: userId,
-      updatedAt: new Date().toISOString(),
-      setIsLoading: setIsActionLoading,
-    })
+      volume: parsedVolume,
+      sellingType: sellingTypeInput.trim().toUpperCase(),
+      number: parsedNumber,
+      name: sellingNameInput.trim(),
+      address: sellingAddressInput.trim(),
+      phone: sellingPhoneInput.trim(),
+    };
+
+    if (!isEditingSellingDetail) {
+      if (!sellingTransaction.isRFS) {
+        setErrorMessage("Only RFS transaction can be sold.");
+        setIsShowError(true);
+        return;
+      }
+
+      if (sellingTransaction.dateOUT) {
+        setErrorMessage("Transaction is already sold.");
+        setIsShowError(true);
+        return;
+      }
+
+      await TransactionService.updateTransactionAsSold({
+        transactionId: sellingTransaction.transactionId,
+        dateOUT: getSelectedDateString(),
+        userUp: userId,
+        updatedAt: new Date().toISOString(),
+        setIsLoading: setIsActionLoading,
+      })
+        .then(async () => {
+          await TransactionService.insertTransactionDetail({
+            ...payload,
+            userIn: userId,
+            setIsLoading: setIsActionLoading,
+          });
+
+          setSuccessMessage("Transaction has been marked as sold successfully.");
+          setIsDetailModalOpen(false);
+          setIsShowSuccess(true);
+          setIsConfirmSellDetailModalOpen(false);
+          setIsSellingDetailModalOpen(false);
+          setSellingTransaction(null);
+          resetSellingDetailForm();
+          void handleFetchTableTransactionData();
+        })
+        .catch((error) => {
+          setErrorMessage(error.error.message);
+          setIsShowError(true);
+        });
+
+      return;
+    }
+
+    const mutation = sellingTransaction.transactionDetailId
+      ? TransactionService.updateTransactionDetail({
+        ...payload,
+        userUp: userId,
+        updatedAt: new Date().toISOString(),
+        setIsLoading: setIsActionLoading,
+      })
+      : TransactionService.insertTransactionDetail({
+        ...payload,
+        userIn: userId,
+        setIsLoading: setIsActionLoading,
+      });
+
+    await mutation
       .then(() => {
-        setSuccessMessage("Transaction has been marked as sold successfully.");
-        setIsDetailModalOpen(false);
+        setSuccessMessage("Selling detail updated successfully.");
         setIsShowSuccess(true);
-        setIsConfirmSellDetailModalOpen(false);
+        setIsSellingDetailModalOpen(false);
         setSellingTransaction(null);
+        resetSellingDetailForm();
         void handleFetchTableTransactionData();
       })
       .catch((error) => {
         setErrorMessage(error.error.message);
         setIsShowError(true);
       });
+  };
+
+  const validateSellingDetailForm = () => {
+    if (!sellingTransaction) {
+      setErrorMessage("No transaction selected to sell.");
+      setIsShowError(true);
+      return false;
+    }
+
+    if (
+      !sellingVolumeInput.trim() ||
+      !sellingTypeInput.trim() ||
+      !sellingNumberInput.trim() ||
+      !sellingNameInput.trim() ||
+      !sellingAddressInput.trim() ||
+      !sellingPhoneInput.trim()
+    ) {
+      setErrorMessage(
+        "Please fill Volume, Selling Type, Number, Name, Address, and Phone.",
+      );
+      setIsShowError(true);
+      return false;
+    }
+
+    const parsedVolume = Number(sellingVolumeInput);
+    const parsedNumber = Number(sellingNumberInput);
+
+    if (!Number.isFinite(parsedVolume) || parsedVolume <= 0) {
+      setErrorMessage("Volume must be a valid number greater than 0.");
+      setIsShowError(true);
+      return false;
+    }
+
+    if (!Number.isFinite(parsedNumber) || parsedNumber <= 0) {
+      setErrorMessage("Number must be a valid number greater than 0.");
+      setIsShowError(true);
+      return false;
+    }
+
+    return true;
   };
 
   // Modal / Action Handler
@@ -583,8 +733,63 @@ const TransactionPage = () => {
       return;
     }
 
+    resetSellingDetailForm();
+    setIsEditingSellingDetail(false);
     setSellingTransaction(row);
+    setIsSellingDetailModalOpen(true);
+  };
+
+  const handleOpenConfirmSellDetailModal = () => {
+    if (!validateSellingDetailForm()) {
+      return;
+    }
+
+    setIsSellingDetailModalOpen(false);
     setIsConfirmSellDetailModalOpen(true);
+  };
+
+  const handleOpenEditSellingDetailRow = async (row: TransactionDetailRow) => {
+    if (!canSellTransaction) {
+      setErrorMessage("You do not have permission to edit selling detail.");
+      setIsShowError(true);
+      return;
+    }
+
+    if (!row.dateOUT) {
+      setErrorMessage("Selling detail can only be edited for sold transactions.");
+      setIsShowError(true);
+      return;
+    }
+
+    const detailResponse = await TransactionService.getTransactionDetailByTransactionId({
+      transactionId: row.transactionId,
+      setIsLoading: setIsActionLoading,
+    }).catch((error) => {
+      setErrorMessage(error.error.message);
+      setIsShowError(true);
+      return null;
+    });
+
+    if (!detailResponse) {
+      return;
+    }
+
+    const detail = detailResponse.data;
+    const sellingDetailRow: TransactionDetailRow = {
+      ...row,
+      transactionDetailId: detail?.transactionDetailId || null,
+      volume: detail?.volume || null,
+      sellingType: detail?.sellingType || null,
+      number: detail?.number || null,
+      name: detail?.name || null,
+      address: detail?.address || null,
+      phone: detail?.phone || null,
+    };
+
+    setSellingTransaction(sellingDetailRow);
+    setIsEditingSellingDetail(true);
+    fillSellingDetailForm(sellingDetailRow);
+    setIsSellingDetailModalOpen(true);
   };
 
   const handleOpenConfirmAddModal = () => {
@@ -1113,6 +1318,7 @@ const TransactionPage = () => {
         onEditDetailRow={handleOpenEditDetailRow}
         onDeleteDetailRow={handleOpenDeleteDetailRow}
         onSellDetailRow={handleOpenSellDetailRow}
+        onEditSellingDetailRow={handleOpenEditSellingDetailRow}
       />
 
       <AppModal
@@ -1369,12 +1575,8 @@ const TransactionPage = () => {
         open={isConfirmSellDetailModalOpen}
         onOpenChange={(open) => {
           setIsConfirmSellDetailModalOpen(open);
-
-          if (!open) {
-            setSellingTransaction(null);
-          }
         }}
-        title="Confirm Sell Transaction"
+        title={isEditingSellingDetail ? "Confirm Update Selling Detail" : "Confirm Sell Transaction"}
         showCloseButton={true}
         footer={
           <div className="flex gap-1">
@@ -1384,7 +1586,7 @@ const TransactionPage = () => {
               disabled={isActionLoading}
               onClick={() => {
                 setIsConfirmSellDetailModalOpen(false);
-                setSellingTransaction(null);
+                setIsSellingDetailModalOpen(true);
               }}
             >
               Cancel
@@ -1392,18 +1594,113 @@ const TransactionPage = () => {
             <Button
               type="button"
               disabled={isActionLoading}
-              onClick={handleSellDetailTransaction}
+              onClick={handleSubmitSellingDetail}
             >
               {isActionLoading ? "Saving..." : "Confirm"}
             </Button>
           </div>
         }
       >
-        <p className="text-sm">
-          Mark transaction <strong>{sellingTransaction?.noMesin || "-"}</strong> /{" "}
-          <strong>{sellingTransaction?.noRangka || "-"}</strong> as sold for{" "}
-          <strong>{getSelectedDateString()}</strong>?
-        </p>
+        {isEditingSellingDetail ? (
+          <p className="text-sm">
+            Update selling detail for transaction <strong>{sellingTransaction?.noMesin || "-"}</strong> /{" "}
+            <strong>{sellingTransaction?.noRangka || "-"}</strong>?
+          </p>
+        ) : (
+          <p className="text-sm">
+            Mark transaction <strong>{sellingTransaction?.noMesin || "-"}</strong> /{" "}
+            <strong>{sellingTransaction?.noRangka || "-"}</strong> as sold for{" "}
+            <strong>{getSelectedDateString()}</strong>?
+          </p>
+        )}
+      </AppModal>
+
+      <AppModal
+        open={isSellingDetailModalOpen}
+        onOpenChange={(open) => {
+          setIsSellingDetailModalOpen(open);
+
+          if (!open) {
+            resetSellingDetailForm();
+            setSellingTransaction(null);
+          }
+        }}
+        title={isEditingSellingDetail ? "Edit Selling Detail" : "Add Selling Detail"}
+        showCloseButton={true}
+        classNames={{
+          content: "sm:max-w-2xl",
+        }}
+        footer={
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isActionLoading}
+              onClick={() => {
+                setIsSellingDetailModalOpen(false);
+                setSellingTransaction(null);
+                resetSellingDetailForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={isActionLoading}
+              onClick={handleOpenConfirmSellDetailModal}
+            >
+              {isActionLoading ? "Saving..." : "Submit"}
+            </Button>
+          </div>
+        }
+      >
+        <div className="grid md:grid-cols-2 gap-4">
+          <AppTextField
+            label="Volume"
+            placeholder="Input volume"
+            required={true}
+            type="number"
+            value={sellingVolumeInput}
+            onChange={setSellingVolumeInput}
+          />
+          <AppTextField
+            label="Penjualan"
+            placeholder="Input penjualan"
+            required={true}
+            value={sellingTypeInput}
+            onChange={setSellingTypeInput}
+            isCapital
+          />
+          <AppTextField
+            label="No"
+            placeholder="Input no"
+            required={true}
+            type="number"
+            value={sellingNumberInput}
+            onChange={setSellingNumberInput}
+          />
+          <AppTextField
+            label="Name"
+            placeholder="Input name"
+            required={true}
+            value={sellingNameInput}
+            onChange={setSellingNameInput}
+          />
+          <AppTextField
+            label="Address"
+            placeholder="Input address"
+            required={true}
+            value={sellingAddressInput}
+            onChange={setSellingAddressInput}
+          />
+          <AppTextField
+            label="Phone"
+            placeholder="Input phone"
+            required={true}
+            value={sellingPhoneInput}
+            onChange={setSellingPhoneInput}
+          />
+        </div>
       </AppModal>
 
       <AppModal

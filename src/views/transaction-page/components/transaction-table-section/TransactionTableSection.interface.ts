@@ -21,4 +21,5 @@ export interface TransactionTableSectionProps {
   onEditDetailRow?: (row: TransactionDetailRow) => void;
   onDeleteDetailRow?: (row: TransactionDetailRow) => void;
   onSellDetailRow?: (row: TransactionDetailRow) => void;
+  onEditSellingDetailRow?: (row: TransactionDetailRow) => void;
 }

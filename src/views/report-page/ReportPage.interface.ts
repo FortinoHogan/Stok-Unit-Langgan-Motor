@@ -1,3 +1,5 @@
+import type { ReportTransactionSummaryRow } from "@/interfaces/IReportService.interface";
+
 export interface ReportAppliedPeriodFilter {
   year: string;
   month: string;
@@ -17,6 +19,7 @@ export interface ReportRow {
   typeName: string;
   typeCode: string;
   quantity: number;
+  details: ReportTransactionSummaryRow[];
 }
 
 export interface ReportCategoryTotal {

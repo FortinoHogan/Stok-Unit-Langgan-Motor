@@ -105,3 +105,14 @@ export interface TrRolePrivillege extends IModel {
   roleId: number;
   privillegeId: number;
 }
+
+export interface TrTransactionDetail extends IModel {
+  transactionDetailId: number;
+  transactionId: number;
+  volume: number;
+  sellingType: string;
+  number: number;
+  name: string;
+  address: string;
+  phone: string;
+}
