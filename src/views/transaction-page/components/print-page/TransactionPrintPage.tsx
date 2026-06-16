@@ -74,7 +74,7 @@ const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
                         <View style={styles.vehicleRow}>
                             <Text style={styles.vehicleLabel}>Deskripsi</Text>
                             <Text style={styles.vehicleColon}>:</Text>
-                            <Text style={styles.vehicleValue}>{data.typeDescription || data.typeCode || "-"}</Text>
+                            <Text style={styles.vehicleValue}>{data.typeDescription + " (" + data.typeCode + ")" || "-"}</Text>
                         </View>
                         <View style={styles.vehicleRow}>
                             <Text style={styles.vehicleLabel}>Warna</Text>
@@ -192,7 +192,7 @@ const TransactionPrintPage = () => {
     if (errorMessage || !printData) {
         return (
             <div className="flex min-h-screen items-center justify-center p-6 text-center text-sm text-muted-foreground">
-                {errorMessage || "Transaction print data not found."}
+                {"Transaction print data not found." + "(" + errorMessage + ")"}
             </div>
         );
     }
