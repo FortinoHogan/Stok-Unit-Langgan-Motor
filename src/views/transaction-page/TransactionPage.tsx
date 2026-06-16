@@ -6,6 +6,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { Eye } from "lucide-react";
+import { routes } from "@/constants/paths";
 
 import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAutoComplete";
 import AppDatePicker from "@/components/app-components/app-datepicker/AppDatePicker";
@@ -792,6 +793,15 @@ const TransactionPage = () => {
     setIsSellingDetailModalOpen(true);
   };
 
+  const handleOpenPrintDetailRow = (row: TransactionDetailRow) => {
+    const printPath = routes.transactionPrint.replace(
+      ":transactionId",
+      String(row.transactionId),
+    );
+
+    window.open(printPath, "_blank", "noopener,noreferrer");
+  };
+
   const handleOpenConfirmAddModal = () => {
     if (
       !typeColorIdInput.trim() ||
@@ -1319,6 +1329,7 @@ const TransactionPage = () => {
         onDeleteDetailRow={handleOpenDeleteDetailRow}
         onSellDetailRow={handleOpenSellDetailRow}
         onEditSellingDetailRow={handleOpenEditSellingDetailRow}
+        onPrintDetailRow={handleOpenPrintDetailRow}
       />
 
       <AppModal
@@ -1678,6 +1689,7 @@ const TransactionPage = () => {
             type="number"
             value={sellingNumberInput}
             onChange={setSellingNumberInput}
+            isCapital
           />
           <AppTextField
             label="Name"
@@ -1685,6 +1697,7 @@ const TransactionPage = () => {
             required={true}
             value={sellingNameInput}
             onChange={setSellingNameInput}
+            isCapital
           />
           <AppTextField
             label="Address"
@@ -1692,6 +1705,7 @@ const TransactionPage = () => {
             required={true}
             value={sellingAddressInput}
             onChange={setSellingAddressInput}
+            isCapital
           />
           <AppTextField
             label="Phone"

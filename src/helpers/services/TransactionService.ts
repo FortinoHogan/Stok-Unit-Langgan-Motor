@@ -19,7 +19,9 @@ import type {
   GetTypeColorOptionsRequest,
   GetTableTransactionDataRequest,
   GetTransactionDetailByTransactionIdRequest,
+  GetTransactionPrintDataByTransactionIdRequest,
   InsertTransactionDetailRequest,
+  TransactionPrintData,
   UpdateTransactionDetailRequest,
 } from "@/interfaces/ITransactionService";
 import { ApiService } from "@/utilities/ApiService";
@@ -533,6 +535,90 @@ const getTransactionDetailByTransactionId = async (
   }
 };
 
+const getTransactionPrintDataByTransactionId = async (
+  params: GetTransactionPrintDataByTransactionIdRequest,
+): Promise<IResponse<TransactionPrintData>> => {
+  const { transactionId, setIsLoading } = params;
+
+  setIsLoading?.(true);
+
+  try {
+    const response = await ApiService.request<any>(() =>
+      supabase
+        .from("TrTransaction")
+        .select(
+          `
+          transactionId,
+          noMesin,
+          noRangka,
+          year,
+          dateOUT,
+          TrTypeColor!inner (
+            MsColor!inner (
+              colorName,
+              isDeleted
+            ),
+            MsType!inner (
+              typeName,
+              typeCode,
+              typeDescription,
+              isDeleted,
+              MsCategory!inner (
+                isDeleted
+              )
+            )
+          ),
+          TrTransactionDetail!inner (
+            volume,
+            sellingType,
+            number,
+            name,
+            address,
+            phone,
+            isDeleted
+          )
+        `,
+        )
+        .eq("transactionId", transactionId)
+        .eq("isDeleted", false)
+        .eq("TrTypeColor.MsColor.isDeleted", false)
+        .eq("TrTypeColor.MsType.isDeleted", false)
+        .eq("TrTypeColor.MsType.MsCategory.isDeleted", false)
+        .eq("TrTransactionDetail.isDeleted", false)
+        .single(),
+    );
+
+    const item = response.data;
+
+    return {
+      ...response,
+      data: item
+        ? {
+            transactionId: item.transactionId,
+            typeName: item.TrTypeColor?.MsType?.typeName || null,
+            typeCode: item.TrTypeColor?.MsType?.typeCode || null,
+            typeDescription: item.TrTypeColor?.MsType?.typeDescription || null,
+            colorName: item.TrTypeColor?.MsColor?.colorName || null,
+            year: item.year,
+            volume: item.TrTransactionDetail[0]?.volume || null,
+            noRangka: item.noRangka,
+            noMesin: item.noMesin,
+            sellingType: item.TrTransactionDetail[0]?.sellingType || null,
+            number: item.TrTransactionDetail[0]?.number || null,
+            name: item.TrTransactionDetail[0]?.name || null,
+            address: item.TrTransactionDetail[0]?.address || null,
+            phone: item.TrTransactionDetail[0]?.phone || null,
+            dateOUT: item.dateOUT,
+          }
+        : null,
+    };
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
 const updateTransactionAsSold = async (
   params: UpdateTransactionAsSoldRequest,
 ): Promise<IResponse<TrTransaction>> => {
@@ -724,6 +810,7 @@ export const TransactionService = {
   getYearFilterOptions,
   getTableTransactionData,
   getTransactionDetailByTransactionId,
+  getTransactionPrintDataByTransactionId,
 
   updateTransactionAsSold,
   insertTransactionDetail,

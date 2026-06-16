@@ -18,5 +18,6 @@ export const routes = {
   typeAndColor: "/configuration/type-and-color",
   roleAndPrivillege: "/configuration/role-and-privillege",
   transaction: "/configuration/transaction",
+  transactionPrint: "/configuration/transaction/print/:transactionId",
   report: "/configuration/report",
 };

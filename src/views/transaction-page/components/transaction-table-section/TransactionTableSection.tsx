@@ -4,7 +4,7 @@ import {
   type ColumnDef,
   useReactTable,
 } from "@tanstack/react-table";
-import { CircleDollarSign, FilePen, Pencil, Trash } from "lucide-react";
+import { CircleDollarSign, FilePen, Pencil, Printer, Trash } from "lucide-react";
 import AppModal from "@/components/app-components/app-modal/AppModal";
 import AppTable from "@/components/app-components/app-table/AppTable";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
     onDeleteDetailRow,
     onSellDetailRow,
     onEditSellingDetailRow,
+    onPrintDetailRow,
   } = props;
 
   const detailColumns: ColumnDef<TransactionDetailRow>[] = [
@@ -119,6 +120,17 @@ const TransactionTableSection = (props: TransactionTableSectionProps) => {
               onClick={() => onEditSellingDetailRow(row.original)}
             >
               <FilePen className="size-4" />
+            </Button>
+          ) : null}
+          {onPrintDetailRow && (row.original.dateOUT || row.original.transactionDetailId) ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              title="Print surat jalan"
+              onClick={() => onPrintDetailRow(row.original)}
+            >
+              <Printer className="size-4" />
             </Button>
           ) : null}
           {canUpdateDetail && onEditDetailRow ? (

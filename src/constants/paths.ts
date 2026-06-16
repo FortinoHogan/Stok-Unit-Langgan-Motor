@@ -11,6 +11,7 @@ import TypeAndColorPage from "@/views/type-and-color-page/TypeAndColorPage";
 import { routes } from "./routeValues";
 import TransactionPage from "@/views/transaction-page/TransactionPage";
 import ReportPage from "@/views/report-page/ReportPage";
+import TransactionPrintPage from "@/views/transaction-page/print-page/TransactionPrintPage";
 
 export { routes };
 
@@ -26,5 +27,6 @@ export const routePaths = [
   { path: routes.typeAndColor, Component: TypeAndColorPage },
   { path: routes.roleAndPrivillege, Component: RoleAndPrivillegePage },
   { path: routes.transaction, Component: TransactionPage },
+  { path: routes.transactionPrint, Component: TransactionPrintPage },
   { path: routes.report, Component: ReportPage },
 ];

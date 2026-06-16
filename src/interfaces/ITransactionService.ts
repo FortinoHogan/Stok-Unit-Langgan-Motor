@@ -35,6 +35,10 @@ export interface GetTransactionDetailByTransactionIdRequest extends IRequestWith
   transactionId: number;
 }
 
+export interface GetTransactionPrintDataByTransactionIdRequest extends IRequestWithLoading {
+  transactionId: number;
+}
+
 export interface TransactionDetailRow {
   transactionId: number;
   typeColorId: number;
@@ -63,6 +67,24 @@ export interface TransactionTypeColorOption {
   typeName: string | null;
   typeCode: string | null;
   colorName: string | null;
+}
+
+export interface TransactionPrintData {
+  transactionId: number;
+  typeName: string | null;
+  typeCode: string | null;
+  typeDescription: string | null;
+  colorName: string | null;
+  year: number;
+  volume: number | null;
+  noRangka: string;
+  noMesin: string;
+  sellingType: string | null;
+  number: number | null;
+  name: string | null;
+  address: string | null;
+  phone: string | null;
+  dateOUT: string | null;
 }
 
 export interface UpdateTransactionAsSoldRequest extends IRequestWithLoading {
