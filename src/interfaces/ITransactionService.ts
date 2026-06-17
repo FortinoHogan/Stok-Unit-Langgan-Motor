@@ -113,6 +113,12 @@ export interface DeleteTransactionRequest extends IRequestWithLoading {
   updatedAt: string;
 }
 
+export interface DeleteTransactionDetailRequest extends IRequestWithLoading {
+  transactionId: number;
+  userUp: number;
+  updatedAt: string;
+}
+
 export interface InsertTransactionRequest extends IRequestWithLoading {
   typeColorId: number;
   noMesin: string;

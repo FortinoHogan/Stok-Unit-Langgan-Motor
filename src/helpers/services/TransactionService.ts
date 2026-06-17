@@ -23,6 +23,7 @@ import type {
   InsertTransactionDetailRequest,
   TransactionPrintData,
   UpdateTransactionDetailRequest,
+  DeleteTransactionDetailRequest,
 } from "@/interfaces/ITransactionService";
 import { ApiService } from "@/utilities/ApiService";
 import { supabase } from "../supabase/client";
@@ -802,6 +803,30 @@ const deleteTransaction = async (
   }
 };
 
+const deleteTransactionDetail = async (
+  params: DeleteTransactionDetailRequest,
+): Promise<IResponse<TrTransactionDetail[]>> => {
+  const { transactionId, userUp, updatedAt, setIsLoading } = params;
+  setIsLoading?.(true);
+
+  try {
+    const res = await ApiService.request<TrTransactionDetail[]>(() =>
+      supabase
+        .from("TrTransactionDetail")
+        .update({ userUp, updatedAt, isDeleted: true })
+        .eq("transactionId", transactionId)
+        .eq("isDeleted", false)
+        .select(),
+    );
+
+    return res;
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
 export const TransactionService = {
   getTypeColorOptions,
   getCategoryOptions,
@@ -816,6 +841,7 @@ export const TransactionService = {
   insertTransactionDetail,
   updateTransactionDetail,
   updateTransaction,
+  deleteTransactionDetail,
   deleteTransaction,
   insertTransaction,
 };

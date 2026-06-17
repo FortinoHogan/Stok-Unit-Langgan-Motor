@@ -140,6 +140,7 @@ const TransactionPage = () => {
   const [sellingNameInput, setSellingNameInput] = useState("");
   const [sellingAddressInput, setSellingAddressInput] = useState("");
   const [sellingPhoneInput, setSellingPhoneInput] = useState("");
+  const [sellingDateOutInput, setSellingDateOutInput] = useState<Date | undefined>(today);
 
   // Utility
   const handleCloseErrorModal = () => {
@@ -209,6 +210,7 @@ const TransactionPage = () => {
     setSellingNameInput("");
     setSellingAddressInput("");
     setSellingPhoneInput("");
+    setSellingDateOutInput(new Date());
     setIsEditingSellingDetail(false);
   };
 
@@ -219,6 +221,7 @@ const TransactionPage = () => {
     setSellingNameInput(transaction.name || "");
     setSellingAddressInput(transaction.address || "");
     setSellingPhoneInput(transaction.phone || "");
+    setSellingDateOutInput(transaction.dateOUT ? new Date(transaction.dateOUT) : new Date());
   };
 
   const fillEditDetailForm = (transaction: TransactionDetailRow) => {
@@ -486,6 +489,22 @@ const TransactionPage = () => {
       return;
     }
 
+    const deleteDetailResponse = await TransactionService.deleteTransactionDetail({
+      transactionId: deletingTransaction.transactionId,
+      userUp: userId,
+      updatedAt: new Date().toISOString(),
+      setIsLoading: setIsActionLoading,
+    })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+        return null;
+      });
+
+    if (!deleteDetailResponse) {
+      return;
+    }
+
     await TransactionService.deleteTransaction({
       transactionId: deletingTransaction.transactionId,
       userUp: userId,
@@ -551,6 +570,14 @@ const TransactionPage = () => {
       return;
     }
 
+    if (!sellingDateOutInput) {
+      setErrorMessage("Date Out is required.");
+      setIsShowError(true);
+      return;
+    }
+
+    const sellingDateOut = formatDateAsYmd(sellingDateOutInput);
+
     const payload = {
       transactionId: sellingTransaction.transactionId,
       volume: parsedVolume,
@@ -576,7 +603,7 @@ const TransactionPage = () => {
 
       await TransactionService.updateTransactionAsSold({
         transactionId: sellingTransaction.transactionId,
-        dateOUT: getSelectedDateString(),
+        dateOUT: sellingDateOut,
         userUp: userId,
         updatedAt: new Date().toISOString(),
         setIsLoading: setIsActionLoading,
@@ -605,21 +632,28 @@ const TransactionPage = () => {
       return;
     }
 
-    const mutation = sellingTransaction.transactionDetailId
-      ? TransactionService.updateTransactionDetail({
-        ...payload,
-        userUp: userId,
-        updatedAt: new Date().toISOString(),
-        setIsLoading: setIsActionLoading,
-      })
-      : TransactionService.insertTransactionDetail({
-        ...payload,
-        userIn: userId,
-        setIsLoading: setIsActionLoading,
-      });
+    await TransactionService.updateTransactionAsSold({
+      transactionId: sellingTransaction.transactionId,
+      dateOUT: sellingDateOut,
+      userUp: userId,
+      updatedAt: new Date().toISOString(),
+      setIsLoading: setIsActionLoading,
+    })
+      .then(async () => {
+        const mutation = sellingTransaction.transactionDetailId
+          ? TransactionService.updateTransactionDetail({
+            ...payload,
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
+            setIsLoading: setIsActionLoading,
+          })
+          : TransactionService.insertTransactionDetail({
+            ...payload,
+            userIn: userId,
+            setIsLoading: setIsActionLoading,
+          });
 
-    await mutation
-      .then(() => {
+        await mutation;
         setSuccessMessage("Selling detail updated successfully.");
         setIsShowSuccess(true);
         setIsSellingDetailModalOpen(false);
@@ -666,6 +700,12 @@ const TransactionPage = () => {
 
     if (!Number.isFinite(parsedNumber) || parsedNumber <= 0) {
       setErrorMessage("Number must be a valid number greater than 0.");
+      setIsShowError(true);
+      return false;
+    }
+
+    if (!sellingDateOutInput) {
+      setErrorMessage("Date Out is required.");
       setIsShowError(true);
       return false;
     }
@@ -1621,7 +1661,7 @@ const TransactionPage = () => {
           <p className="text-sm">
             Mark transaction <strong>{sellingTransaction?.noMesin || "-"}</strong> /{" "}
             <strong>{sellingTransaction?.noRangka || "-"}</strong> as sold for{" "}
-            <strong>{getSelectedDateString()}</strong>?
+            <strong>{sellingDateOutInput ? formatDateAsYmd(sellingDateOutInput) : "-"}</strong>?
           </p>
         )}
       </AppModal>
@@ -1666,6 +1706,13 @@ const TransactionPage = () => {
         }
       >
         <div className="grid md:grid-cols-2 gap-4">
+          <AppDatePicker
+            label="Date Out"
+            placeholder="Pick date out"
+            required={true}
+            value={sellingDateOutInput}
+            onValueChange={setSellingDateOutInput}
+          />
           <AppTextField
             label="Volume"
             placeholder="Input volume"
