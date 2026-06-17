@@ -19,6 +19,33 @@ const formatLongDate = (value?: string | null) => {
     }).format(new Date(value));
 };
 
+const mmToPt = (mm: number) => mm * 2.83464567;
+
+const buyerInfoRows = (data: TransactionPrintData) => (
+    <>
+        <View style={styles.secondBuyerRow}>
+            <Text style={styles.secondBuyerLabel}>Nama</Text>
+            <Text style={styles.secondBuyerColon}>:</Text>
+            <Text style={styles.secondBuyerValue}>{data.name || "-"}</Text>
+        </View>
+        <View style={styles.secondBuyerRow}>
+            <Text style={styles.secondBuyerLabel}>Alamat</Text>
+            <Text style={styles.secondBuyerColon}>:</Text>
+            <Text style={styles.secondBuyerValue}>{data.address || "-"}</Text>
+        </View>
+        <View style={styles.secondBuyerRow}>
+            <Text style={styles.secondBuyerLabel}>No. Telp.</Text>
+            <Text style={styles.secondBuyerColon}>:</Text>
+            <Text style={styles.secondBuyerValue}>{data.phone || "-"}</Text>
+        </View>
+        <View style={styles.secondBuyerRow}>
+            <Text style={styles.secondBuyerLabel}>Tgl. Beli</Text>
+            <Text style={styles.secondBuyerColon}>:</Text>
+            <Text style={styles.secondBuyerDateValue}>{formatLongDate(data.dateOUT)}</Text>
+        </View>
+    </>
+);
+
 const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
     return (
         <Document title={`Surat Jalan${" - " + data.sellingNumber}`}>
@@ -150,6 +177,70 @@ const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
                         <Text>Pembeli,</Text>
                         <View>
                             <Text style={styles.signature}>(_________________________)</Text>
+                        </View>
+                    </View>
+                </View>
+            </Page>
+
+            <Page
+                size={{
+                    width: mmToPt(76),
+                    height: mmToPt(38),
+                }}
+                style={styles.secondPage}
+            >
+                <View style={styles.secondCard}>
+                    <View style={styles.secondBuyerGroup}>{buyerInfoRows(data)}</View>
+                    <View style={styles.secondBuyerGroup}>{buyerInfoRows(data)}</View>
+                </View>
+            </Page>
+
+            <Page size={{ width: 595.28, height: 420.94 }} style={styles.thirdPage}>
+                <View style={styles.thirdCard}>
+                    <View style={styles.thirdHeaderBox}>
+                        <Text style={styles.thirdTitle}>BAST HADIAH</Text>
+                        <View style={styles.thirdHeaderDivider} />
+                        <Text style={styles.thirdSubTitle}>Program Jaket Honda Safety Riding #cari_aman</Text>
+                        <Text style={styles.thirdPeriod}>1 April - 30 Juni 2026</Text>
+                    </View>
+
+                    <View style={styles.thirdBody}>
+                        <Text style={styles.thirdSectionTitle}>Data Konsumen :</Text>
+                        <View style={styles.thirdInfoRows}>
+                            <View style={styles.thirdInfoRow}>
+                                <Text style={styles.thirdInfoLabel}>Nama</Text>
+                                <Text style={styles.thirdInfoColon}>:</Text>
+                                <Text style={styles.thirdInfoValue}>{data.name || "-"}</Text>
+                            </View>
+                            <View style={styles.thirdInfoRow}>
+                                <Text style={styles.thirdInfoLabel}>Alamat</Text>
+                                <Text style={styles.thirdInfoColon}>:</Text>
+                                <Text style={styles.thirdInfoValue}>{data.address || "-"}</Text>
+                            </View>
+                            <View style={styles.thirdInfoRow}>
+                                <Text style={styles.thirdInfoLabel}>No. Telp</Text>
+                                <Text style={styles.thirdInfoColon}>:</Text>
+                                <Text style={styles.thirdInfoValue}>{data.phone || "-"}</Text>
+                            </View>
+                        </View>
+
+                        <Text style={styles.thirdStatement}>Menyatakan telah terima dari Dealer HADIAH berupa :</Text>
+                        <Text style={styles.thirdGiftLine}>{"> 1 Unit Jaket Honda Safety Riding #cari_aman"}</Text>
+                    </View>
+
+                    <View style={styles.thirdSignatures}>
+                        <View style={styles.thirdSignatureBlock}>
+                            <Text style={styles.thirdDate}> </Text>
+                            <Text style={styles.thirdDate}>Diterima oleh KONSUMEN,</Text>
+                            <Text style={styles.thirdSignatureGap}> </Text>
+                            <Text style={styles.thirdSignatureName}>{data.name || "-"}</Text>
+                        </View>
+
+                        <View style={styles.thirdSignatureBlock}>
+                            <Text style={styles.thirdDate}>Tegal, {formatLongDate(data.dateOUT)}</Text>
+                            <Text style={styles.thirdDate}>Diserahkan oleh SALESMAN,</Text>
+                            <Text style={styles.thirdSignatureGap}> </Text>
+                            <Text style={styles.thirdSignatureName}>ALI TAUPAN</Text>
                         </View>
                     </View>
                 </View>

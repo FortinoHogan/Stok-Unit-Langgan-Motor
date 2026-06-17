@@ -128,4 +128,140 @@ export const styles = StyleSheet.create({
   signature: {
     marginTop: 40,
   },
+  secondPage: {
+    padding: 8,
+    fontSize: 5,
+    fontFamily: "Helvetica",
+    color: "#3b4555",
+  },
+  secondCard: {
+    padding: 8,
+    height: "100%",
+    justifyContent: "space-between",
+    gap: 4,
+    fontWeight: 900,
+  },
+  secondBuyerGroup: {
+    gap: 6,
+  },
+  secondBuyerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 2,
+  },
+  secondBuyerLabel: {
+    width: 24,
+  },
+  secondBuyerColon: {
+    width: 6,
+  },
+  secondBuyerValue: {
+    flex: 1,
+  },
+  secondBuyerDateValue: {
+    flex: 1,
+  },
+  secondSeparator: {
+    borderTopWidth: 1,
+    borderTopColor: "#d6dde7",
+    marginVertical: 4,
+  },
+  thirdPage: {
+    paddingTop: 16,
+    paddingRight: 20,
+    paddingBottom: 16,
+    paddingLeft: 20,
+    fontSize: 8,
+    fontFamily: "Helvetica",
+    color: "#2f3844",
+  },
+  thirdCard: {
+    borderWidth: 1,
+    borderColor: "#858e99",
+    padding: 10,
+    height: "100%",
+  },
+  thirdHeaderBox: {
+    borderWidth: 1,
+    borderColor: "#8f98a3",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    marginBottom: 10,
+    gap: 3,
+  },
+  thirdTitle: {
+    fontSize: 18,
+    fontWeight: 900,
+  },
+  thirdHeaderDivider: {
+    alignSelf: "stretch",
+    borderTopWidth: 1,
+    borderTopColor: "#8f98a3",
+    marginHorizontal: -8,
+    marginVertical: 2,
+  },
+  thirdSubTitle: {
+    fontSize: 14,
+    fontWeight: 900,
+  },
+  thirdPeriod: {
+    fontSize: 14,
+    fontWeight: 900,
+  },
+  thirdBody: {
+    marginTop: 4,
+    gap: 6,
+  },
+  thirdSectionTitle: {
+    fontSize: 8,
+  },
+  thirdInfoRows: {
+    width: "72%",
+    gap: 3,
+  },
+  thirdInfoRow: {
+    flexDirection: "row",
+  },
+  thirdInfoLabel: {
+    width: 64,
+    fontWeight: 500,
+  },
+  thirdInfoColon: {
+    width: 8,
+  },
+  thirdInfoValue: {
+    flex: 1,
+    fontWeight: 700,
+  },
+  thirdStatement: {
+    marginTop: 2,
+    fontSize: 8,
+  },
+  thirdGiftLine: {
+    marginTop: 4,
+    marginLeft: 10,
+    fontSize: 8,
+    fontWeight: 700,
+  },
+  thirdSignatures: {
+    marginTop: 30,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  thirdSignatureBlock: {
+    width: "42%",
+    gap: 4,
+  },
+  thirdDate: {
+    textAlign: "center",
+  },
+  thirdSignatureGap: {
+    marginTop: 36,
+  },
+  thirdSignatureName: {
+    marginTop: 4,
+    textAlign: "center",
+    fontWeight: 700,
+  },
 });
