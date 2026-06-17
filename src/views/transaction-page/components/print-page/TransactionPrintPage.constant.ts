@@ -14,7 +14,6 @@ export const styles = StyleSheet.create({
     fontSize: 8,
     fontFamily: "Helvetica",
     color: "#244a78",
-    backgroundColor: "#efe39c",
   },
   header: {
     flexDirection: "row",
@@ -73,7 +72,7 @@ export const styles = StyleSheet.create({
   },
   leftContent: {
     width: "45%",
-    gap: 6,
+    gap: 3,
   },
   rightContent: {
     width: "55%",
@@ -108,7 +107,7 @@ export const styles = StyleSheet.create({
   },
   noteText: {
     flex: 1,
-    lineHeight: 1,
+    lineHeight: 0.75,
   },
   footer: {
     marginTop: 5,
@@ -124,6 +123,7 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingVertical: 1.5,
     borderColor: "#7ea0c3",
+    marginVertical: 6,
   },
   signature: {
     marginTop: 40,

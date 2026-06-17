@@ -111,7 +111,7 @@ export interface TrTransactionDetail extends IModel {
   transactionId: number;
   volume: number;
   sellingType: string;
-  number: number;
+  sellingNumber: string;
   name: string;
   address: string;
   phone: string;

@@ -217,7 +217,7 @@ const TransactionPage = () => {
   const fillSellingDetailForm = (transaction: TransactionDetailRow) => {
     setSellingVolumeInput(transaction.volume ? String(transaction.volume) : "");
     setSellingTypeInput(transaction.sellingType || "");
-    setSellingNumberInput(transaction.number ? String(transaction.number) : "");
+    setSellingNumberInput(transaction.sellingNumber || "");
     setSellingNameInput(transaction.name || "");
     setSellingAddressInput(transaction.address || "");
     setSellingPhoneInput(transaction.phone || "");
@@ -582,7 +582,7 @@ const TransactionPage = () => {
       transactionId: sellingTransaction.transactionId,
       volume: parsedVolume,
       sellingType: sellingTypeInput.trim().toUpperCase(),
-      number: parsedNumber,
+      sellingNumber: sellingNumberInput.trim().toUpperCase(),
       name: sellingNameInput.trim(),
       address: sellingAddressInput.trim(),
       phone: sellingPhoneInput.trim(),
@@ -821,7 +821,7 @@ const TransactionPage = () => {
       transactionDetailId: detail?.transactionDetailId || null,
       volume: detail?.volume || null,
       sellingType: detail?.sellingType || null,
-      number: detail?.number || null,
+      sellingNumber: detail?.sellingNumber || null,
       name: detail?.name || null,
       address: detail?.address || null,
       phone: detail?.phone || null,
@@ -1733,7 +1733,6 @@ const TransactionPage = () => {
             label="No"
             placeholder="Input no"
             required={true}
-            type="number"
             value={sellingNumberInput}
             onChange={setSellingNumberInput}
             isCapital

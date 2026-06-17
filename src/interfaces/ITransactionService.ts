@@ -55,7 +55,7 @@ export interface TransactionDetailRow {
   transactionDetailId: number | null;
   volume: number | null;
   sellingType: string | null;
-  number: number | null;
+  sellingNumber: string | null;
   name: string | null;
   address: string | null;
   phone: string | null;
@@ -80,7 +80,7 @@ export interface TransactionPrintData {
   noRangka: string;
   noMesin: string;
   sellingType: string | null;
-  number: number | null;
+  sellingNumber: string | null;
   name: string | null;
   address: string | null;
   phone: string | null;
@@ -134,7 +134,7 @@ export interface InsertTransactionDetailRequest extends IRequestWithLoading {
   transactionId: number;
   volume: number;
   sellingType: string;
-  number: number;
+  sellingNumber: string;
   name: string;
   address: string;
   phone: string;
@@ -145,7 +145,7 @@ export interface UpdateTransactionDetailRequest extends IRequestWithLoading {
   transactionId: number;
   volume: number;
   sellingType: string;
-  number: number;
+  sellingNumber: string;
   name: string;
   address: string;
   phone: string;

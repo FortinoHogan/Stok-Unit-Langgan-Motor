@@ -21,7 +21,7 @@ const formatLongDate = (value?: string | null) => {
 
 const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
     return (
-        <Document title={`Surat Jalan${" - " + data.number}`}>
+        <Document title={`Surat Jalan${" - " + data.sellingNumber}`}>
             <Page size={{ width: 595.28, height: 420.94 }} style={styles.page}>
                 <View style={styles.header}>
                     <View style={styles.companyBlock}>
@@ -39,23 +39,28 @@ const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
                     <View style={styles.topRightBlock}>
                         <View style={styles.row}>
                             <Text style={styles.label}>Penjualan</Text>
-                            <Text style={styles.value}>: {data.sellingType || "-"}</Text>
+                            <Text>: </Text>
+                            <Text style={styles.value}>{data.sellingType || "-"}</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.label}>No.</Text>
-                            <Text style={styles.value}>: {data.number ?? "-"}</Text>
+                            <Text>: </Text>
+                            <Text style={styles.value}>{data.sellingNumber ?? "-"}</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.label}>Nama</Text>
-                            <Text style={styles.value}>: {data.name || "-"}</Text>
+                            <Text>: </Text>
+                            <Text style={styles.value}>{data.name || "-"}</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.label}>Alamat</Text>
-                            <Text style={styles.value}>: {data.address || "-"}</Text>
+                            <Text>: </Text>
+                            <Text style={styles.value}>{data.address || "-"}</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.label}>No. Telp/HP</Text>
-                            <Text style={styles.value}>: {data.phone || "-"}</Text>
+                            <Text>: </Text>
+                            <Text style={styles.value}>{data.phone || "-"}</Text>
                         </View>
                     </View>
                 </View>
@@ -125,7 +130,7 @@ const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
                         <View style={styles.noteItem}><Text style={styles.noteNumber}>3</Text><Text style={styles.noteText}>Peraturan-peraturan Pemerintah yang dikeluarkan sesudah tanggal dibuat Surat Jalan ini menjadi beban tanggungan pembeli.</Text></View>
                         <View style={styles.noteItem}><Text style={styles.noteNumber}>4</Text><Text style={styles.noteText}>Barang-barang yang telah keluar dari toko/gudang kami, tidak dapat dikembalikan.</Text></View>
                         <View style={styles.noteItem}><Text style={styles.noteNumber}>5</Text><Text style={styles.noteText}>Bila Faktur asli tidak diambil dalam waktu 1 bulan, maka segala akibat dan semua hal-hal yang tidak diinginkan yang mungkin akan menimpa pihak importir menjadi beban pembeli sepenuhnya.</Text></View>
-                        <View style={styles.noteItem}><Text style={styles.noteNumber}>6</Text><Text style={styles.noteText}>Surat jalan ini tidak dapat dipindahtangankan/diperjual belikan. Peraturan Pemerintah yang dikeluarkan sesudah tanggal di-buat</Text></View>
+                        <View style={styles.noteItem}><Text style={styles.noteNumber}>6</Text><Text style={styles.noteText}>Surat jalan ini tidak dapat dipindahtangankan/diperjual belikan.</Text></View>
                     </View>
                 </View>
 
