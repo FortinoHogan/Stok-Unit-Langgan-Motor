@@ -205,7 +205,7 @@ const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
                     </View>
 
                     <View style={styles.thirdBody}>
-                        <Text style={styles.thirdSectionTitle}>Data Konsumen :</Text>
+                        <Text>Data Konsumen :</Text>
                         <View style={styles.thirdInfoRows}>
                             <View style={styles.thirdInfoRow}>
                                 <Text style={styles.thirdInfoLabel}>Nama</Text>

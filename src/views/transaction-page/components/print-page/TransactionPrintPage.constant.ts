@@ -13,7 +13,6 @@ export const styles = StyleSheet.create({
     paddingLeft: 22,
     fontSize: 8,
     fontFamily: "Helvetica",
-    color: "#244a78",
   },
   header: {
     flexDirection: "row",
@@ -64,7 +63,6 @@ export const styles = StyleSheet.create({
     marginBottom: 12,
     paddingVertical: 1.5,
     borderWidth: 1,
-    borderColor: "#7ea0c3",
   },
   content: {
     flexDirection: "row",
@@ -122,38 +120,36 @@ export const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     paddingVertical: 1.5,
-    borderColor: "#7ea0c3",
     marginVertical: 6,
   },
   signature: {
     marginTop: 40,
   },
   secondPage: {
-    padding: 8,
-    fontSize: 5,
+    padding: 4,
+    fontSize: 7,
     fontFamily: "Helvetica",
-    color: "#3b4555",
   },
   secondCard: {
-    padding: 8,
+    padding: 2,
     height: "100%",
     justifyContent: "space-between",
-    gap: 4,
+    gap: 2,
     fontWeight: 900,
   },
   secondBuyerGroup: {
-    gap: 6,
+    gap: 3,
+    marginBottom: 4,
   },
   secondBuyerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 2,
   },
   secondBuyerLabel: {
-    width: 24,
+    width: 34,
   },
   secondBuyerColon: {
-    width: 6,
+    width: 4,
   },
   secondBuyerValue: {
     flex: 1,
@@ -163,27 +159,22 @@ export const styles = StyleSheet.create({
   },
   secondSeparator: {
     borderTopWidth: 1,
-    borderTopColor: "#d6dde7",
     marginVertical: 4,
   },
   thirdPage: {
-    paddingTop: 16,
-    paddingRight: 20,
-    paddingBottom: 16,
-    paddingLeft: 20,
-    fontSize: 8,
+    paddingHorizontal: 22,
+    paddingVertical: 18,
+    paddingBottom: 28,
+    fontSize: 12,
     fontFamily: "Helvetica",
-    color: "#2f3844",
   },
   thirdCard: {
     borderWidth: 1,
-    borderColor: "#858e99",
     padding: 10,
     height: "100%",
   },
   thirdHeaderBox: {
     borderWidth: 1,
-    borderColor: "#8f98a3",
     paddingVertical: 6,
     paddingHorizontal: 8,
     alignItems: "center",
@@ -191,18 +182,17 @@ export const styles = StyleSheet.create({
     gap: 3,
   },
   thirdTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 900,
   },
   thirdHeaderDivider: {
     alignSelf: "stretch",
     borderTopWidth: 1,
-    borderTopColor: "#8f98a3",
     marginHorizontal: -8,
     marginVertical: 2,
   },
   thirdSubTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 900,
   },
   thirdPeriod: {
@@ -212,9 +202,6 @@ export const styles = StyleSheet.create({
   thirdBody: {
     marginTop: 4,
     gap: 6,
-  },
-  thirdSectionTitle: {
-    fontSize: 8,
   },
   thirdInfoRows: {
     width: "72%",
@@ -236,16 +223,14 @@ export const styles = StyleSheet.create({
   },
   thirdStatement: {
     marginTop: 2,
-    fontSize: 8,
   },
   thirdGiftLine: {
     marginTop: 4,
     marginLeft: 10,
-    fontSize: 8,
     fontWeight: 700,
   },
   thirdSignatures: {
-    marginTop: 30,
+    marginTop: 18,
     flexDirection: "row",
     justifyContent: "space-between",
   },
