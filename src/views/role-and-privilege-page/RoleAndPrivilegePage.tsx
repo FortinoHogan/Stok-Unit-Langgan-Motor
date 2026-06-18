@@ -15,31 +15,31 @@ import AppCheckboxList from "@/components/app-layout/app-checkbox-list/AppCheckb
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
-import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
-import { PrivillegeService } from "@/helpers/services/PrivillegeService"
-import { RolePrivillegeService } from "@/helpers/services/RolePrivillegeService"
+import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess"
+import { PrivilegeService } from "@/helpers/services/PrivilegeService"
+import { RolePrivilegeService } from "@/helpers/services/RolePrivilegeService"
 import { RoleService } from "@/helpers/services/RoleService"
 import type { GetRoleListRequest } from "@/interfaces/IRoleService"
-import type { MsPrivillege, MsRole, TrRolePrivillege } from "@/interfaces/IModel.interface"
-import { ROLE_AND_PRIVILLEGE_PAGE_SIZE_OPTIONS } from "./RoleAndPrivillegePage.constant"
+import type { MsPrivilege, MsRole, TrRolePrivilege } from "@/interfaces/IModel.interface"
+import { ROLE_AND_PRIVILEGE_PAGE_SIZE_OPTIONS } from "./RoleAndPrivilegePage.constant"
 
-const RoleAndPrivillegePage = () => {
+const RoleAndPrivilegePage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-  const roleAndPrivillegeAccess = usePrivillegeAccess("Role and Privillege")
-  const canUpdateRolePrivillege = roleAndPrivillegeAccess.canUpdate
+  const roleAndPrivilegeAccess = usePrivilegeAccess("Role and privilege")
+  const canUpdateRolePrivilege = roleAndPrivilegeAccess.canUpdate
 
-  const [isAddPrivillegeModalOpen, setIsAddPrivillegeModalOpen] = useState(false)
+  const [isAddPrivilegeModalOpen, setIsAddPrivilegeModalOpen] = useState(false)
   const [isConfirmSaveModalOpen, setIsConfirmSaveModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const [isShowError, setIsShowError] = useState(false)
 
   const [roleList, setRoleList] = useState<MsRole[]>([])
-  const [rolePrivillegeList, setRolePrivillegeList] = useState<TrRolePrivillege[]>([])
-  const [privillegeList, setPrivillegeList] = useState<MsPrivillege[]>([])
+  const [rolePrivilegeList, setRolePrivilegeList] = useState<TrRolePrivilege[]>([])
+  const [privilegeList, setPrivilegeList] = useState<MsPrivilege[]>([])
 
   const [selectedRole, setSelectedRole] = useState<MsRole | null>(null)
-  const [selectedPrivillegeIds, setSelectedPrivillegeIds] = useState<number[]>([])
+  const [selectedPrivilegeIds, setSelectedPrivilegeIds] = useState<number[]>([])
 
   const [isLoading, setIsLoading] = useState(false)
   const [search, setSearch] = useState("")
@@ -47,47 +47,47 @@ const RoleAndPrivillegePage = () => {
   const [pageSize, setPageSize] = useState(5)
   const [totalCount, setTotalCount] = useState(0)
 
-  const privillegeNameById = useMemo(
-    () => new Map(privillegeList.map((privillege) => [privillege.privillegeId, privillege.privillegeName])),
-    [privillegeList],
+  const privilegeNameById = useMemo(
+    () => new Map(privilegeList.map((privilege) => [privilege.privilegeId, privilege.privilegeName])),
+    [privilegeList],
   )
 
-  const privillegeIdsByRoleId = useMemo(() => {
-    return rolePrivillegeList.reduce((accumulator, item) => {
+  const privilegeIdsByRoleId = useMemo(() => {
+    return rolePrivilegeList.reduce((accumulator, item) => {
       const previous = accumulator.get(item.roleId) || []
-      accumulator.set(item.roleId, [...previous, item.privillegeId])
+      accumulator.set(item.roleId, [...previous, item.privilegeId])
       return accumulator
     }, new Map<number, number[]>())
-  }, [rolePrivillegeList])
+  }, [rolePrivilegeList])
 
-  const selectedRolePrivillegeIds = useMemo(
-    () => (selectedRole ? privillegeIdsByRoleId.get(selectedRole.roleId) || [] : []),
-    [privillegeIdsByRoleId, selectedRole],
+  const selectedRolePrivilegeIds = useMemo(
+    () => (selectedRole ? privilegeIdsByRoleId.get(selectedRole.roleId) || [] : []),
+    [privilegeIdsByRoleId, selectedRole],
   )
 
-  const splitPrivillegeName = (privillegeName: string) => {
-    const partList = privillegeName.split(" ")
+  const splitPrivilegeName = (privilegeName: string) => {
+    const partList = privilegeName.split(" ")
 
     return {
-      actionName: partList[0] || privillegeName,
+      actionName: partList[0] || privilegeName,
       groupName: partList.length > 1 ? partList.slice(1).join(" ") : "Other",
     }
   }
 
-  const privillegeOptions = useMemo(
-    () => privillegeList.map((privillege) => {
-      const { groupName } = splitPrivillegeName(privillege.privillegeName)
+  const privilegeOptions = useMemo(
+    () => privilegeList.map((privilege) => {
+      const { groupName } = splitPrivilegeName(privilege.privilegeName)
 
       return {
-        value: String(privillege.privillegeId),
-        label: privillege.privillegeName,
+        value: String(privilege.privilegeId),
+        label: privilege.privilegeName,
         group: groupName,
       }
     }),
-    [privillegeList],
+    [privilegeList],
   )
 
-  const roleAndPrivillegeTableColumns: ColumnDef<MsRole>[] = [
+  const roleAndPrivilegeTableColumns: ColumnDef<MsRole>[] = [
     {
       accessorKey: "roleName",
       header: "Role Name",
@@ -96,16 +96,16 @@ const RoleAndPrivillegePage = () => {
       ),
     },
     {
-      id: "privillege",
-      header: "Privillege",
+      id: "privilege",
+      header: "privilege",
       cell: ({ row }) => {
-        const privillegeIds = privillegeIdsByRoleId.get(row.original.roleId) || []
-        const privillegeNames = privillegeIds
-          .map((privillegeId) => privillegeNameById.get(privillegeId))
+        const privilegeIds = privilegeIdsByRoleId.get(row.original.roleId) || []
+        const privilegeNames = privilegeIds
+          .map((privilegeId) => privilegeNameById.get(privilegeId))
           .filter((value): value is string => Boolean(value))
 
-        const privillegesByGroupName = privillegeNames.reduce((accumulator, privillegeName) => {
-          const { actionName, groupName } = splitPrivillegeName(privillegeName)
+        const privilegesByGroupName = privilegeNames.reduce((accumulator, privilegeName) => {
+          const { actionName, groupName } = splitPrivilegeName(privilegeName)
           const previous = accumulator.get(groupName) || []
 
           if (!previous.includes(actionName)) {
@@ -115,20 +115,20 @@ const RoleAndPrivillegePage = () => {
           return accumulator
         }, new Map<string, string[]>())
 
-        const groupedPrivilleges = Array.from(privillegesByGroupName.entries())
+        const groupedPrivileges = Array.from(privilegesByGroupName.entries())
           .map(([groupName, actionNames]) => ({
             groupName,
             actionNames: actionNames.sort((a, b) => a.localeCompare(b)),
           }))
           .sort((a, b) => a.groupName.localeCompare(b.groupName))
 
-        if (!privillegeNames.length) {
-          return <p className="text-sm text-muted-foreground">No privillege assigned</p>
+        if (!privilegeNames.length) {
+          return <p className="text-sm text-muted-foreground">No privilege assigned</p>
         }
 
         return (
           <div className="grid gap-2 md:grid-cols-2">
-            {groupedPrivilleges.map((group) => (
+            {groupedPrivileges.map((group) => (
               <div
                 key={group.groupName}
                 className="rounded-md border border-border/60 bg-muted/20 p-2"
@@ -157,13 +157,13 @@ const RoleAndPrivillegePage = () => {
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex justify-center">
-          {canUpdateRolePrivillege ? (
+          {canUpdateRolePrivilege ? (
             <Button
               variant="outline"
               size="sm"
-              title="Add privilleges"
+              title="Add privileges"
               className="h-8 w-8 p-0"
-              onClick={() => handleOpenAddPrivillegeModal(row.original)}
+              onClick={() => handleOpenAddPrivilegeModal(row.original)}
             >
               <Pencil className="size-4" />
             </Button>
@@ -177,7 +177,7 @@ const RoleAndPrivillegePage = () => {
 
   const table = useReactTable({
     data: roleList,
-    columns: roleAndPrivillegeTableColumns,
+    columns: roleAndPrivilegeTableColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
@@ -194,22 +194,22 @@ const RoleAndPrivillegePage = () => {
     return userId
   }
 
-  const resetAddPrivillegeState = () => {
+  const resetAddPrivilegeState = () => {
     setSelectedRole(null)
-    setSelectedPrivillegeIds([])
-    setIsAddPrivillegeModalOpen(false)
+    setSelectedPrivilegeIds([])
+    setIsAddPrivilegeModalOpen(false)
   }
 
   const resetConfirmSaveState = () => {
     setIsConfirmSaveModalOpen(false)
   }
 
-  const handleOpenAddPrivillegeModal = (role: MsRole) => {
-    const mappedPrivillegeIds = privillegeIdsByRoleId.get(role.roleId) || []
+  const handleOpenAddPrivilegeModal = (role: MsRole) => {
+    const mappedPrivilegeIds = privilegeIdsByRoleId.get(role.roleId) || []
 
     setSelectedRole(role)
-    setSelectedPrivillegeIds(mappedPrivillegeIds)
-    setIsAddPrivillegeModalOpen(true)
+    setSelectedPrivilegeIds(mappedPrivilegeIds)
+    setIsAddPrivilegeModalOpen(true)
   }
 
   const handleOpenConfirmSave = () => {
@@ -220,17 +220,17 @@ const RoleAndPrivillegePage = () => {
     setIsConfirmSaveModalOpen(true)
   }
 
-  const handleFetchRolePrivilleges = async (roles: MsRole[]) => {
+  const handleFetchRolePrivileges = async (roles: MsRole[]) => {
     const roleIds = roles.map((role) => role.roleId)
 
     if (!roleIds.length) {
-      setRolePrivillegeList([])
+      setRolePrivilegeList([])
       return
     }
 
-    await RolePrivillegeService.getRolePrivillegeListByRoleIds({ roleIds })
+    await RolePrivilegeService.getRolePrivilegeListByRoleIds({ roleIds })
       .then((res) => {
-        setRolePrivillegeList(res.data || [])
+        setRolePrivilegeList(res.data || [])
       })
       .catch((error) => {
         setErrorMessage(error.error.message)
@@ -251,7 +251,7 @@ const RoleAndPrivillegePage = () => {
         const nextRoleList = res.data || []
         setRoleList(nextRoleList)
         setTotalCount(res.count ?? 0)
-        handleFetchRolePrivilleges(nextRoleList)
+        handleFetchRolePrivileges(nextRoleList)
       })
       .catch((error) => {
         setErrorMessage(error.error.message)
@@ -259,18 +259,18 @@ const RoleAndPrivillegePage = () => {
       })
   }
 
-  const handleFetchPrivilleges = async () => {
-    await PrivillegeService.getPrivillegeList({
+  const handleFetchPrivileges = async () => {
+    await PrivilegeService.getPrivilegeList({
       page: 1,
       pageSize: 9999,
       search: "",
     })
       .then((res) => {
         const sorted = (res.data || []).sort((a, b) =>
-          a.privillegeName.localeCompare(b.privillegeName),
+          a.privilegeName.localeCompare(b.privilegeName),
         )
 
-        setPrivillegeList(sorted)
+        setPrivilegeList(sorted)
       })
       .catch((error) => {
         setErrorMessage(error.error.message)
@@ -278,24 +278,24 @@ const RoleAndPrivillegePage = () => {
       })
   }
 
-  const handleInsertRolePrivillege = async () => {
+  const handleInsertRolePrivilege = async () => {
     if (!selectedRole) {
       return
     }
 
-    const selectedRolePrivillegeMappings = rolePrivillegeList.filter(
-      (rolePrivillege) => rolePrivillege.roleId === selectedRole.roleId,
+    const selectedRolePrivilegeMappings = rolePrivilegeList.filter(
+      (rolePrivilege) => rolePrivilege.roleId === selectedRole.roleId,
     )
 
-    const nextPrivillegeIds = selectedPrivillegeIds.filter(
-      (privillegeId) => !selectedRolePrivillegeIds.includes(privillegeId),
+    const nextPrivilegeIds = selectedPrivilegeIds.filter(
+      (privilegeId) => !selectedRolePrivilegeIds.includes(privilegeId),
     )
 
-    const removedRolePrivillegeMappings = selectedRolePrivillegeMappings.filter(
-      (rolePrivillege) => !selectedPrivillegeIds.includes(rolePrivillege.privillegeId),
+    const removedRolePrivilegeMappings = selectedRolePrivilegeMappings.filter(
+      (rolePrivilege) => !selectedPrivilegeIds.includes(rolePrivilege.privilegeId),
     )
 
-    if (!nextPrivillegeIds.length && !removedRolePrivillegeMappings.length) {
+    if (!nextPrivilegeIds.length && !removedRolePrivilegeMappings.length) {
       setErrorMessage("No changes detected for this role")
       setIsShowError(true)
       return
@@ -309,16 +309,16 @@ const RoleAndPrivillegePage = () => {
     setIsLoading(true)
     await Promise.all(
       [
-        ...nextPrivillegeIds.map((privillegeId) =>
-          RolePrivillegeService.insertRolePrivillege({
+        ...nextPrivilegeIds.map((privilegeId) =>
+          RolePrivilegeService.insertRolePrivilege({
             roleId: selectedRole.roleId,
-            privillegeId,
+            privilegeId,
             userIn: userId,
           }),
         ),
-        ...removedRolePrivillegeMappings.map((rolePrivillege) =>
-          RolePrivillegeService.deleteRolePrivillege({
-            rolePrivillegeId: rolePrivillege.rolePrivillegeId,
+        ...removedRolePrivilegeMappings.map((rolePrivilege) =>
+          RolePrivilegeService.deleteRolePrivilege({
+            rolePrivilegeId: rolePrivilege.rolePrivilegeId,
             userUp: userId,
             updatedAt: new Date().toISOString(),
           }),
@@ -327,9 +327,9 @@ const RoleAndPrivillegePage = () => {
     )
       .then(() => {
         resetConfirmSaveState()
-        resetAddPrivillegeState()
+        resetAddPrivilegeState()
         setErrorMessage("")
-        setSuccessMessage("Privillege assignment saved successfully")
+        setSuccessMessage("privilege assignment saved successfully")
         setIsShowError(true)
         handleFetchRoles()
       })
@@ -347,16 +347,16 @@ const RoleAndPrivillegePage = () => {
   }, [page, pageSize, search])
 
   useEffect(() => {
-    handleFetchPrivilleges()
+    handleFetchPrivileges()
   }, [])
 
   return (
     <div>
       <div className="mb-4">
         <h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-          Role and Privillege
+          Role and privilege
         </h1>
-        <p className="text-muted-foreground">Manage privillege assignment for each role</p>
+        <p className="text-muted-foreground">Manage privilege assignment for each role</p>
       </div>
 
       <AppSearchBar
@@ -373,7 +373,7 @@ const RoleAndPrivillegePage = () => {
       <AppTable
         table={table}
         showNumberColumn
-        columnsCount={roleAndPrivillegeTableColumns.length}
+        columnsCount={roleAndPrivilegeTableColumns.length}
         emptyMessage="No roles found."
         classNames={{
           tableContainer: "rounded-xl border-border/70 bg-card",
@@ -392,29 +392,29 @@ const RoleAndPrivillegePage = () => {
           setPageSize(size)
           setPage(1)
         }}
-        pageSizeOptions={ROLE_AND_PRIVILLEGE_PAGE_SIZE_OPTIONS}
+        pageSizeOptions={ROLE_AND_PRIVILEGE_PAGE_SIZE_OPTIONS}
         pageInfoRenderer={({ page: currentPage, rowCount }) =>
           `Page ${currentPage} • ${totalCount} total • ${rowCount} row(s) shown`
         }
       />
 
       <AppModal
-        open={isAddPrivillegeModalOpen}
+        open={isAddPrivilegeModalOpen}
         onOpenChange={(open) => {
-          setIsAddPrivillegeModalOpen(open)
+          setIsAddPrivilegeModalOpen(open)
 
           if (!open) {
-            resetAddPrivillegeState()
+            resetAddPrivilegeState()
           }
         }}
-        title="Add Privillege"
-        description={`Add privillege for ${selectedRole ? `role: ${selectedRole.roleName}` : "role not selected"}`}
+        title="Add privilege"
+        description={`Add privilege for ${selectedRole ? `role: ${selectedRole.roleName}` : "role not selected"}`}
         footer={
           <div className="flex gap-1">
             <Button
               type="button"
               onClick={() => {
-                resetAddPrivillegeState()
+                resetAddPrivilegeState()
               }}
               variant="outline"
             >
@@ -425,7 +425,7 @@ const RoleAndPrivillegePage = () => {
               onClick={() => {
                 handleOpenConfirmSave()
               }}
-              disabled={!canUpdateRolePrivillege}
+              disabled={!canUpdateRolePrivilege}
             >
               Save
             </Button>
@@ -437,21 +437,21 @@ const RoleAndPrivillegePage = () => {
         </p>
 
         <AppCheckboxList
-          label="Choose Privillege (Multiple)"
-          placeholder="Select privilleges"
-          searchPlaceholder="Search privillege"
-          emptyMessage="No privilleges found"
-          values={selectedPrivillegeIds.map((privillegeId) => String(privillegeId))}
-          options={privillegeOptions}
+          label="Choose privilege (Multiple)"
+          placeholder="Select privileges"
+          searchPlaceholder="Search privilege"
+          emptyMessage="No privileges found"
+          values={selectedPrivilegeIds.map((privilegeId) => String(privilegeId))}
+          options={privilegeOptions}
           onValuesChange={(values) => {
-            setSelectedPrivillegeIds(values.map((value) => Number(value)))
+            setSelectedPrivilegeIds(values.map((value) => Number(value)))
           }}
         />
 
         <AppExistingList
-          title="Existing Privillege List"
-          items={selectedRolePrivillegeIds.map((privillegeId) => privillegeNameById.get(privillegeId) || "-")}
-          emptyMessage="No privillege assigned"
+          title="Existing privilege List"
+          items={selectedRolePrivilegeIds.map((privilegeId) => privilegeNameById.get(privilegeId) || "-")}
+          emptyMessage="No privilege assigned"
         />
       </AppModal>
 
@@ -465,7 +465,7 @@ const RoleAndPrivillegePage = () => {
           }
         }}
         title="Confirm Save"
-        description="This action will add selected privillege to selected role"
+        description="This action will add selected privilege to selected role"
         classNames={{
           content: "sm:max-w-sm",
           header: "gap-1",
@@ -486,7 +486,7 @@ const RoleAndPrivillegePage = () => {
             <Button
               type="button"
               onClick={() => {
-                handleInsertRolePrivillege()
+                handleInsertRolePrivilege()
               }}
             >
               Save
@@ -494,7 +494,7 @@ const RoleAndPrivillegePage = () => {
           </div>
         }
       >
-        <p>Are you sure you want to add this privillege?</p>
+        <p>Are you sure you want to add this privilege?</p>
       </AppModal>
 
       <AppModal
@@ -541,4 +541,4 @@ const RoleAndPrivillegePage = () => {
   )
 }
 
-export default RoleAndPrivillegePage
+export default RoleAndPrivilegePage

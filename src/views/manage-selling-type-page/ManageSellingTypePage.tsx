@@ -1,93 +1,80 @@
+import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
 import AppModal from "@/components/app-components/app-modal/AppModal"
-import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAutoComplete"
+import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
 import AppTable from "@/components/app-components/app-table/AppTable"
 import AppTextField from "@/components/app-components/app-text-field/AppTextField"
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
-import type { AuthenticatedUser, MsRole } from "@/interfaces/IModel.interface"
+import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
 import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess"
-import { UserService } from "@/helpers/services/UserService"
-import { RoleService } from "@/helpers/services/RoleService"
+import { SellingTypeService } from "@/helpers/services/SellingTypeService"
+import type {
+    DeleteSellingTypeRequest,
+    GetSellingTypeListRequest,
+    InsertSellingTypeRequest,
+    UpdateSellingTypeRequest,
+} from "@/interfaces/ISellingTypeService"
+import type { MsSellingType } from "@/interfaces/IModel.interface"
 import {
-    useReactTable,
     getCoreRowModel,
     getSortedRowModel,
     type ColumnDef,
+    useReactTable,
 } from "@tanstack/react-table"
-import { useEffect, useMemo, useState } from "react"
-import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
-import type {
-    DeleteAuthenticatedUserRequest,
-    GetAuthenticatedUserListRequest,
-    InsertAuthenticatedUserRequest,
-    UpdateAuthenticatedUserRequest,
-} from "@/interfaces/IUserService.interface"
 import { Pencil, Trash } from "lucide-react"
-import { MANAGE_USER_PAGE_SIZE_OPTIONS, type PendingActionManageUser } from "./ManageUserPage.constant"
+import { useEffect, useMemo, useState } from "react"
+import {
+    MANAGE_SELLING_TYPE_PAGE_SIZE_OPTIONS,
+    type PendingActionManageSellingType,
+} from "./ManageSellingTypePage.constant"
 
-const ManageUserPage = () => {
-    const manageUserAccess = usePrivilegeAccess("Manage Users")
+const ManageSellingTypePage = () => {
+    const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
+    const sellingTypeAccess = usePrivilegeAccess("Master Selling Type")
 
     const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
     const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
     const [successMessage, setSuccessMessage] = useState("")
     const [isShowError, setIsShowError] = useState(false)
-    const [newUserEmail, setNewUserEmail] = useState("")
-    const [selectedRoleId, setSelectedRoleId] = useState("")
-    const [editingOriginalEmail, setEditingOriginalEmail] = useState("")
-    const [editingUserId, setEditingUserId] = useState<number | null>(null)
-    const [pendingAction, setPendingAction] = useState<PendingActionManageUser>(null)
-    const [pendingDeleteUser, setPendingDeleteUser] = useState<AuthenticatedUser | null>(null)
+    const [newSellingTypeName, setNewSellingTypeName] = useState("")
+    const [editingSellingTypeId, setEditingSellingTypeId] = useState<number | null>(null)
+    const [pendingAction, setPendingAction] = useState<PendingActionManageSellingType>(null)
+    const [pendingDeleteSellingType, setPendingDeleteSellingType] = useState<MsSellingType | null>(null)
 
-    const [userList, setUserList] = useState<AuthenticatedUser[]>([])
-    const [roleList, setRoleList] = useState<MsRole[]>([])
+    const [sellingTypeList, setSellingTypeList] = useState<MsSellingType[]>([])
+    const [existingSellingTypeList, setExistingSellingTypeList] = useState<MsSellingType[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [search, setSearch] = useState("")
     const [page, setPage] = useState(1)
-    const [pageSize, setPageSize] = useState(5)
+    const [pageSize, setPageSize] = useState(10)
     const [totalCount, setTotalCount] = useState(0)
 
-    const roleNameById = useMemo(
-        () => new Map(roleList.map((role) => [role.roleId, role.roleName])),
-        [roleList],
-    )
-
-    const roleOptions = useMemo(() => roleList.map((role) => ({
-        value: String(role.roleId),
-        label: role.roleName,
-    })), [roleList])
-
-    const manageUserTableColumns: ColumnDef<AuthenticatedUser>[] = [
+    const manageSellingTypeTableColumns: ColumnDef<MsSellingType>[] = [
         {
-            accessorKey: "email",
-            header: "Email",
-        },
-        {
-            accessorKey: "roleId",
-            header: "Role",
-            cell: ({ getValue }) => roleNameById.get(getValue<number>()) || "-",
+            accessorKey: "sellingTypeName",
+            header: "Selling Type Name",
         },
         {
             id: "actions",
             header: "Actions",
             cell: ({ row }) => (
                 <div className="flex gap-2">
-                    {manageUserAccess.canUpdate ? (
+                    {sellingTypeAccess.canUpdate ? (
                         <Button
                             variant="outline"
                             size="sm"
-                            title="Edit user"
-                            onClick={() => handleEditUser(row.original)}
+                            title="Edit selling type"
+                            onClick={() => handleEditSellingType(row.original)}
                         >
                             <Pencil className="size-4" />
                         </Button>
                     ) : null}
-                    {manageUserAccess.canDelete ? (
+                    {sellingTypeAccess.canDelete ? (
                         <Button
                             variant="destructive"
                             size="sm"
-                            title="Delete user"
+                            title="Delete selling type"
                             onClick={() => handleOpenDeleteConfirmation(row.original)}
                         >
                             <Trash className="size-4" />
@@ -95,150 +82,139 @@ const ManageUserPage = () => {
                     ) : null}
                 </div>
             ),
-        }
+        },
     ]
 
     const hasNextPage = page * pageSize < totalCount
 
     const table = useReactTable({
-        data: userList,
-        columns: manageUserTableColumns,
+        data: sellingTypeList,
+        columns: manageSellingTypeTableColumns,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
     })
 
-    const resetUserForm = () => {
-        setNewUserEmail("")
-        setSelectedRoleId("")
-        setEditingOriginalEmail("")
-        setEditingUserId(null)
+    const filteredExistingSellingTypeList = useMemo(() => {
+        const keyword = newSellingTypeName.trim().toLowerCase()
+
+        if (!keyword) {
+            return existingSellingTypeList
+        }
+
+        return existingSellingTypeList.filter((sellingType) =>
+            sellingType.sellingTypeName.toLowerCase().includes(keyword),
+        )
+    }, [existingSellingTypeList, newSellingTypeName])
+
+    const ensureAuthenticatedUserId = () => {
+        const userId = authenticatedUser?.userId
+
+        if (!userId) {
+            setErrorMessage("Authenticated user not found. Please login again.")
+            setIsShowError(true)
+            return null
+        }
+
+        return userId
+    }
+
+    const resetSellingTypeForm = () => {
+        setNewSellingTypeName("")
+        setEditingSellingTypeId(null)
     }
 
     const resetConfirmActionState = () => {
         setPendingAction(null)
-        setPendingDeleteUser(null)
+        setPendingDeleteSellingType(null)
         setIsConfirmActionModalOpen(false)
     }
 
     const handleOpenCreateModal = () => {
-        resetUserForm()
+        resetSellingTypeForm()
+        handleFetchExistingSellingTypes()
         setIsUpsertModalOpen(true)
     }
 
-    const handleEditUser = (user: AuthenticatedUser) => {
-        setEditingUserId(user.userId)
-        setNewUserEmail(user.email)
-        setSelectedRoleId(String(user.roleId))
-        setEditingOriginalEmail(user.email)
+    const handleEditSellingType = (sellingType: MsSellingType) => {
+        setEditingSellingTypeId(sellingType.sellingTypeId)
+        setNewSellingTypeName(sellingType.sellingTypeName)
+        handleFetchExistingSellingTypes()
         setIsUpsertModalOpen(true)
-    }
-
-    const validateUniqueEmail = async (email: string) => {
-        const normalizedEmail = email.trim().toLowerCase()
-        const normalizedOriginalEmail = editingOriginalEmail.trim().toLowerCase()
-
-        if (editingUserId && normalizedEmail === normalizedOriginalEmail) {
-            return true
-        }
-
-        const res = await UserService.getUserByEmail({
-            email: normalizedEmail,
-        })
-
-        if (res.data) {
-            setErrorMessage("Email access already exists")
-            setIsShowError(true)
-            return false
-        }
-
-        return true
     }
 
     const handleOpenUpdateConfirmation = () => {
-        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
+        if (!editingSellingTypeId || !newSellingTypeName.trim()) {
             return
         }
 
         setPendingAction("update")
-        setPendingDeleteUser(null)
+        setPendingDeleteSellingType(null)
         setIsConfirmActionModalOpen(true)
     }
 
     const handleOpenInsertConfirmation = () => {
-        if (!newUserEmail.trim() || !selectedRoleId) {
+        if (!newSellingTypeName.trim()) {
             return
         }
 
         setPendingAction("insert")
-        setPendingDeleteUser(null)
+        setPendingDeleteSellingType(null)
         setIsConfirmActionModalOpen(true)
     }
 
-    const handleOpenDeleteConfirmation = (user: AuthenticatedUser) => {
+    const handleOpenDeleteConfirmation = (sellingType: MsSellingType) => {
         setPendingAction("delete")
-        setPendingDeleteUser(user)
+        setPendingDeleteSellingType(sellingType)
         setIsConfirmActionModalOpen(true)
+    }
+
+    const isDuplicateSellingTypeName = () => {
+        const normalized = newSellingTypeName.trim().toLowerCase()
+
+        return existingSellingTypeList.some((sellingType) => {
+            const isSameRecord = editingSellingTypeId
+                ? sellingType.sellingTypeId === editingSellingTypeId
+                : false
+
+            if (isSameRecord) {
+                return false
+            }
+
+            return sellingType.sellingTypeName.trim().toLowerCase() === normalized
+        })
     }
 
     const handleInsert = async () => {
-        if (!newUserEmail.trim() || !selectedRoleId) {
-            return;
-        }
-
-        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
-        if (!isUniqueEmail) {
+        if (!newSellingTypeName.trim()) {
             return
         }
 
-        const payload: InsertAuthenticatedUserRequest = {
-            email: newUserEmail.trim().toLowerCase(),
-            roleId: Number(selectedRoleId),
-            setIsLoading,
-        }
-
-        await UserService.insertAuthenticatedUser(payload)
-            .then(() => {
-                setIsUpsertModalOpen(false)
-                setNewUserEmail("")
-                setSelectedRoleId("")
-                resetConfirmActionState()
-                setErrorMessage("")
-                setSuccessMessage("User access added successfully")
-                setIsShowError(true)
-                handleFetchUsers()
-            })
-            .catch((error) => {
-                setErrorMessage(error.error.message);
-                setIsShowError(true);
-            })
-    }
-
-    const handleUpdate = async () => {
-        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
-            return;
-        }
-
-        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
-        if (!isUniqueEmail) {
+        if (isDuplicateSellingTypeName()) {
+            setErrorMessage("Selling type name already exists")
+            setIsShowError(true)
             return
         }
 
-        const payload: UpdateAuthenticatedUserRequest = {
-            userId: editingUserId,
-            email: newUserEmail.trim().toLowerCase(),
-            roleId: Number(selectedRoleId),
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: InsertSellingTypeRequest = {
+            sellingTypeName: newSellingTypeName.trim().toUpperCase(),
+            userIn: userId,
             setIsLoading,
         }
 
-        await UserService.updateAuthenticatedUser(payload)
+        await SellingTypeService.insertSellingType(payload)
             .then(() => {
                 setIsUpsertModalOpen(false)
-                resetUserForm()
+                resetSellingTypeForm()
                 resetConfirmActionState()
                 setErrorMessage("")
-                setSuccessMessage("User access updated successfully")
+                setSuccessMessage("Selling type added successfully")
                 setIsShowError(true)
-                handleFetchUsers()
+                handleFetchSellingTypes()
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -246,24 +222,72 @@ const ManageUserPage = () => {
             })
     }
 
-    const handleDeleteUser = async (user: AuthenticatedUser) => {
-        const payload: DeleteAuthenticatedUserRequest = {
-            userId: user.userId,
+    const handleUpdate = async () => {
+        if (!editingSellingTypeId || !newSellingTypeName.trim()) {
+            return
+        }
+
+        if (isDuplicateSellingTypeName()) {
+            setErrorMessage("Selling type name already exists")
+            setIsShowError(true)
+            return
+        }
+
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: UpdateSellingTypeRequest = {
+            sellingTypeId: editingSellingTypeId,
+            sellingTypeName: newSellingTypeName.trim().toUpperCase(),
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
             setIsLoading,
         }
 
-        await UserService.deleteAuthenticatedUser(payload)
+        await SellingTypeService.updateSellingType(payload)
+            .then(() => {
+                setIsUpsertModalOpen(false)
+                resetSellingTypeForm()
+                resetConfirmActionState()
+                setErrorMessage("")
+                setSuccessMessage("Selling type updated successfully")
+                setIsShowError(true)
+                handleFetchSellingTypes()
+            })
+            .catch((error) => {
+                setErrorMessage(error.error.message)
+                setIsShowError(true)
+            })
+    }
+
+    const handleDeleteSellingType = async (sellingType: MsSellingType) => {
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: DeleteSellingTypeRequest = {
+            sellingTypeId: sellingType.sellingTypeId,
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
+            setIsLoading,
+        }
+
+        await SellingTypeService.deleteSellingType(payload)
             .then(() => {
                 resetConfirmActionState()
                 setErrorMessage("")
-                setSuccessMessage("User access deleted successfully")
+                setSuccessMessage("Selling type deleted successfully")
                 setIsShowError(true)
-                if (userList.length === 1 && page > 1) {
+
+                if (sellingTypeList.length === 1 && page > 1) {
                     setPage((prev) => prev - 1)
                     return
                 }
 
-                handleFetchUsers()
+                handleFetchSellingTypes()
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -282,38 +306,38 @@ const ManageUserPage = () => {
             return
         }
 
-        if (pendingAction === "delete" && pendingDeleteUser) {
-            await handleDeleteUser(pendingDeleteUser)
+        if (pendingAction === "delete" && pendingDeleteSellingType) {
+            await handleDeleteSellingType(pendingDeleteSellingType)
         }
     }
 
-    const handleFetchUsers = async () => {
-        const payload: GetAuthenticatedUserListRequest = {
+    const handleFetchSellingTypes = async () => {
+        const payload: GetSellingTypeListRequest = {
             page,
             pageSize,
             search,
             setIsLoading,
         }
 
-        await UserService.getAuthenticatedUserList(payload)
+        await SellingTypeService.getSellingTypeList(payload)
             .then((res) => {
-                setUserList(res.data || []);
+                setSellingTypeList(res.data || [])
                 setTotalCount(res.count ?? 0)
             })
             .catch((error) => {
-                setErrorMessage(error.error.message);
-                setIsShowError(true);
+                setErrorMessage(error.error.message)
+                setIsShowError(true)
             })
     }
 
-    const handleFetchRoles = async () => {
-        await RoleService.getRoleList({
+    const handleFetchExistingSellingTypes = async () => {
+        await SellingTypeService.getSellingTypeList({
             page: 1,
             pageSize: 9999,
             search: "",
         })
             .then((res) => {
-                setRoleList(res.data || [])
+                setExistingSellingTypeList(res.data || [])
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -322,31 +346,36 @@ const ManageUserPage = () => {
     }
 
     useEffect(() => {
-        handleFetchUsers();
+        handleFetchSellingTypes()
     }, [page, pageSize, search])
-
-    useEffect(() => {
-        handleFetchRoles()
-    }, [])
 
     return (
         <div>
             <div className="mb-4">
                 <h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-                    Manage User
+                    Manage Selling Type
                 </h1>
-                <p className="text-muted-foreground">Manage email and role access for this application</p>
+                <p className="text-muted-foreground">Manage selling type data</p>
             </div>
+
             <AppModal
-                trigger={manageUserAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Email Access</Button> : undefined}
-                title={editingUserId ? "Edit User Access" : "Add New User Access"}
-                description={editingUserId ? "Update email access for AuthenticatedUser" : "Add a new email access for AuthenticatedUser"}
+                trigger={
+                    sellingTypeAccess.canInsert ? (
+                        <Button className="mb-4" onClick={handleOpenCreateModal}>
+                            Add Selling Type
+                        </Button>
+                    ) : undefined
+                }
+                title={editingSellingTypeId ? "Edit Selling Type" : "Add New Selling Type"}
+                description={
+                    editingSellingTypeId ? "Update selected selling type" : "Add a new selling type"
+                }
                 open={isUpsertModalOpen}
                 onOpenChange={(open) => {
                     setIsUpsertModalOpen(open)
 
                     if (!open) {
-                        resetUserForm()
+                        resetSellingTypeForm()
                     }
                 }}
                 footer={
@@ -355,50 +384,43 @@ const ManageUserPage = () => {
                             type="button"
                             onClick={() => {
                                 setIsUpsertModalOpen(false)
-                                resetUserForm()
+                                resetSellingTypeForm()
                             }}
-                            variant={"outline"}
+                            variant="outline"
                         >
                             Cancel
                         </Button>
                         <Button
                             type="button"
                             onClick={() => {
-                                if (editingUserId) {
+                                if (editingSellingTypeId) {
                                     handleOpenUpdateConfirmation()
                                     return
                                 }
 
                                 handleOpenInsertConfirmation()
                             }}
-                            disabled={editingUserId ? !manageUserAccess.canUpdate : !manageUserAccess.canInsert}
                         >
-                            {editingUserId ? "Update" : "Save"}
+                            {editingSellingTypeId ? "Update" : "Save"}
                         </Button>
                     </div>
                 }
             >
                 <AppTextField
-                    label="Email"
-                    placeholder="user123@example.com"
-                    type="email"
-                    required={true}
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e)}
+                    label="Selling Type Name"
+                    placeholder="RETAIL"
+                    required
+                    value={newSellingTypeName}
+                    onChange={(value) => setNewSellingTypeName(value)}
+                    isUppercase
                 />
-                <AppAutoComplete
-                    label="Role"
-                    placeholder="Select role"
-                    searchPlaceholder="Search role"
-                    emptyMessage="No role found"
-                    required={true}
-                    value={selectedRoleId}
-                    options={roleOptions}
-                    onValueChange={(value) => {
-                        setSelectedRoleId(value)
-                    }}
+                <AppExistingList
+                    title="Existing Selling Type List"
+                    items={filteredExistingSellingTypeList.map((st) => st.sellingTypeName)}
+                    emptyMessage="No selling type data"
                 />
             </AppModal>
+
             <AppModal
                 open={isConfirmActionModalOpen}
                 onOpenChange={(open) => {
@@ -410,17 +432,17 @@ const ManageUserPage = () => {
                 }}
                 title={
                     pendingAction === "delete"
-                        ? "Delete User Access"
+                        ? "Delete Selling Type"
                         : pendingAction === "insert"
                             ? "Confirm Save"
                             : "Confirm Update"
                 }
                 description={
                     pendingAction === "delete"
-                        ? "This action will remove the selected user access"
+                        ? "This action will remove the selected selling type"
                         : pendingAction === "insert"
-                            ? "This action will add new user access"
-                            : "This action will update the selected user access"
+                            ? "This action will add new selling type"
+                            : "This action will update the selected selling type"
                 }
                 classNames={{
                     content: "sm:max-w-sm",
@@ -453,15 +475,16 @@ const ManageUserPage = () => {
             >
                 <p>
                     {pendingAction === "delete"
-                        ? "Are you sure you want to delete this user?"
+                        ? "Are you sure you want to delete this selling type?"
                         : pendingAction === "insert"
-                            ? "Are you sure you want to add this user?"
-                            : "Are you sure you want to update this user?"}
+                            ? "Are you sure you want to add this selling type?"
+                            : "Are you sure you want to update this selling type?"}
                 </p>
             </AppModal>
+
             <AppSearchBar
-                label="Search User"
-                placeholder="user123@example.com"
+                label="Search Selling Type"
+                placeholder="RETAIL"
                 onSearch={(value) => {
                     setSearch(value)
                     setPage(1)
@@ -474,12 +497,12 @@ const ManageUserPage = () => {
             <AppTable
                 table={table}
                 showNumberColumn
-                columnsCount={manageUserTableColumns.length}
-                emptyMessage={"No users found."}
+                columnsCount={manageSellingTypeTableColumns.length}
+                emptyMessage="No selling types found."
                 showPagination
                 page={page}
                 pageSize={pageSize}
-                rowCount={userList.length}
+                rowCount={sellingTypeList.length}
                 hasNextPage={hasNextPage}
                 onPreviousPage={() => setPage((p) => Math.max(p - 1, 1))}
                 onNextPage={() => setPage((p) => p + 1)}
@@ -487,22 +510,23 @@ const ManageUserPage = () => {
                     setPageSize(size)
                     setPage(1)
                 }}
-                pageSizeOptions={MANAGE_USER_PAGE_SIZE_OPTIONS}
-                pageInfoRenderer={({ page, rowCount }) =>
-                    `Page ${page} • ${totalCount} total • ${rowCount} row(s) shown`
+                pageSizeOptions={MANAGE_SELLING_TYPE_PAGE_SIZE_OPTIONS}
+                pageInfoRenderer={({ page: currentPage, rowCount }) =>
+                    `Page ${currentPage} • ${totalCount} total • ${rowCount} row(s) shown`
                 }
             />
+
             <AppModal
                 open={isShowError}
                 onOpenChange={setIsShowError}
                 title={errorMessage ? "Error" : "Success"}
-                showCloseButton={true}
+                showCloseButton
                 contentProps={{
                     onOpenAutoFocus: (event) => {
-                        event.preventDefault();
+                        event.preventDefault()
                     },
                     onCloseAutoFocus: (event) => {
-                        event.preventDefault();
+                        event.preventDefault()
                     },
                 }}
                 classNames={{
@@ -518,9 +542,9 @@ const ManageUserPage = () => {
                         <Button
                             type="button"
                             onClick={() => {
-                                setErrorMessage("");
-                                setSuccessMessage("");
-                                setIsShowError(false);
+                                setErrorMessage("")
+                                setSuccessMessage("")
+                                setIsShowError(false)
                             }}
                         >
                             OK
@@ -530,9 +554,10 @@ const ManageUserPage = () => {
             >
                 <p>{errorMessage || successMessage}</p>
             </AppModal>
+
             {isLoading && <AppSpinner />}
         </div>
     )
 }
 
-export default ManageUserPage
+export default ManageSellingTypePage

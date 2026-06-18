@@ -1,0 +1,1 @@
+export const ROLE_AND_PRIVILEGE_PAGE_SIZE_OPTIONS = [5, 10, 20];

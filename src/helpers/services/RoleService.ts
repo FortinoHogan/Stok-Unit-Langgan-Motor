@@ -1,5 +1,13 @@
-import type { IGetListRequest, IResponse, MsRole } from "@/interfaces/IModel.interface";
-import type { DeleteRoleRequest, InsertRoleRequest, UpdateRoleRequest } from "@/interfaces/IRoleService";
+import type {
+  IGetListRequest,
+  IResponse,
+  MsRole,
+} from "@/interfaces/IModel.interface";
+import type {
+  DeleteRoleRequest,
+  InsertRoleRequest,
+  UpdateRoleRequest,
+} from "@/interfaces/IRoleService";
 import { ApiService } from "@/utilities/ApiService";
 import { supabase } from "../supabase/client";
 
@@ -47,11 +55,7 @@ const insertRole = async (
 
   try {
     return await ApiService.request<MsRole>(() =>
-      supabase
-        .from("MsRole")
-        .insert({ roleName, userIn })
-        .select()
-        .single(),
+      supabase.from("MsRole").insert({ roleName, userIn }).select().single(),
     );
   } catch (error) {
     throw error;
@@ -91,7 +95,7 @@ const deleteRole = async (
   try {
     await ApiService.request(() =>
       supabase
-        .from("TrRolePrivillege")
+        .from("TrRoleprivilege")
         .update({ userUp, updatedAt, isDeleted: true })
         .eq("roleId", roleId),
     );

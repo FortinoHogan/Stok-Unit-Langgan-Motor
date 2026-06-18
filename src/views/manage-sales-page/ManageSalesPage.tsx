@@ -1,93 +1,80 @@
+import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
 import AppModal from "@/components/app-components/app-modal/AppModal"
-import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAutoComplete"
+import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
 import AppTable from "@/components/app-components/app-table/AppTable"
 import AppTextField from "@/components/app-components/app-text-field/AppTextField"
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
-import type { AuthenticatedUser, MsRole } from "@/interfaces/IModel.interface"
+import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
 import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess"
-import { UserService } from "@/helpers/services/UserService"
-import { RoleService } from "@/helpers/services/RoleService"
+import { SalesService } from "@/helpers/services/SalesService"
+import type {
+    DeleteSalesRequest,
+    GetSalesListRequest,
+    InsertSalesRequest,
+    UpdateSalesRequest,
+} from "@/interfaces/ISalesService"
+import type { MsSales } from "@/interfaces/IModel.interface"
 import {
-    useReactTable,
     getCoreRowModel,
     getSortedRowModel,
     type ColumnDef,
+    useReactTable,
 } from "@tanstack/react-table"
-import { useEffect, useMemo, useState } from "react"
-import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
-import type {
-    DeleteAuthenticatedUserRequest,
-    GetAuthenticatedUserListRequest,
-    InsertAuthenticatedUserRequest,
-    UpdateAuthenticatedUserRequest,
-} from "@/interfaces/IUserService.interface"
 import { Pencil, Trash } from "lucide-react"
-import { MANAGE_USER_PAGE_SIZE_OPTIONS, type PendingActionManageUser } from "./ManageUserPage.constant"
+import { useEffect, useMemo, useState } from "react"
+import {
+    MANAGE_SALES_PAGE_SIZE_OPTIONS,
+    type PendingActionManageSales,
+} from "./ManageSalesPage.constant"
 
-const ManageUserPage = () => {
-    const manageUserAccess = usePrivilegeAccess("Manage Users")
+const ManageSalesPage = () => {
+    const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
+    const salesAccess = usePrivilegeAccess("Master Sales")
 
     const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
     const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
     const [successMessage, setSuccessMessage] = useState("")
     const [isShowError, setIsShowError] = useState(false)
-    const [newUserEmail, setNewUserEmail] = useState("")
-    const [selectedRoleId, setSelectedRoleId] = useState("")
-    const [editingOriginalEmail, setEditingOriginalEmail] = useState("")
-    const [editingUserId, setEditingUserId] = useState<number | null>(null)
-    const [pendingAction, setPendingAction] = useState<PendingActionManageUser>(null)
-    const [pendingDeleteUser, setPendingDeleteUser] = useState<AuthenticatedUser | null>(null)
+    const [newSalesName, setNewSalesName] = useState("")
+    const [editingSalesId, setEditingSalesId] = useState<number | null>(null)
+    const [pendingAction, setPendingAction] = useState<PendingActionManageSales>(null)
+    const [pendingDeleteSales, setPendingDeleteSales] = useState<MsSales | null>(null)
 
-    const [userList, setUserList] = useState<AuthenticatedUser[]>([])
-    const [roleList, setRoleList] = useState<MsRole[]>([])
+    const [salesList, setSalesList] = useState<MsSales[]>([])
+    const [existingSalesList, setExistingSalesList] = useState<MsSales[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [search, setSearch] = useState("")
     const [page, setPage] = useState(1)
-    const [pageSize, setPageSize] = useState(5)
+    const [pageSize, setPageSize] = useState(10)
     const [totalCount, setTotalCount] = useState(0)
 
-    const roleNameById = useMemo(
-        () => new Map(roleList.map((role) => [role.roleId, role.roleName])),
-        [roleList],
-    )
-
-    const roleOptions = useMemo(() => roleList.map((role) => ({
-        value: String(role.roleId),
-        label: role.roleName,
-    })), [roleList])
-
-    const manageUserTableColumns: ColumnDef<AuthenticatedUser>[] = [
+    const manageSalesTableColumns: ColumnDef<MsSales>[] = [
         {
-            accessorKey: "email",
-            header: "Email",
-        },
-        {
-            accessorKey: "roleId",
-            header: "Role",
-            cell: ({ getValue }) => roleNameById.get(getValue<number>()) || "-",
+            accessorKey: "salesName",
+            header: "Sales Name",
         },
         {
             id: "actions",
             header: "Actions",
             cell: ({ row }) => (
                 <div className="flex gap-2">
-                    {manageUserAccess.canUpdate ? (
+                    {salesAccess.canUpdate ? (
                         <Button
                             variant="outline"
                             size="sm"
-                            title="Edit user"
-                            onClick={() => handleEditUser(row.original)}
+                            title="Edit sales"
+                            onClick={() => handleEditSales(row.original)}
                         >
                             <Pencil className="size-4" />
                         </Button>
                     ) : null}
-                    {manageUserAccess.canDelete ? (
+                    {salesAccess.canDelete ? (
                         <Button
                             variant="destructive"
                             size="sm"
-                            title="Delete user"
+                            title="Delete sales"
                             onClick={() => handleOpenDeleteConfirmation(row.original)}
                         >
                             <Trash className="size-4" />
@@ -95,150 +82,137 @@ const ManageUserPage = () => {
                     ) : null}
                 </div>
             ),
-        }
+        },
     ]
 
     const hasNextPage = page * pageSize < totalCount
 
     const table = useReactTable({
-        data: userList,
-        columns: manageUserTableColumns,
+        data: salesList,
+        columns: manageSalesTableColumns,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
     })
 
-    const resetUserForm = () => {
-        setNewUserEmail("")
-        setSelectedRoleId("")
-        setEditingOriginalEmail("")
-        setEditingUserId(null)
+    const filteredExistingSalesList = useMemo(() => {
+        const keyword = newSalesName.trim().toLowerCase()
+
+        if (!keyword) {
+            return existingSalesList
+        }
+
+        return existingSalesList.filter((sales) =>
+            sales.salesName.toLowerCase().includes(keyword),
+        )
+    }, [existingSalesList, newSalesName])
+
+    const ensureAuthenticatedUserId = () => {
+        const userId = authenticatedUser?.userId
+
+        if (!userId) {
+            setErrorMessage("Authenticated user not found. Please login again.")
+            setIsShowError(true)
+            return null
+        }
+
+        return userId
+    }
+
+    const resetSalesForm = () => {
+        setNewSalesName("")
+        setEditingSalesId(null)
     }
 
     const resetConfirmActionState = () => {
         setPendingAction(null)
-        setPendingDeleteUser(null)
+        setPendingDeleteSales(null)
         setIsConfirmActionModalOpen(false)
     }
 
     const handleOpenCreateModal = () => {
-        resetUserForm()
+        resetSalesForm()
+        handleFetchExistingSales()
         setIsUpsertModalOpen(true)
     }
 
-    const handleEditUser = (user: AuthenticatedUser) => {
-        setEditingUserId(user.userId)
-        setNewUserEmail(user.email)
-        setSelectedRoleId(String(user.roleId))
-        setEditingOriginalEmail(user.email)
+    const handleEditSales = (sales: MsSales) => {
+        setEditingSalesId(sales.salesId)
+        setNewSalesName(sales.salesName)
+        handleFetchExistingSales()
         setIsUpsertModalOpen(true)
-    }
-
-    const validateUniqueEmail = async (email: string) => {
-        const normalizedEmail = email.trim().toLowerCase()
-        const normalizedOriginalEmail = editingOriginalEmail.trim().toLowerCase()
-
-        if (editingUserId && normalizedEmail === normalizedOriginalEmail) {
-            return true
-        }
-
-        const res = await UserService.getUserByEmail({
-            email: normalizedEmail,
-        })
-
-        if (res.data) {
-            setErrorMessage("Email access already exists")
-            setIsShowError(true)
-            return false
-        }
-
-        return true
     }
 
     const handleOpenUpdateConfirmation = () => {
-        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
+        if (!editingSalesId || !newSalesName.trim()) {
             return
         }
 
         setPendingAction("update")
-        setPendingDeleteUser(null)
+        setPendingDeleteSales(null)
         setIsConfirmActionModalOpen(true)
     }
 
     const handleOpenInsertConfirmation = () => {
-        if (!newUserEmail.trim() || !selectedRoleId) {
+        if (!newSalesName.trim()) {
             return
         }
 
         setPendingAction("insert")
-        setPendingDeleteUser(null)
+        setPendingDeleteSales(null)
         setIsConfirmActionModalOpen(true)
     }
 
-    const handleOpenDeleteConfirmation = (user: AuthenticatedUser) => {
+    const handleOpenDeleteConfirmation = (sales: MsSales) => {
         setPendingAction("delete")
-        setPendingDeleteUser(user)
+        setPendingDeleteSales(sales)
         setIsConfirmActionModalOpen(true)
+    }
+
+    const isDuplicateSalesName = () => {
+        const normalized = newSalesName.trim().toLowerCase()
+
+        return existingSalesList.some((sales) => {
+            const isSameRecord = editingSalesId ? sales.salesId === editingSalesId : false
+
+            if (isSameRecord) {
+                return false
+            }
+
+            return sales.salesName.trim().toLowerCase() === normalized
+        })
     }
 
     const handleInsert = async () => {
-        if (!newUserEmail.trim() || !selectedRoleId) {
-            return;
-        }
-
-        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
-        if (!isUniqueEmail) {
+        if (!newSalesName.trim()) {
             return
         }
 
-        const payload: InsertAuthenticatedUserRequest = {
-            email: newUserEmail.trim().toLowerCase(),
-            roleId: Number(selectedRoleId),
-            setIsLoading,
-        }
-
-        await UserService.insertAuthenticatedUser(payload)
-            .then(() => {
-                setIsUpsertModalOpen(false)
-                setNewUserEmail("")
-                setSelectedRoleId("")
-                resetConfirmActionState()
-                setErrorMessage("")
-                setSuccessMessage("User access added successfully")
-                setIsShowError(true)
-                handleFetchUsers()
-            })
-            .catch((error) => {
-                setErrorMessage(error.error.message);
-                setIsShowError(true);
-            })
-    }
-
-    const handleUpdate = async () => {
-        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
-            return;
-        }
-
-        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
-        if (!isUniqueEmail) {
+        if (isDuplicateSalesName()) {
+            setErrorMessage("Sales name already exists")
+            setIsShowError(true)
             return
         }
 
-        const payload: UpdateAuthenticatedUserRequest = {
-            userId: editingUserId,
-            email: newUserEmail.trim().toLowerCase(),
-            roleId: Number(selectedRoleId),
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: InsertSalesRequest = {
+            salesName: newSalesName.trim(),
+            userIn: userId,
             setIsLoading,
         }
 
-        await UserService.updateAuthenticatedUser(payload)
+        await SalesService.insertSales(payload)
             .then(() => {
                 setIsUpsertModalOpen(false)
-                resetUserForm()
+                resetSalesForm()
                 resetConfirmActionState()
                 setErrorMessage("")
-                setSuccessMessage("User access updated successfully")
+                setSuccessMessage("Sales added successfully")
                 setIsShowError(true)
-                handleFetchUsers()
+                handleFetchSalesList()
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -246,24 +220,72 @@ const ManageUserPage = () => {
             })
     }
 
-    const handleDeleteUser = async (user: AuthenticatedUser) => {
-        const payload: DeleteAuthenticatedUserRequest = {
-            userId: user.userId,
+    const handleUpdate = async () => {
+        if (!editingSalesId || !newSalesName.trim()) {
+            return
+        }
+
+        if (isDuplicateSalesName()) {
+            setErrorMessage("Sales name already exists")
+            setIsShowError(true)
+            return
+        }
+
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: UpdateSalesRequest = {
+            salesId: editingSalesId,
+            salesName: newSalesName.trim(),
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
             setIsLoading,
         }
 
-        await UserService.deleteAuthenticatedUser(payload)
+        await SalesService.updateSales(payload)
+            .then(() => {
+                setIsUpsertModalOpen(false)
+                resetSalesForm()
+                resetConfirmActionState()
+                setErrorMessage("")
+                setSuccessMessage("Sales updated successfully")
+                setIsShowError(true)
+                handleFetchSalesList()
+            })
+            .catch((error) => {
+                setErrorMessage(error.error.message)
+                setIsShowError(true)
+            })
+    }
+
+    const handleDeleteSales = async (sales: MsSales) => {
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: DeleteSalesRequest = {
+            salesId: sales.salesId,
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
+            setIsLoading,
+        }
+
+        await SalesService.deleteSales(payload)
             .then(() => {
                 resetConfirmActionState()
                 setErrorMessage("")
-                setSuccessMessage("User access deleted successfully")
+                setSuccessMessage("Sales deleted successfully")
                 setIsShowError(true)
-                if (userList.length === 1 && page > 1) {
+
+                if (salesList.length === 1 && page > 1) {
                     setPage((prev) => prev - 1)
                     return
                 }
 
-                handleFetchUsers()
+                handleFetchSalesList()
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -282,38 +304,38 @@ const ManageUserPage = () => {
             return
         }
 
-        if (pendingAction === "delete" && pendingDeleteUser) {
-            await handleDeleteUser(pendingDeleteUser)
+        if (pendingAction === "delete" && pendingDeleteSales) {
+            await handleDeleteSales(pendingDeleteSales)
         }
     }
 
-    const handleFetchUsers = async () => {
-        const payload: GetAuthenticatedUserListRequest = {
+    const handleFetchSalesList = async () => {
+        const payload: GetSalesListRequest = {
             page,
             pageSize,
             search,
             setIsLoading,
         }
 
-        await UserService.getAuthenticatedUserList(payload)
+        await SalesService.getSalesList(payload)
             .then((res) => {
-                setUserList(res.data || []);
+                setSalesList(res.data || [])
                 setTotalCount(res.count ?? 0)
             })
             .catch((error) => {
-                setErrorMessage(error.error.message);
-                setIsShowError(true);
+                setErrorMessage(error.error.message)
+                setIsShowError(true)
             })
     }
 
-    const handleFetchRoles = async () => {
-        await RoleService.getRoleList({
+    const handleFetchExistingSales = async () => {
+        await SalesService.getSalesList({
             page: 1,
             pageSize: 9999,
             search: "",
         })
             .then((res) => {
-                setRoleList(res.data || [])
+                setExistingSalesList(res.data || [])
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -322,31 +344,34 @@ const ManageUserPage = () => {
     }
 
     useEffect(() => {
-        handleFetchUsers();
+        handleFetchSalesList()
     }, [page, pageSize, search])
-
-    useEffect(() => {
-        handleFetchRoles()
-    }, [])
 
     return (
         <div>
             <div className="mb-4">
                 <h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-                    Manage User
+                    Manage Sales
                 </h1>
-                <p className="text-muted-foreground">Manage email and role access for this application</p>
+                <p className="text-muted-foreground">Manage sales data</p>
             </div>
+
             <AppModal
-                trigger={manageUserAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Email Access</Button> : undefined}
-                title={editingUserId ? "Edit User Access" : "Add New User Access"}
-                description={editingUserId ? "Update email access for AuthenticatedUser" : "Add a new email access for AuthenticatedUser"}
+                trigger={
+                    salesAccess.canInsert ? (
+                        <Button className="mb-4" onClick={handleOpenCreateModal}>
+                            Add Sales
+                        </Button>
+                    ) : undefined
+                }
+                title={editingSalesId ? "Edit Sales" : "Add New Sales"}
+                description={editingSalesId ? "Update selected sales" : "Add a new sales"}
                 open={isUpsertModalOpen}
                 onOpenChange={(open) => {
                     setIsUpsertModalOpen(open)
 
                     if (!open) {
-                        resetUserForm()
+                        resetSalesForm()
                     }
                 }}
                 footer={
@@ -355,50 +380,42 @@ const ManageUserPage = () => {
                             type="button"
                             onClick={() => {
                                 setIsUpsertModalOpen(false)
-                                resetUserForm()
+                                resetSalesForm()
                             }}
-                            variant={"outline"}
+                            variant="outline"
                         >
                             Cancel
                         </Button>
                         <Button
                             type="button"
                             onClick={() => {
-                                if (editingUserId) {
+                                if (editingSalesId) {
                                     handleOpenUpdateConfirmation()
                                     return
                                 }
 
                                 handleOpenInsertConfirmation()
                             }}
-                            disabled={editingUserId ? !manageUserAccess.canUpdate : !manageUserAccess.canInsert}
                         >
-                            {editingUserId ? "Update" : "Save"}
+                            {editingSalesId ? "Update" : "Save"}
                         </Button>
                     </div>
                 }
             >
                 <AppTextField
-                    label="Email"
-                    placeholder="user123@example.com"
-                    type="email"
-                    required={true}
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e)}
+                    label="Sales Name"
+                    placeholder="John Doe"
+                    required
+                    value={newSalesName}
+                    onChange={(value) => setNewSalesName(value)}
                 />
-                <AppAutoComplete
-                    label="Role"
-                    placeholder="Select role"
-                    searchPlaceholder="Search role"
-                    emptyMessage="No role found"
-                    required={true}
-                    value={selectedRoleId}
-                    options={roleOptions}
-                    onValueChange={(value) => {
-                        setSelectedRoleId(value)
-                    }}
+                <AppExistingList
+                    title="Existing Sales List"
+                    items={filteredExistingSalesList.map((sales) => sales.salesName)}
+                    emptyMessage="No sales data"
                 />
             </AppModal>
+
             <AppModal
                 open={isConfirmActionModalOpen}
                 onOpenChange={(open) => {
@@ -410,17 +427,17 @@ const ManageUserPage = () => {
                 }}
                 title={
                     pendingAction === "delete"
-                        ? "Delete User Access"
+                        ? "Delete Sales"
                         : pendingAction === "insert"
                             ? "Confirm Save"
                             : "Confirm Update"
                 }
                 description={
                     pendingAction === "delete"
-                        ? "This action will remove the selected user access"
+                        ? "This action will remove the selected sales"
                         : pendingAction === "insert"
-                            ? "This action will add new user access"
-                            : "This action will update the selected user access"
+                            ? "This action will add new sales"
+                            : "This action will update the selected sales"
                 }
                 classNames={{
                     content: "sm:max-w-sm",
@@ -453,15 +470,16 @@ const ManageUserPage = () => {
             >
                 <p>
                     {pendingAction === "delete"
-                        ? "Are you sure you want to delete this user?"
+                        ? "Are you sure you want to delete this sales?"
                         : pendingAction === "insert"
-                            ? "Are you sure you want to add this user?"
-                            : "Are you sure you want to update this user?"}
+                            ? "Are you sure you want to add this sales?"
+                            : "Are you sure you want to update this sales?"}
                 </p>
             </AppModal>
+
             <AppSearchBar
-                label="Search User"
-                placeholder="user123@example.com"
+                label="Search Sales"
+                placeholder="John Doe"
                 onSearch={(value) => {
                     setSearch(value)
                     setPage(1)
@@ -474,12 +492,12 @@ const ManageUserPage = () => {
             <AppTable
                 table={table}
                 showNumberColumn
-                columnsCount={manageUserTableColumns.length}
-                emptyMessage={"No users found."}
+                columnsCount={manageSalesTableColumns.length}
+                emptyMessage="No sales found."
                 showPagination
                 page={page}
                 pageSize={pageSize}
-                rowCount={userList.length}
+                rowCount={salesList.length}
                 hasNextPage={hasNextPage}
                 onPreviousPage={() => setPage((p) => Math.max(p - 1, 1))}
                 onNextPage={() => setPage((p) => p + 1)}
@@ -487,22 +505,23 @@ const ManageUserPage = () => {
                     setPageSize(size)
                     setPage(1)
                 }}
-                pageSizeOptions={MANAGE_USER_PAGE_SIZE_OPTIONS}
-                pageInfoRenderer={({ page, rowCount }) =>
-                    `Page ${page} • ${totalCount} total • ${rowCount} row(s) shown`
+                pageSizeOptions={MANAGE_SALES_PAGE_SIZE_OPTIONS}
+                pageInfoRenderer={({ page: currentPage, rowCount }) =>
+                    `Page ${currentPage} • ${totalCount} total • ${rowCount} row(s) shown`
                 }
             />
+
             <AppModal
                 open={isShowError}
                 onOpenChange={setIsShowError}
                 title={errorMessage ? "Error" : "Success"}
-                showCloseButton={true}
+                showCloseButton
                 contentProps={{
                     onOpenAutoFocus: (event) => {
-                        event.preventDefault();
+                        event.preventDefault()
                     },
                     onCloseAutoFocus: (event) => {
-                        event.preventDefault();
+                        event.preventDefault()
                     },
                 }}
                 classNames={{
@@ -518,9 +537,9 @@ const ManageUserPage = () => {
                         <Button
                             type="button"
                             onClick={() => {
-                                setErrorMessage("");
-                                setSuccessMessage("");
-                                setIsShowError(false);
+                                setErrorMessage("")
+                                setSuccessMessage("")
+                                setIsShowError(false)
                             }}
                         >
                             OK
@@ -530,9 +549,10 @@ const ManageUserPage = () => {
             >
                 <p>{errorMessage || successMessage}</p>
             </AppModal>
+
             {isLoading && <AppSpinner />}
         </div>
     )
 }
 
-export default ManageUserPage
+export default ManageSalesPage

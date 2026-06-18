@@ -1,93 +1,80 @@
+import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
 import AppModal from "@/components/app-components/app-modal/AppModal"
-import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAutoComplete"
+import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
 import AppTable from "@/components/app-components/app-table/AppTable"
 import AppTextField from "@/components/app-components/app-text-field/AppTextField"
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
-import type { AuthenticatedUser, MsRole } from "@/interfaces/IModel.interface"
+import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
 import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess"
-import { UserService } from "@/helpers/services/UserService"
-import { RoleService } from "@/helpers/services/RoleService"
+import { VolumeService } from "@/helpers/services/VolumeService"
+import type {
+    DeleteVolumeRequest,
+    GetVolumeListRequest,
+    InsertVolumeRequest,
+    UpdateVolumeRequest,
+} from "@/interfaces/IVolumeService"
+import type { MsVolume } from "@/interfaces/IModel.interface"
 import {
-    useReactTable,
     getCoreRowModel,
     getSortedRowModel,
     type ColumnDef,
+    useReactTable,
 } from "@tanstack/react-table"
-import { useEffect, useMemo, useState } from "react"
-import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
-import type {
-    DeleteAuthenticatedUserRequest,
-    GetAuthenticatedUserListRequest,
-    InsertAuthenticatedUserRequest,
-    UpdateAuthenticatedUserRequest,
-} from "@/interfaces/IUserService.interface"
 import { Pencil, Trash } from "lucide-react"
-import { MANAGE_USER_PAGE_SIZE_OPTIONS, type PendingActionManageUser } from "./ManageUserPage.constant"
+import { useEffect, useMemo, useState } from "react"
+import {
+    MANAGE_VOLUME_PAGE_SIZE_OPTIONS,
+    type PendingActionManageVolume,
+} from "./ManageVolumePage.constant"
 
-const ManageUserPage = () => {
-    const manageUserAccess = usePrivilegeAccess("Manage Users")
+const ManageVolumePage = () => {
+    const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
+    const volumeAccess = usePrivilegeAccess("Master Volume")
 
     const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
     const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
     const [successMessage, setSuccessMessage] = useState("")
     const [isShowError, setIsShowError] = useState(false)
-    const [newUserEmail, setNewUserEmail] = useState("")
-    const [selectedRoleId, setSelectedRoleId] = useState("")
-    const [editingOriginalEmail, setEditingOriginalEmail] = useState("")
-    const [editingUserId, setEditingUserId] = useState<number | null>(null)
-    const [pendingAction, setPendingAction] = useState<PendingActionManageUser>(null)
-    const [pendingDeleteUser, setPendingDeleteUser] = useState<AuthenticatedUser | null>(null)
+    const [newVolumeRaw, setNewVolumeRaw] = useState("")
+    const [editingVolumeId, setEditingVolumeId] = useState<number | null>(null)
+    const [pendingAction, setPendingAction] = useState<PendingActionManageVolume>(null)
+    const [pendingDeleteVolume, setPendingDeleteVolume] = useState<MsVolume | null>(null)
 
-    const [userList, setUserList] = useState<AuthenticatedUser[]>([])
-    const [roleList, setRoleList] = useState<MsRole[]>([])
+    const [volumeList, setVolumeList] = useState<MsVolume[]>([])
+    const [existingVolumeList, setExistingVolumeList] = useState<MsVolume[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [search, setSearch] = useState("")
     const [page, setPage] = useState(1)
-    const [pageSize, setPageSize] = useState(5)
+    const [pageSize, setPageSize] = useState(10)
     const [totalCount, setTotalCount] = useState(0)
 
-    const roleNameById = useMemo(
-        () => new Map(roleList.map((role) => [role.roleId, role.roleName])),
-        [roleList],
-    )
-
-    const roleOptions = useMemo(() => roleList.map((role) => ({
-        value: String(role.roleId),
-        label: role.roleName,
-    })), [roleList])
-
-    const manageUserTableColumns: ColumnDef<AuthenticatedUser>[] = [
+    const manageVolumeTableColumns: ColumnDef<MsVolume>[] = [
         {
-            accessorKey: "email",
-            header: "Email",
-        },
-        {
-            accessorKey: "roleId",
-            header: "Role",
-            cell: ({ getValue }) => roleNameById.get(getValue<number>()) || "-",
+            accessorKey: "volume",
+            header: "Volume",
         },
         {
             id: "actions",
             header: "Actions",
             cell: ({ row }) => (
                 <div className="flex gap-2">
-                    {manageUserAccess.canUpdate ? (
+                    {volumeAccess.canUpdate ? (
                         <Button
                             variant="outline"
                             size="sm"
-                            title="Edit user"
-                            onClick={() => handleEditUser(row.original)}
+                            title="Edit volume"
+                            onClick={() => handleEditVolume(row.original)}
                         >
                             <Pencil className="size-4" />
                         </Button>
                     ) : null}
-                    {manageUserAccess.canDelete ? (
+                    {volumeAccess.canDelete ? (
                         <Button
                             variant="destructive"
                             size="sm"
-                            title="Delete user"
+                            title="Delete volume"
                             onClick={() => handleOpenDeleteConfirmation(row.original)}
                         >
                             <Trash className="size-4" />
@@ -95,150 +82,135 @@ const ManageUserPage = () => {
                     ) : null}
                 </div>
             ),
-        }
+        },
     ]
 
     const hasNextPage = page * pageSize < totalCount
 
     const table = useReactTable({
-        data: userList,
-        columns: manageUserTableColumns,
+        data: volumeList,
+        columns: manageVolumeTableColumns,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
     })
 
-    const resetUserForm = () => {
-        setNewUserEmail("")
-        setSelectedRoleId("")
-        setEditingOriginalEmail("")
-        setEditingUserId(null)
+    const newVolumeNumber = Number(newVolumeRaw)
+
+    const filteredExistingVolumeList = useMemo(() => {
+        const keyword = newVolumeRaw.trim()
+
+        if (!keyword) {
+            return existingVolumeList
+        }
+
+        return existingVolumeList.filter((v) => String(v.volume).includes(keyword))
+    }, [existingVolumeList, newVolumeRaw])
+
+    const ensureAuthenticatedUserId = () => {
+        const userId = authenticatedUser?.userId
+
+        if (!userId) {
+            setErrorMessage("Authenticated user not found. Please login again.")
+            setIsShowError(true)
+            return null
+        }
+
+        return userId
+    }
+
+    const resetVolumeForm = () => {
+        setNewVolumeRaw("")
+        setEditingVolumeId(null)
     }
 
     const resetConfirmActionState = () => {
         setPendingAction(null)
-        setPendingDeleteUser(null)
+        setPendingDeleteVolume(null)
         setIsConfirmActionModalOpen(false)
     }
 
     const handleOpenCreateModal = () => {
-        resetUserForm()
+        resetVolumeForm()
+        handleFetchExistingVolumes()
         setIsUpsertModalOpen(true)
     }
 
-    const handleEditUser = (user: AuthenticatedUser) => {
-        setEditingUserId(user.userId)
-        setNewUserEmail(user.email)
-        setSelectedRoleId(String(user.roleId))
-        setEditingOriginalEmail(user.email)
+    const handleEditVolume = (volume: MsVolume) => {
+        setEditingVolumeId(volume.volumeId)
+        setNewVolumeRaw(String(volume.volume))
+        handleFetchExistingVolumes()
         setIsUpsertModalOpen(true)
-    }
-
-    const validateUniqueEmail = async (email: string) => {
-        const normalizedEmail = email.trim().toLowerCase()
-        const normalizedOriginalEmail = editingOriginalEmail.trim().toLowerCase()
-
-        if (editingUserId && normalizedEmail === normalizedOriginalEmail) {
-            return true
-        }
-
-        const res = await UserService.getUserByEmail({
-            email: normalizedEmail,
-        })
-
-        if (res.data) {
-            setErrorMessage("Email access already exists")
-            setIsShowError(true)
-            return false
-        }
-
-        return true
     }
 
     const handleOpenUpdateConfirmation = () => {
-        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
+        if (!editingVolumeId || !newVolumeRaw.trim() || Number.isNaN(newVolumeNumber)) {
             return
         }
 
         setPendingAction("update")
-        setPendingDeleteUser(null)
+        setPendingDeleteVolume(null)
         setIsConfirmActionModalOpen(true)
     }
 
     const handleOpenInsertConfirmation = () => {
-        if (!newUserEmail.trim() || !selectedRoleId) {
+        if (!newVolumeRaw.trim() || Number.isNaN(newVolumeNumber)) {
             return
         }
 
         setPendingAction("insert")
-        setPendingDeleteUser(null)
+        setPendingDeleteVolume(null)
         setIsConfirmActionModalOpen(true)
     }
 
-    const handleOpenDeleteConfirmation = (user: AuthenticatedUser) => {
+    const handleOpenDeleteConfirmation = (volume: MsVolume) => {
         setPendingAction("delete")
-        setPendingDeleteUser(user)
+        setPendingDeleteVolume(volume)
         setIsConfirmActionModalOpen(true)
+    }
+
+    const isDuplicateVolume = () => {
+        return existingVolumeList.some((v) => {
+            const isSameRecord = editingVolumeId ? v.volumeId === editingVolumeId : false
+
+            if (isSameRecord) {
+                return false
+            }
+
+            return v.volume === newVolumeNumber
+        })
     }
 
     const handleInsert = async () => {
-        if (!newUserEmail.trim() || !selectedRoleId) {
-            return;
-        }
-
-        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
-        if (!isUniqueEmail) {
+        if (!newVolumeRaw.trim() || Number.isNaN(newVolumeNumber)) {
             return
         }
 
-        const payload: InsertAuthenticatedUserRequest = {
-            email: newUserEmail.trim().toLowerCase(),
-            roleId: Number(selectedRoleId),
-            setIsLoading,
-        }
-
-        await UserService.insertAuthenticatedUser(payload)
-            .then(() => {
-                setIsUpsertModalOpen(false)
-                setNewUserEmail("")
-                setSelectedRoleId("")
-                resetConfirmActionState()
-                setErrorMessage("")
-                setSuccessMessage("User access added successfully")
-                setIsShowError(true)
-                handleFetchUsers()
-            })
-            .catch((error) => {
-                setErrorMessage(error.error.message);
-                setIsShowError(true);
-            })
-    }
-
-    const handleUpdate = async () => {
-        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
-            return;
-        }
-
-        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
-        if (!isUniqueEmail) {
+        if (isDuplicateVolume()) {
+            setErrorMessage("Volume already exists")
+            setIsShowError(true)
             return
         }
 
-        const payload: UpdateAuthenticatedUserRequest = {
-            userId: editingUserId,
-            email: newUserEmail.trim().toLowerCase(),
-            roleId: Number(selectedRoleId),
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: InsertVolumeRequest = {
+            volume: newVolumeNumber,
+            userIn: userId,
             setIsLoading,
         }
 
-        await UserService.updateAuthenticatedUser(payload)
+        await VolumeService.insertVolume(payload)
             .then(() => {
                 setIsUpsertModalOpen(false)
-                resetUserForm()
+                resetVolumeForm()
                 resetConfirmActionState()
                 setErrorMessage("")
-                setSuccessMessage("User access updated successfully")
+                setSuccessMessage("Volume added successfully")
                 setIsShowError(true)
-                handleFetchUsers()
+                handleFetchVolumes()
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -246,24 +218,72 @@ const ManageUserPage = () => {
             })
     }
 
-    const handleDeleteUser = async (user: AuthenticatedUser) => {
-        const payload: DeleteAuthenticatedUserRequest = {
-            userId: user.userId,
+    const handleUpdate = async () => {
+        if (!editingVolumeId || !newVolumeRaw.trim() || Number.isNaN(newVolumeNumber)) {
+            return
+        }
+
+        if (isDuplicateVolume()) {
+            setErrorMessage("Volume already exists")
+            setIsShowError(true)
+            return
+        }
+
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: UpdateVolumeRequest = {
+            volumeId: editingVolumeId,
+            volume: newVolumeNumber,
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
             setIsLoading,
         }
 
-        await UserService.deleteAuthenticatedUser(payload)
+        await VolumeService.updateVolume(payload)
+            .then(() => {
+                setIsUpsertModalOpen(false)
+                resetVolumeForm()
+                resetConfirmActionState()
+                setErrorMessage("")
+                setSuccessMessage("Volume updated successfully")
+                setIsShowError(true)
+                handleFetchVolumes()
+            })
+            .catch((error) => {
+                setErrorMessage(error.error.message)
+                setIsShowError(true)
+            })
+    }
+
+    const handleDeleteVolume = async (volume: MsVolume) => {
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: DeleteVolumeRequest = {
+            volumeId: volume.volumeId,
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
+            setIsLoading,
+        }
+
+        await VolumeService.deleteVolume(payload)
             .then(() => {
                 resetConfirmActionState()
                 setErrorMessage("")
-                setSuccessMessage("User access deleted successfully")
+                setSuccessMessage("Volume deleted successfully")
                 setIsShowError(true)
-                if (userList.length === 1 && page > 1) {
+
+                if (volumeList.length === 1 && page > 1) {
                     setPage((prev) => prev - 1)
                     return
                 }
 
-                handleFetchUsers()
+                handleFetchVolumes()
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -282,38 +302,38 @@ const ManageUserPage = () => {
             return
         }
 
-        if (pendingAction === "delete" && pendingDeleteUser) {
-            await handleDeleteUser(pendingDeleteUser)
+        if (pendingAction === "delete" && pendingDeleteVolume) {
+            await handleDeleteVolume(pendingDeleteVolume)
         }
     }
 
-    const handleFetchUsers = async () => {
-        const payload: GetAuthenticatedUserListRequest = {
+    const handleFetchVolumes = async () => {
+        const payload: GetVolumeListRequest = {
             page,
             pageSize,
             search,
             setIsLoading,
         }
 
-        await UserService.getAuthenticatedUserList(payload)
+        await VolumeService.getVolumeList(payload)
             .then((res) => {
-                setUserList(res.data || []);
+                setVolumeList(res.data || [])
                 setTotalCount(res.count ?? 0)
             })
             .catch((error) => {
-                setErrorMessage(error.error.message);
-                setIsShowError(true);
+                setErrorMessage(error.error.message)
+                setIsShowError(true)
             })
     }
 
-    const handleFetchRoles = async () => {
-        await RoleService.getRoleList({
+    const handleFetchExistingVolumes = async () => {
+        await VolumeService.getVolumeList({
             page: 1,
             pageSize: 9999,
             search: "",
         })
             .then((res) => {
-                setRoleList(res.data || [])
+                setExistingVolumeList(res.data || [])
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -322,31 +342,34 @@ const ManageUserPage = () => {
     }
 
     useEffect(() => {
-        handleFetchUsers();
+        handleFetchVolumes()
     }, [page, pageSize, search])
-
-    useEffect(() => {
-        handleFetchRoles()
-    }, [])
 
     return (
         <div>
             <div className="mb-4">
                 <h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-                    Manage User
+                    Manage Volume
                 </h1>
-                <p className="text-muted-foreground">Manage email and role access for this application</p>
+                <p className="text-muted-foreground">Manage volume data</p>
             </div>
+
             <AppModal
-                trigger={manageUserAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Email Access</Button> : undefined}
-                title={editingUserId ? "Edit User Access" : "Add New User Access"}
-                description={editingUserId ? "Update email access for AuthenticatedUser" : "Add a new email access for AuthenticatedUser"}
+                trigger={
+                    volumeAccess.canInsert ? (
+                        <Button className="mb-4" onClick={handleOpenCreateModal}>
+                            Add Volume
+                        </Button>
+                    ) : undefined
+                }
+                title={editingVolumeId ? "Edit Volume" : "Add New Volume"}
+                description={editingVolumeId ? "Update selected volume" : "Add a new volume"}
                 open={isUpsertModalOpen}
                 onOpenChange={(open) => {
                     setIsUpsertModalOpen(open)
 
                     if (!open) {
-                        resetUserForm()
+                        resetVolumeForm()
                     }
                 }}
                 footer={
@@ -355,50 +378,43 @@ const ManageUserPage = () => {
                             type="button"
                             onClick={() => {
                                 setIsUpsertModalOpen(false)
-                                resetUserForm()
+                                resetVolumeForm()
                             }}
-                            variant={"outline"}
+                            variant="outline"
                         >
                             Cancel
                         </Button>
                         <Button
                             type="button"
                             onClick={() => {
-                                if (editingUserId) {
+                                if (editingVolumeId) {
                                     handleOpenUpdateConfirmation()
                                     return
                                 }
 
                                 handleOpenInsertConfirmation()
                             }}
-                            disabled={editingUserId ? !manageUserAccess.canUpdate : !manageUserAccess.canInsert}
                         >
-                            {editingUserId ? "Update" : "Save"}
+                            {editingVolumeId ? "Update" : "Save"}
                         </Button>
                     </div>
                 }
             >
                 <AppTextField
-                    label="Email"
-                    placeholder="user123@example.com"
-                    type="email"
-                    required={true}
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e)}
+                    label="Volume"
+                    placeholder="125"
+                    type="number"
+                    required
+                    value={newVolumeRaw}
+                    onChange={(value) => setNewVolumeRaw(value)}
                 />
-                <AppAutoComplete
-                    label="Role"
-                    placeholder="Select role"
-                    searchPlaceholder="Search role"
-                    emptyMessage="No role found"
-                    required={true}
-                    value={selectedRoleId}
-                    options={roleOptions}
-                    onValueChange={(value) => {
-                        setSelectedRoleId(value)
-                    }}
+                <AppExistingList
+                    title="Existing Volume List"
+                    items={filteredExistingVolumeList.map((v) => String(v.volume))}
+                    emptyMessage="No volume data"
                 />
             </AppModal>
+
             <AppModal
                 open={isConfirmActionModalOpen}
                 onOpenChange={(open) => {
@@ -410,17 +426,17 @@ const ManageUserPage = () => {
                 }}
                 title={
                     pendingAction === "delete"
-                        ? "Delete User Access"
+                        ? "Delete Volume"
                         : pendingAction === "insert"
                             ? "Confirm Save"
                             : "Confirm Update"
                 }
                 description={
                     pendingAction === "delete"
-                        ? "This action will remove the selected user access"
+                        ? "This action will remove the selected volume"
                         : pendingAction === "insert"
-                            ? "This action will add new user access"
-                            : "This action will update the selected user access"
+                            ? "This action will add new volume"
+                            : "This action will update the selected volume"
                 }
                 classNames={{
                     content: "sm:max-w-sm",
@@ -453,15 +469,16 @@ const ManageUserPage = () => {
             >
                 <p>
                     {pendingAction === "delete"
-                        ? "Are you sure you want to delete this user?"
+                        ? "Are you sure you want to delete this volume?"
                         : pendingAction === "insert"
-                            ? "Are you sure you want to add this user?"
-                            : "Are you sure you want to update this user?"}
+                            ? "Are you sure you want to add this volume?"
+                            : "Are you sure you want to update this volume?"}
                 </p>
             </AppModal>
+
             <AppSearchBar
-                label="Search User"
-                placeholder="user123@example.com"
+                label="Search Volume"
+                placeholder="125"
                 onSearch={(value) => {
                     setSearch(value)
                     setPage(1)
@@ -474,12 +491,12 @@ const ManageUserPage = () => {
             <AppTable
                 table={table}
                 showNumberColumn
-                columnsCount={manageUserTableColumns.length}
-                emptyMessage={"No users found."}
+                columnsCount={manageVolumeTableColumns.length}
+                emptyMessage="No volumes found."
                 showPagination
                 page={page}
                 pageSize={pageSize}
-                rowCount={userList.length}
+                rowCount={volumeList.length}
                 hasNextPage={hasNextPage}
                 onPreviousPage={() => setPage((p) => Math.max(p - 1, 1))}
                 onNextPage={() => setPage((p) => p + 1)}
@@ -487,22 +504,23 @@ const ManageUserPage = () => {
                     setPageSize(size)
                     setPage(1)
                 }}
-                pageSizeOptions={MANAGE_USER_PAGE_SIZE_OPTIONS}
-                pageInfoRenderer={({ page, rowCount }) =>
-                    `Page ${page} • ${totalCount} total • ${rowCount} row(s) shown`
+                pageSizeOptions={MANAGE_VOLUME_PAGE_SIZE_OPTIONS}
+                pageInfoRenderer={({ page: currentPage, rowCount }) =>
+                    `Page ${currentPage} • ${totalCount} total • ${rowCount} row(s) shown`
                 }
             />
+
             <AppModal
                 open={isShowError}
                 onOpenChange={setIsShowError}
                 title={errorMessage ? "Error" : "Success"}
-                showCloseButton={true}
+                showCloseButton
                 contentProps={{
                     onOpenAutoFocus: (event) => {
-                        event.preventDefault();
+                        event.preventDefault()
                     },
                     onCloseAutoFocus: (event) => {
-                        event.preventDefault();
+                        event.preventDefault()
                     },
                 }}
                 classNames={{
@@ -518,9 +536,9 @@ const ManageUserPage = () => {
                         <Button
                             type="button"
                             onClick={() => {
-                                setErrorMessage("");
-                                setSuccessMessage("");
-                                setIsShowError(false);
+                                setErrorMessage("")
+                                setSuccessMessage("")
+                                setIsShowError(false)
                             }}
                         >
                             OK
@@ -530,9 +548,10 @@ const ManageUserPage = () => {
             >
                 <p>{errorMessage || successMessage}</p>
             </AppModal>
+
             {isLoading && <AppSpinner />}
         </div>
     )
 }
 
-export default ManageUserPage
+export default ManageVolumePage

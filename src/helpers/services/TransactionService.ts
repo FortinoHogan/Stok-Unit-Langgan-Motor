@@ -489,9 +489,11 @@ const getTableTransactionData = async (
           isRFS: item.isRFS,
           dateDO: item.dateDO,
           dateOUT: item.dateOUT,
-          transactionDetailId: null,
-          volume: null,
-          sellingType: null,
+          transactionDetailId: 0,
+          volumeId: null,
+          volumeLabel: null,
+          sellingTypeId: null,
+          sellingTypeName: null,
           sellingNumber: null,
           name: null,
           address: null,
@@ -570,13 +572,22 @@ const getTransactionPrintDataByTransactionId = async (
             )
           ),
           TrTransactionDetail!inner (
-            volume,
-            sellingType,
+            transactionDetailId,
+            volumeId,
+            sellingTypeId,
             sellingNumber,
             name,
             address,
             phone,
-            isDeleted
+            isDeleted,
+            MsVolume!inner (
+              volume,
+              isDeleted
+            ),
+            MsSellingType!inner (
+              sellingTypeName,
+              isDeleted
+            )
           )
         `,
         )
@@ -585,6 +596,8 @@ const getTransactionPrintDataByTransactionId = async (
         .eq("TrTypeColor.MsColor.isDeleted", false)
         .eq("TrTypeColor.MsType.isDeleted", false)
         .eq("TrTypeColor.MsType.MsCategory.isDeleted", false)
+        .eq("TrTransactionDetail.MsVolume.isDeleted", false)
+        .eq("TrTransactionDetail.MsSellingType.isDeleted", false)
         .eq("TrTransactionDetail.isDeleted", false)
         .single(),
     );
@@ -601,15 +614,22 @@ const getTransactionPrintDataByTransactionId = async (
             typeDescription: item.TrTypeColor?.MsType?.typeDescription || null,
             colorName: item.TrTypeColor?.MsColor?.colorName || null,
             year: item.year,
-            volume: item.TrTransactionDetail[0]?.volume || null,
+            volumeId: item.TrTransactionDetail[0]?.volumeId || null,
+            volume: item.TrTransactionDetail[0]?.MsVolume?.volume || null,
             noRangka: item.noRangka,
             noMesin: item.noMesin,
-            sellingType: item.TrTransactionDetail[0]?.sellingType || null,
+            sellingTypeId: item.TrTransactionDetail[0]?.sellingTypeId || null,
+            sellingTypeName:
+              item.TrTransactionDetail[0]?.MsSellingType?.sellingTypeName ||
+              null,
             sellingNumber: item.TrTransactionDetail[0]?.sellingNumber || null,
             name: item.TrTransactionDetail[0]?.name || null,
             address: item.TrTransactionDetail[0]?.address || null,
             phone: item.TrTransactionDetail[0]?.phone || null,
             dateOUT: item.dateOUT,
+            salesName: null,
+            period: null,
+            programName: null,
           }
         : null,
     };
@@ -649,8 +669,8 @@ const insertTransactionDetail = async (
 ): Promise<IResponse<TrTransactionDetail>> => {
   const {
     transactionId,
-    volume,
-    sellingType,
+    volumeId,
+    transactionDetailId,
     sellingNumber,
     name,
     address,
@@ -667,8 +687,8 @@ const insertTransactionDetail = async (
         .from("TrTransactionDetail")
         .insert({
           transactionId,
-          volume,
-          sellingType,
+          volumeId,
+          transactionDetailId,
           sellingNumber,
           name,
           address,
@@ -691,9 +711,10 @@ const updateTransactionDetail = async (
   params: UpdateTransactionDetailRequest,
 ): Promise<IResponse<TrTransactionDetail>> => {
   const {
+    transactionDetailId,
     transactionId,
-    volume,
-    sellingType,
+    volumeId,
+    sellingTypeId,
     sellingNumber,
     name,
     address,
@@ -710,8 +731,8 @@ const updateTransactionDetail = async (
       supabase
         .from("TrTransactionDetail")
         .update({
-          volume,
-          sellingType,
+          volumeId,
+          sellingTypeId,
           sellingNumber,
           name,
           address,
@@ -719,6 +740,7 @@ const updateTransactionDetail = async (
           userUp,
           updatedAt,
         })
+        .eq("transactionDetailId", transactionDetailId)
         .eq("transactionId", transactionId)
         .eq("isDeleted", false)
         .select()

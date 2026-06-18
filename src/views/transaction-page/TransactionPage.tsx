@@ -15,8 +15,10 @@ import AppSwitch from "@/components/app-components/app-switch/AppSwitch";
 import AppTextField from "@/components/app-components/app-text-field/AppTextField";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore";
-import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess";
+import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess";
+import { SellingTypeService } from "@/helpers/services/SellingTypeService";
 import { TransactionService } from "@/helpers/services/TransactionService";
+import { VolumeService } from "@/helpers/services/VolumeService";
 import type {
   TransactionDetailRow,
   TransactionTypeColorOption,
@@ -28,6 +30,7 @@ import { monthFormatter } from "./utilities";
 import type { IFormData, TransactionDayGroupedRow } from "./TransactionPage.interface";
 import type { AutoCompleteOption } from "@/components/app-components/app-auto-complete/AppAutoComplete.interface";
 import { useIsMobile } from "@/helpers/hooks/useMobile/useMobile";
+import { formatDateAsYmd } from "@/lib/utils";
 
 const TransactionPage = () => {
   // Base / Access
@@ -38,7 +41,7 @@ const TransactionPage = () => {
   const initialMonth = today.getMonth() + 1;
   const initialDay = today.getDate();
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser);
-  const transactionAccess = usePrivillegeAccess("Transaction");
+  const transactionAccess = usePrivilegeAccess("Transaction");
   const canInsertTransaction = transactionAccess.canInsert;
   const canUpdateTransaction = transactionAccess.canUpdate;
   const canDeleteTransaction = transactionAccess.canDelete;
@@ -51,6 +54,8 @@ const TransactionPage = () => {
   const [isTypeOptionsLoading, setIsTypeOptionsLoading] = useState(false);
   const [isColorOptionsLoading, setIsColorOptionsLoading] = useState(false);
   const [isYearOptionsLoading, setIsYearOptionsLoading] = useState(false);
+  const [isSellingTypeOptionsLoading, setIsSellingTypeOptionsLoading] = useState(false);
+  const [isVolumeOptionsLoading, setIsVolumeOptionsLoading] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isShowSuccess, setIsShowSuccess] = useState(false);
@@ -112,6 +117,8 @@ const TransactionPage = () => {
   const [yearFilterOptions, setYearFilterOptions] = useState<AutoCompleteOption[]>([
     { value: "All", label: "All" },
   ]);
+  const [sellingTypeOptions, setSellingTypeOptions] = useState<AutoCompleteOption[]>([]);
+  const [sellingVolumeOptions, setSellingVolumeOptions] = useState<AutoCompleteOption[]>([]);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [tablePage, setTablePage] = useState(1);
   const [tablePageSize, setTablePageSize] = useState(10);
@@ -158,10 +165,6 @@ const TransactionPage = () => {
     setIsDetailModalOpen(false);
     resetEditDetailForm();
     resetSellingDetailForm();
-  };
-
-  const formatDateAsYmd = (value: Date) => {
-    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
   };
 
   const getSelectedDateString = () => {
@@ -215,8 +218,8 @@ const TransactionPage = () => {
   };
 
   const fillSellingDetailForm = (transaction: TransactionDetailRow) => {
-    setSellingVolumeInput(transaction.volume ? String(transaction.volume) : "");
-    setSellingTypeInput(transaction.sellingType || "");
+    setSellingVolumeInput(transaction.volumeId ? String(transaction.volumeId) : "");
+    setSellingTypeInput(transaction.sellingTypeId ? String(transaction.sellingTypeId) : "");
     setSellingNumberInput(transaction.sellingNumber || "");
     setSellingNameInput(transaction.name || "");
     setSellingAddressInput(transaction.address || "");
@@ -319,6 +322,48 @@ const TransactionPage = () => {
     })
       .then((res) => {
         setYearFilterOptions([{ value: "All", label: "All" }, ...(res.data || [])]);
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
+  }, []);
+
+  const handleFetchSellingTypeOptions = useCallback(async () => {
+    await SellingTypeService.getSellingTypeList({
+      page: 1,
+      pageSize: 9999,
+      search: "",
+      setIsLoading: setIsSellingTypeOptionsLoading,
+    })
+      .then((res) => {
+        const mappedOptions = (res.data || []).map((item) => ({
+          value: String(item.sellingTypeId),
+          label: item.sellingTypeName,
+        }));
+
+        setSellingTypeOptions(mappedOptions);
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
+  }, []);
+
+  const handleFetchSellingVolumeOptions = useCallback(async () => {
+    await VolumeService.getVolumeList({
+      page: 1,
+      pageSize: 9999,
+      search: "",
+      setIsLoading: setIsVolumeOptionsLoading,
+    })
+      .then((res) => {
+        const mappedOptions = (res.data || []).map((item) => ({
+          value: String(item.volumeId),
+          label: String(item.volume),
+        }));
+
+        setSellingVolumeOptions(mappedOptions);
       })
       .catch((error) => {
         setErrorMessage(error.error.message);
@@ -555,11 +600,18 @@ const TransactionPage = () => {
       return;
     }
 
-    const parsedVolume = Number(sellingVolumeInput);
+    const parsedVolumeId = Number(sellingVolumeInput);
+    const parsedSellingTypeId = Number(sellingTypeInput);
     const parsedNumber = Number(sellingNumberInput);
 
-    if (!Number.isFinite(parsedVolume) || parsedVolume <= 0) {
-      setErrorMessage("Volume must be a valid number greater than 0.");
+    if (!Number.isInteger(parsedVolumeId) || parsedVolumeId <= 0) {
+      setErrorMessage("Volume must be selected.");
+      setIsShowError(true);
+      return;
+    }
+
+    if (!Number.isInteger(parsedSellingTypeId) || parsedSellingTypeId <= 0) {
+      setErrorMessage("Selling Type must be selected.");
       setIsShowError(true);
       return;
     }
@@ -579,9 +631,10 @@ const TransactionPage = () => {
     const sellingDateOut = formatDateAsYmd(sellingDateOutInput);
 
     const payload = {
+      transactionDetailId: sellingTransaction.transactionDetailId,
       transactionId: sellingTransaction.transactionId,
-      volume: parsedVolume,
-      sellingType: sellingTypeInput.trim().toUpperCase(),
+      volumeId: parsedVolumeId,
+      sellingTypeId: parsedSellingTypeId,
       sellingNumber: sellingNumberInput.trim().toUpperCase(),
       name: sellingNameInput.trim(),
       address: sellingAddressInput.trim(),
@@ -643,6 +696,7 @@ const TransactionPage = () => {
         const mutation = sellingTransaction.transactionDetailId
           ? TransactionService.updateTransactionDetail({
             ...payload,
+            transactionDetailId: sellingTransaction.transactionDetailId,
             userUp: userId,
             updatedAt: new Date().toISOString(),
             setIsLoading: setIsActionLoading,
@@ -689,11 +743,18 @@ const TransactionPage = () => {
       return false;
     }
 
-    const parsedVolume = Number(sellingVolumeInput);
+    const parsedVolumeId = Number(sellingVolumeInput);
+    const parsedSellingTypeId = Number(sellingTypeInput);
     const parsedNumber = Number(sellingNumberInput);
 
-    if (!Number.isFinite(parsedVolume) || parsedVolume <= 0) {
-      setErrorMessage("Volume must be a valid number greater than 0.");
+    if (!Number.isInteger(parsedVolumeId) || parsedVolumeId <= 0) {
+      setErrorMessage("Volume must be selected.");
+      setIsShowError(true);
+      return false;
+    }
+
+    if (!Number.isInteger(parsedSellingTypeId) || parsedSellingTypeId <= 0) {
+      setErrorMessage("Selling Type must be selected.");
       setIsShowError(true);
       return false;
     }
@@ -816,11 +877,19 @@ const TransactionPage = () => {
     }
 
     const detail = detailResponse.data;
+
+    if (!detail?.transactionDetailId) {
+      setErrorMessage("Selling detail not found for this transaction.");
+      setIsShowError(true);
+      return;
+    }
     const sellingDetailRow: TransactionDetailRow = {
       ...row,
-      transactionDetailId: detail?.transactionDetailId || null,
-      volume: detail?.volume || null,
-      sellingType: detail?.sellingType || null,
+      transactionDetailId: detail.transactionDetailId,
+      volumeId: detail?.volumeId || null,
+      volumeLabel: null,
+      sellingTypeId: detail?.sellingTypeId || null,
+      sellingTypeName: null,
       sellingNumber: detail?.sellingNumber || null,
       name: detail?.name || null,
       address: detail?.address || null,
@@ -1156,6 +1225,19 @@ const TransactionPage = () => {
 
     void handleFetchTypeColorOptions();
   }, [handleFetchTypeColorOptions, isAddModalOpen, isEditDetailModalOpen]);
+
+  useEffect(() => {
+    if (!isSellingDetailModalOpen) {
+      return;
+    }
+
+    void handleFetchSellingTypeOptions();
+    void handleFetchSellingVolumeOptions();
+  }, [
+    handleFetchSellingTypeOptions,
+    handleFetchSellingVolumeOptions,
+    isSellingDetailModalOpen,
+  ]);
 
   useEffect(() => {
     const initializeFilterOptions = async () => {
@@ -1705,7 +1787,7 @@ const TransactionPage = () => {
           </div>
         }
       >
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 gap-2">
           <AppDatePicker
             label="Date Out"
             placeholder="Pick date out"
@@ -1713,21 +1795,27 @@ const TransactionPage = () => {
             value={sellingDateOutInput}
             onValueChange={setSellingDateOutInput}
           />
-          <AppTextField
+          <AppAutoComplete
             label="Volume"
-            placeholder="Input volume"
+            placeholder="Select volume"
+            searchPlaceholder="Search volume"
+            emptyMessage="No volume found"
             required={true}
-            type="number"
+            isLoading={isVolumeOptionsLoading}
             value={sellingVolumeInput}
-            onChange={setSellingVolumeInput}
+            options={sellingVolumeOptions}
+            onValueChange={setSellingVolumeInput}
           />
-          <AppTextField
+          <AppAutoComplete
             label="Penjualan"
-            placeholder="Input penjualan"
+            placeholder="Select penjualan"
+            searchPlaceholder="Search penjualan"
+            emptyMessage="No penjualan found"
             required={true}
+            isLoading={isSellingTypeOptionsLoading}
             value={sellingTypeInput}
-            onChange={setSellingTypeInput}
-            isCapital
+            options={sellingTypeOptions}
+            onValueChange={setSellingTypeInput}
           />
           <AppTextField
             label="No"

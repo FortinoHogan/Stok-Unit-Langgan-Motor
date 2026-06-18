@@ -65,6 +65,38 @@ export interface MsColor extends IModel {
   colorName: string;
 }
 
+export interface MsPeriod extends IModel {
+  periodId: number;
+  startDate: string;
+  endDate: string;
+  isDefault: boolean;
+}
+
+export interface MsPrivilege extends IModel {
+  privilegeId: number;
+  privilegeName: string;
+}
+
+export interface MsProgram extends IModel {
+  programId: number;
+  programName: string;
+}
+
+export interface MsRole extends IModel {
+  roleId: number;
+  roleName: string;
+}
+
+export interface MsSales extends IModel {
+  salesId: number;
+  salesName: string;
+}
+
+export interface MsSellingType extends IModel {
+  sellingTypeId: number;
+  sellingTypeName: string;
+}
+
 export interface MsType extends IModel {
   typeId: number;
   typeName: string;
@@ -73,10 +105,15 @@ export interface MsType extends IModel {
   categoryId: number;
 }
 
-export interface TrTypeColor extends IModel {
-  typeColorId: number;
-  colorId: number;
-  typeId: number;
+export interface MsVolume extends IModel {
+  volumeId: number;
+  volume: number;
+}
+
+export interface TrRolePrivilege extends IModel {
+  rolePrivilegeId: number;
+  roleId: number;
+  privilegeId: number;
 }
 
 export interface TrTransaction extends IModel {
@@ -90,29 +127,19 @@ export interface TrTransaction extends IModel {
   dateOUT: string;
 }
 
-export interface MsRole extends IModel {
-  roleId: number;
-  roleName: string;
-}
-
-export interface MsPrivillege extends IModel {
-  privillegeId: number;
-  privillegeName: string;
-}
-
-export interface TrRolePrivillege extends IModel {
-  rolePrivillegeId: number;
-  roleId: number;
-  privillegeId: number;
-}
-
 export interface TrTransactionDetail extends IModel {
   transactionDetailId: number;
   transactionId: number;
-  volume: number;
-  sellingType: string;
+  volumeId: number;
+  sellingTypeId: number;
   sellingNumber: string;
   name: string;
   address: string;
   phone: string;
+}
+
+export interface TrTypeColor extends IModel {
+  typeColorId: number;
+  colorId: number;
+  typeId: number;
 }

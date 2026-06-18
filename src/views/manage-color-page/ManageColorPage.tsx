@@ -6,7 +6,7 @@ import AppTextField from "@/components/app-components/app-text-field/AppTextFiel
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
-import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
+import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess"
 import { ColorService } from "@/helpers/services/ColorService"
 import type {
   DeleteColorRequest,
@@ -27,7 +27,7 @@ import { MANAGE_COLOR_PAGE_SIZE_OPTIONS, type PendingActionManageColor } from ".
 
 const ManageColorPage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-  const colorAccess = usePrivillegeAccess("Master Color")
+  const colorAccess = usePrivilegeAccess("Master Color")
 
   const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)

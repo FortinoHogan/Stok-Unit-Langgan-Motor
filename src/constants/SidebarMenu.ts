@@ -32,9 +32,17 @@ export const sidebarMenu: SidebarMenuGroup[] = [
           { title: "Master Type", url: routes.manageMasterDataType },
           { title: "Master Role", url: routes.manageMasterDataRole },
           {
-            title: "Master Privillege",
-            url: routes.manageMasterDataPrivillege,
+            title: "Master Privilege",
+            url: routes.manageMasterDataPrivilege,
           },
+          { title: "Master Program", url: routes.manageMasterDataProgram },
+          { title: "Master Period", url: routes.manageMasterDataPeriod },
+          { title: "Master Sales", url: routes.manageMasterDataSales },
+          {
+            title: "Master Selling Type",
+            url: routes.manageMasterDataSellingType,
+          },
+          { title: "Master Volume", url: routes.manageMasterDataVolume },
         ],
       },
     ],
@@ -43,8 +51,8 @@ export const sidebarMenu: SidebarMenuGroup[] = [
     title: "Configuration",
     items: [
       {
-        title: "Role and Privillege",
-        url: routes.roleAndPrivillege,
+        title: "Role and Privilege",
+        url: routes.roleAndPrivilege,
         icon: UserKey,
       },
       { title: "Type and Color", url: routes.typeAndColor, icon: Palette },

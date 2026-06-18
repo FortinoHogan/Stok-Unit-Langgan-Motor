@@ -15,7 +15,7 @@ import AppTextField from "@/components/app-components/app-text-field/AppTextFiel
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
-import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
+import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess"
 import { RoleService } from "@/helpers/services/RoleService"
 import type { MsRole } from "@/interfaces/IModel.interface"
 import type {
@@ -28,7 +28,7 @@ import { MANAGE_ROLE_PAGE_SIZE_OPTIONS } from "./ManageRolePage.constant"
 
 const ManageRolePage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-  const roleAccess = usePrivillegeAccess("Master Role")
+  const roleAccess = usePrivilegeAccess("Master Role")
 
   const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)

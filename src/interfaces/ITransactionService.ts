@@ -52,9 +52,11 @@ export interface TransactionDetailRow {
   isRFS: boolean;
   dateDO: string | null;
   dateOUT: string | null;
-  transactionDetailId: number | null;
-  volume: number | null;
-  sellingType: string | null;
+  transactionDetailId: number;
+  volumeId: number | null;
+  volumeLabel: string | null;
+  sellingTypeId: number | null;
+  sellingTypeName: string | null;
   sellingNumber: string | null;
   name: string | null;
   address: string | null;
@@ -76,15 +78,20 @@ export interface TransactionPrintData {
   typeDescription: string | null;
   colorName: string | null;
   year: number;
+  volumeId: number | null;
   volume: number | null;
   noRangka: string;
   noMesin: string;
-  sellingType: string | null;
+  sellingTypeId: number | null;
+  sellingTypeName: string | null;
   sellingNumber: string | null;
   name: string | null;
   address: string | null;
   phone: string | null;
   dateOUT: string | null;
+  salesName: string | null;
+  programName: string | null;
+  period: string | null;
 }
 
 export interface UpdateTransactionAsSoldRequest extends IRequestWithLoading {
@@ -132,8 +139,8 @@ export interface InsertTransactionRequest extends IRequestWithLoading {
 
 export interface InsertTransactionDetailRequest extends IRequestWithLoading {
   transactionId: number;
-  volume: number;
-  sellingType: string;
+  volumeId: number;
+  transactionDetailId: number;
   sellingNumber: string;
   name: string;
   address: string;
@@ -142,9 +149,10 @@ export interface InsertTransactionDetailRequest extends IRequestWithLoading {
 }
 
 export interface UpdateTransactionDetailRequest extends IRequestWithLoading {
+  transactionDetailId: number;
   transactionId: number;
-  volume: number;
-  sellingType: string;
+  volumeId: number;
+  sellingTypeId: number;
   sellingNumber: string;
   name: string;
   address: string;

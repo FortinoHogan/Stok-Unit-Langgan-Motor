@@ -3,7 +3,7 @@ import { StyleSheet } from "@react-pdf/renderer";
 export const styles = StyleSheet.create({
   viewer: {
     width: "100%",
-    height: "100vh",
+    height: "80vh",
     border: 0,
   },
   page: {
@@ -248,5 +248,120 @@ export const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: "center",
     fontWeight: 700,
+  },
+  fourthPage: {
+    paddingTop: 18,
+    paddingRight: 22,
+    paddingBottom: 18,
+    paddingLeft: 22,
+    fontSize: 10,
+    fontFamily: "Helvetica",
+  },
+
+  fourthHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+
+  fourthCompanyBlock: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  fourthCompanyInfo: {
+    gap: 2,
+  },
+
+  fourthCompanyName: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+
+  fourthDocumentNo: {
+    textAlign: "right",
+    alignSelf: "flex-end",
+    fontSize: 10,
+    marginTop: 8,
+  },
+
+  fourthTitle: {
+    borderWidth: 1,
+    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "bold",
+    paddingVertical: 6,
+    marginBottom: 9,
+  },
+
+  fourthSection: {
+    marginBottom: 4,
+  },
+
+  fourthVehicleRow: {
+    flexDirection: "row",
+    marginBottom: 4,
+  },
+
+  fourthVehicleLabel: {
+    width: 90,
+  },
+
+  fourthVehicleColon: {
+    width: 10,
+  },
+
+  fourthVehicleValue: {
+    flex: 1,
+  },
+
+  fourthEquipmentTable: {
+    marginTop: 8,
+    marginBottom: 6,
+  },
+
+  fourthEquipmentRow: {
+    flexDirection: "row",
+  },
+
+  fourthEquipmentCell: {
+    width: "33.33%",
+    flexDirection: "row",
+    borderWidth: 1,
+    borderTopWidth: 0,
+  },
+
+  fourthCheckBox: {
+    width: 18,
+    borderRightWidth: 1,
+    textAlign: "center",
+    paddingTop: 3,
+  },
+
+  fourthEquipmentText: {
+    flex: 1,
+    paddingHorizontal: 4,
+    paddingTop: 3,
+  },
+
+  fourthSignatureSection: {
+    marginTop: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  fourthNotesBlock: {
+    width: "40%",
+  },
+
+  fourthNotesTitle: {
+    marginBottom: 4,
+  },
+
+  fourthNotesText: {
+    fontSize: 10,
+    fontStyle: "italic",
+    lineHeight: 1.4,
   },
 });

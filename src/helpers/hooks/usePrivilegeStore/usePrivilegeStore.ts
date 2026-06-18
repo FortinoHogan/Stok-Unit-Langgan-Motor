@@ -1,32 +1,32 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { PrivillegeState } from "./usePrivillegeStore.interface";
+import type { PrivilegeState } from "./usePrivilegeStore.interface";
 
-export const usePrivillegeStore = create<PrivillegeState>()(
+export const usePrivilegeStore = create<PrivilegeState>()(
   persist(
     (set) => ({
-      privillegeList: [],
+      privilegeList: [],
       loadedRoleId: null,
       isLoading: false,
-      setPrivillegeList: (privilleges, roleId) =>
+      setPrivilegeList: (privileges, roleId) =>
         set({
-          privillegeList: privilleges,
+          privilegeList: privileges,
           loadedRoleId: roleId,
           isLoading: false,
         }),
       setIsLoading: (value) => set({ isLoading: value }),
-      clearPrivilleges: () =>
+      clearPrivileges: () =>
         set({
-          privillegeList: [],
+          privilegeList: [],
           loadedRoleId: null,
           isLoading: false,
         }),
     }),
     {
-      name: "privillege-store",
+      name: "privilege-store",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        privillegeList: state.privillegeList,
+        privilegeList: state.privilegeList,
         loadedRoleId: state.loadedRoleId,
       }),
     },

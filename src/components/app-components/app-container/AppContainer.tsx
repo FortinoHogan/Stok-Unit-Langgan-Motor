@@ -2,23 +2,23 @@ import { Outlet } from "react-router-dom"
 import { useEffect } from "react"
 
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
-import { usePrivillegeStore } from "@/helpers/hooks/usePrivillegeStore/usePrivillegeStore"
-import { PrivillegeService } from "@/helpers/services/PrivillegeService"
-import { RolePrivillegeService } from "@/helpers/services/RolePrivillegeService"
+import { usePrivilegeStore } from "@/helpers/hooks/usePrivilegeStore/usePrivilegeStore"
+import { PrivilegeService } from "@/helpers/services/PrivilegeService"
+import { RolePrivilegeService } from "@/helpers/services/RolePrivilegeService"
 import SidebarProvider from "@/helpers/provider/SidebarProvider"
 
 const AppContainer = () => {
     const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-    const loadedRoleId = usePrivillegeStore((state) => state.loadedRoleId)
-    const setPrivillegeList = usePrivillegeStore((state) => state.setPrivillegeList)
-    const setIsLoading = usePrivillegeStore((state) => state.setIsLoading)
-    const clearPrivilleges = usePrivillegeStore((state) => state.clearPrivilleges)
+    const loadedRoleId = usePrivilegeStore((state) => state.loadedRoleId)
+    const setPrivilegeList = usePrivilegeStore((state) => state.setPrivilegeList)
+    const setIsLoading = usePrivilegeStore((state) => state.setIsLoading)
+    const clearPrivileges = usePrivilegeStore((state) => state.clearPrivileges)
 
     useEffect(() => {
         const roleId = authenticatedUser?.roleId
 
         if (!roleId) {
-            clearPrivilleges()
+            clearPrivileges()
             return
         }
 
@@ -27,41 +27,41 @@ const AppContainer = () => {
             return
         }
 
-        const fetchPrivilleges = async () => {
-            clearPrivilleges()
+        const fetchPrivileges = async () => {
+            clearPrivileges()
             setIsLoading(true)
 
             try {
-                const [rolePrivillegeResponse, privillegeResponse] = await Promise.all([
-                    RolePrivillegeService.getRolePrivillegeListByRoleIds({ roleIds: [roleId] }),
-                    PrivillegeService.getPrivillegeList({
+                const [rolePrivilegeResponse, privilegeResponse] = await Promise.all([
+                    RolePrivilegeService.getRolePrivilegeListByRoleIds({ roleIds: [roleId] }),
+                    PrivilegeService.getPrivilegeList({
                         page: 1,
                         pageSize: 9999,
                         search: "",
                     }),
                 ])
 
-                const privillegeNameById = new Map(
-                    (privillegeResponse.data || []).map((privillege) => [
-                        privillege.privillegeId,
-                        privillege.privillegeName,
+                const privilegeNameById = new Map(
+                    (privilegeResponse.data || []).map((privilege) => [
+                        privilege.privilegeId,
+                        privilege.privilegeName,
                     ]),
                 )
 
-                const nextPrivillegeList = Array.from(new Set(
-                    (rolePrivillegeResponse.data || [])
-                        .map((rolePrivillege) => privillegeNameById.get(rolePrivillege.privillegeId) || "")
+                const nextPrivilegeList = Array.from(new Set(
+                    (rolePrivilegeResponse.data || [])
+                        .map((rolePrivilege) => privilegeNameById.get(rolePrivilege.privilegeId) || "")
                         .filter(Boolean),
                 ))
 
-                setPrivillegeList(nextPrivillegeList, roleId)
+                setPrivilegeList(nextPrivilegeList, roleId)
             } catch {
-                setPrivillegeList([], roleId)
+                setPrivilegeList([], roleId)
             }
         }
 
-        void fetchPrivilleges()
-    }, [authenticatedUser?.roleId, loadedRoleId, clearPrivilleges, setIsLoading, setPrivillegeList])
+        void fetchPrivileges()
+    }, [authenticatedUser?.roleId, loadedRoleId, clearPrivileges, setIsLoading, setPrivilegeList])
 
     return (
         <SidebarProvider>

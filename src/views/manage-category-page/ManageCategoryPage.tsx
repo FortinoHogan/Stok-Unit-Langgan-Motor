@@ -6,7 +6,7 @@ import AppTextField from "@/components/app-components/app-text-field/AppTextFiel
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
-import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
+import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess"
 import { CategoryService } from "@/helpers/services/CategoryService"
 import type {
   DeleteCategoryRequest,
@@ -27,7 +27,7 @@ import { MANAGE_CATEGORY_PAGE_SIZE_OPTIONS, type PendingActionManageCategory } f
 
 const ManageCategoryPage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-  const categoryAccess = usePrivillegeAccess("Master Category")
+  const categoryAccess = usePrivilegeAccess("Master Category")
 
   const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)

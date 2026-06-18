@@ -24,15 +24,15 @@ import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
 import { supabase } from "@/helpers/supabase/client"
 import { routes } from "@/constants/paths"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { usePrivillegeStore } from "@/helpers/hooks/usePrivillegeStore/usePrivillegeStore"
-import { canAccessPathByPrivillege } from "@/constants/privillegeAccess"
+import { usePrivilegeStore } from "@/helpers/hooks/usePrivilegeStore/usePrivilegeStore"
+import { canAccessPathByprivilege } from "@/constants/privilegeAccess"
 
 const AppSidebar = () => {
     const { isMobile } = useSidebar()
     const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
     const clearAuthenticatedUser = useAuthStore((state) => state.clearAuthenticatedUser)
-    const privillegeList = usePrivillegeStore((state) => state.privillegeList)
-    const isLoadingPrivilleges = usePrivillegeStore((state) => state.isLoading)
+    const privilegeList = usePrivilegeStore((state) => state.privilegeList)
+    const isLoadingPrivileges = usePrivilegeStore((state) => state.isLoading)
     const navigate = useNavigate()
     const location = useLocation()
 
@@ -41,14 +41,14 @@ const AppSidebar = () => {
             const visibleItems = group.items
                 .map((item) => {
                     const visibleSubItems = item.subItems?.filter((subItem) =>
-                        canAccessPathByPrivillege(subItem.url, privillegeList),
+                        canAccessPathByprivilege(subItem.url, privilegeList),
                     )
 
                     if (!item.url && (!visibleSubItems || visibleSubItems.length === 0)) {
                         return null
                     }
 
-                    if (item.url && !canAccessPathByPrivillege(item.url, privillegeList)) {
+                    if (item.url && !canAccessPathByprivilege(item.url, privilegeList)) {
                         return null
                     }
 
@@ -66,7 +66,7 @@ const AppSidebar = () => {
         })
         .filter((group) => group.items.length > 0)
 
-    if (isLoadingPrivilleges) {
+    if (isLoadingPrivileges) {
         return null
     }
 

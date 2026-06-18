@@ -1,0 +1,1 @@
+export const MANAGE_PRIVILEGE_PAGE_SIZE_OPTIONS = [10, 20, 50];

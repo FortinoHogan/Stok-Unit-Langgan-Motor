@@ -135,6 +135,7 @@ const AppAutoComplete = (props: AppAutoCompleteProps) => {
                                         key={option.value}
                                         value={option.label}
                                         disabled={resolvedDisabled}
+                                        className="cursor-pointer"
                                         onSelect={() => {
                                             const nextValue = option.value === value ? "" : option.value
                                             onValueChange?.(nextValue)

@@ -1,93 +1,80 @@
+import AppExistingList from "@/components/app-components/app-existing-list/AppExistingList"
 import AppModal from "@/components/app-components/app-modal/AppModal"
-import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAutoComplete"
+import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
 import AppTable from "@/components/app-components/app-table/AppTable"
 import AppTextField from "@/components/app-components/app-text-field/AppTextField"
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
-import type { AuthenticatedUser, MsRole } from "@/interfaces/IModel.interface"
+import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
 import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess"
-import { UserService } from "@/helpers/services/UserService"
-import { RoleService } from "@/helpers/services/RoleService"
+import { ProgramService } from "@/helpers/services/ProgramService"
+import type {
+    DeleteProgramRequest,
+    GetProgramListRequest,
+    InsertProgramRequest,
+    UpdateProgramRequest,
+} from "@/interfaces/IProgramService"
+import type { MsProgram } from "@/interfaces/IModel.interface"
 import {
-    useReactTable,
     getCoreRowModel,
     getSortedRowModel,
     type ColumnDef,
+    useReactTable,
 } from "@tanstack/react-table"
-import { useEffect, useMemo, useState } from "react"
-import AppSpinner from "@/components/app-components/app-spinner/AppSpinner"
-import type {
-    DeleteAuthenticatedUserRequest,
-    GetAuthenticatedUserListRequest,
-    InsertAuthenticatedUserRequest,
-    UpdateAuthenticatedUserRequest,
-} from "@/interfaces/IUserService.interface"
 import { Pencil, Trash } from "lucide-react"
-import { MANAGE_USER_PAGE_SIZE_OPTIONS, type PendingActionManageUser } from "./ManageUserPage.constant"
+import { useEffect, useMemo, useState } from "react"
+import {
+    MANAGE_PROGRAM_PAGE_SIZE_OPTIONS,
+    type PendingActionManageProgram,
+} from "./ManageProgramPage.constant"
 
-const ManageUserPage = () => {
-    const manageUserAccess = usePrivilegeAccess("Manage Users")
+const ManageProgramPage = () => {
+    const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
+    const programAccess = usePrivilegeAccess("Master Program")
 
     const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
     const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
     const [errorMessage, setErrorMessage] = useState("")
     const [successMessage, setSuccessMessage] = useState("")
     const [isShowError, setIsShowError] = useState(false)
-    const [newUserEmail, setNewUserEmail] = useState("")
-    const [selectedRoleId, setSelectedRoleId] = useState("")
-    const [editingOriginalEmail, setEditingOriginalEmail] = useState("")
-    const [editingUserId, setEditingUserId] = useState<number | null>(null)
-    const [pendingAction, setPendingAction] = useState<PendingActionManageUser>(null)
-    const [pendingDeleteUser, setPendingDeleteUser] = useState<AuthenticatedUser | null>(null)
+    const [newProgramName, setNewProgramName] = useState("")
+    const [editingProgramId, setEditingProgramId] = useState<number | null>(null)
+    const [pendingAction, setPendingAction] = useState<PendingActionManageProgram>(null)
+    const [pendingDeleteProgram, setPendingDeleteProgram] = useState<MsProgram | null>(null)
 
-    const [userList, setUserList] = useState<AuthenticatedUser[]>([])
-    const [roleList, setRoleList] = useState<MsRole[]>([])
+    const [programList, setProgramList] = useState<MsProgram[]>([])
+    const [existingProgramList, setExistingProgramList] = useState<MsProgram[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [search, setSearch] = useState("")
     const [page, setPage] = useState(1)
-    const [pageSize, setPageSize] = useState(5)
+    const [pageSize, setPageSize] = useState(10)
     const [totalCount, setTotalCount] = useState(0)
 
-    const roleNameById = useMemo(
-        () => new Map(roleList.map((role) => [role.roleId, role.roleName])),
-        [roleList],
-    )
-
-    const roleOptions = useMemo(() => roleList.map((role) => ({
-        value: String(role.roleId),
-        label: role.roleName,
-    })), [roleList])
-
-    const manageUserTableColumns: ColumnDef<AuthenticatedUser>[] = [
+    const manageProgramTableColumns: ColumnDef<MsProgram>[] = [
         {
-            accessorKey: "email",
-            header: "Email",
-        },
-        {
-            accessorKey: "roleId",
-            header: "Role",
-            cell: ({ getValue }) => roleNameById.get(getValue<number>()) || "-",
+            accessorKey: "programName",
+            header: "Program Name",
         },
         {
             id: "actions",
             header: "Actions",
             cell: ({ row }) => (
                 <div className="flex gap-2">
-                    {manageUserAccess.canUpdate ? (
+                    {programAccess.canUpdate ? (
                         <Button
                             variant="outline"
                             size="sm"
-                            title="Edit user"
-                            onClick={() => handleEditUser(row.original)}
+                            title="Edit program"
+                            onClick={() => handleEditProgram(row.original)}
                         >
                             <Pencil className="size-4" />
                         </Button>
                     ) : null}
-                    {manageUserAccess.canDelete ? (
+                    {programAccess.canDelete ? (
                         <Button
                             variant="destructive"
                             size="sm"
-                            title="Delete user"
+                            title="Delete program"
                             onClick={() => handleOpenDeleteConfirmation(row.original)}
                         >
                             <Trash className="size-4" />
@@ -95,150 +82,137 @@ const ManageUserPage = () => {
                     ) : null}
                 </div>
             ),
-        }
+        },
     ]
 
     const hasNextPage = page * pageSize < totalCount
 
     const table = useReactTable({
-        data: userList,
-        columns: manageUserTableColumns,
+        data: programList,
+        columns: manageProgramTableColumns,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
     })
 
-    const resetUserForm = () => {
-        setNewUserEmail("")
-        setSelectedRoleId("")
-        setEditingOriginalEmail("")
-        setEditingUserId(null)
+    const filteredExistingProgramList = useMemo(() => {
+        const keyword = newProgramName.trim().toLowerCase()
+
+        if (!keyword) {
+            return existingProgramList
+        }
+
+        return existingProgramList.filter((program) =>
+            program.programName.toLowerCase().includes(keyword),
+        )
+    }, [existingProgramList, newProgramName])
+
+    const ensureAuthenticatedUserId = () => {
+        const userId = authenticatedUser?.userId
+
+        if (!userId) {
+            setErrorMessage("Authenticated user not found. Please login again.")
+            setIsShowError(true)
+            return null
+        }
+
+        return userId
+    }
+
+    const resetProgramForm = () => {
+        setNewProgramName("")
+        setEditingProgramId(null)
     }
 
     const resetConfirmActionState = () => {
         setPendingAction(null)
-        setPendingDeleteUser(null)
+        setPendingDeleteProgram(null)
         setIsConfirmActionModalOpen(false)
     }
 
     const handleOpenCreateModal = () => {
-        resetUserForm()
+        resetProgramForm()
+        handleFetchExistingPrograms()
         setIsUpsertModalOpen(true)
     }
 
-    const handleEditUser = (user: AuthenticatedUser) => {
-        setEditingUserId(user.userId)
-        setNewUserEmail(user.email)
-        setSelectedRoleId(String(user.roleId))
-        setEditingOriginalEmail(user.email)
+    const handleEditProgram = (program: MsProgram) => {
+        setEditingProgramId(program.programId)
+        setNewProgramName(program.programName)
+        handleFetchExistingPrograms()
         setIsUpsertModalOpen(true)
-    }
-
-    const validateUniqueEmail = async (email: string) => {
-        const normalizedEmail = email.trim().toLowerCase()
-        const normalizedOriginalEmail = editingOriginalEmail.trim().toLowerCase()
-
-        if (editingUserId && normalizedEmail === normalizedOriginalEmail) {
-            return true
-        }
-
-        const res = await UserService.getUserByEmail({
-            email: normalizedEmail,
-        })
-
-        if (res.data) {
-            setErrorMessage("Email access already exists")
-            setIsShowError(true)
-            return false
-        }
-
-        return true
     }
 
     const handleOpenUpdateConfirmation = () => {
-        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
+        if (!editingProgramId || !newProgramName.trim()) {
             return
         }
 
         setPendingAction("update")
-        setPendingDeleteUser(null)
+        setPendingDeleteProgram(null)
         setIsConfirmActionModalOpen(true)
     }
 
     const handleOpenInsertConfirmation = () => {
-        if (!newUserEmail.trim() || !selectedRoleId) {
+        if (!newProgramName.trim()) {
             return
         }
 
         setPendingAction("insert")
-        setPendingDeleteUser(null)
+        setPendingDeleteProgram(null)
         setIsConfirmActionModalOpen(true)
     }
 
-    const handleOpenDeleteConfirmation = (user: AuthenticatedUser) => {
+    const handleOpenDeleteConfirmation = (program: MsProgram) => {
         setPendingAction("delete")
-        setPendingDeleteUser(user)
+        setPendingDeleteProgram(program)
         setIsConfirmActionModalOpen(true)
+    }
+
+    const isDuplicateProgramName = () => {
+        const normalized = newProgramName.trim().toLowerCase()
+
+        return existingProgramList.some((program) => {
+            const isSameRecord = editingProgramId ? program.programId === editingProgramId : false
+
+            if (isSameRecord) {
+                return false
+            }
+
+            return program.programName.trim().toLowerCase() === normalized
+        })
     }
 
     const handleInsert = async () => {
-        if (!newUserEmail.trim() || !selectedRoleId) {
-            return;
-        }
-
-        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
-        if (!isUniqueEmail) {
+        if (!newProgramName.trim()) {
             return
         }
 
-        const payload: InsertAuthenticatedUserRequest = {
-            email: newUserEmail.trim().toLowerCase(),
-            roleId: Number(selectedRoleId),
-            setIsLoading,
-        }
-
-        await UserService.insertAuthenticatedUser(payload)
-            .then(() => {
-                setIsUpsertModalOpen(false)
-                setNewUserEmail("")
-                setSelectedRoleId("")
-                resetConfirmActionState()
-                setErrorMessage("")
-                setSuccessMessage("User access added successfully")
-                setIsShowError(true)
-                handleFetchUsers()
-            })
-            .catch((error) => {
-                setErrorMessage(error.error.message);
-                setIsShowError(true);
-            })
-    }
-
-    const handleUpdate = async () => {
-        if (!editingUserId || !newUserEmail.trim() || !selectedRoleId) {
-            return;
-        }
-
-        const isUniqueEmail = await validateUniqueEmail(newUserEmail)
-        if (!isUniqueEmail) {
+        if (isDuplicateProgramName()) {
+            setErrorMessage("Program name already exists")
+            setIsShowError(true)
             return
         }
 
-        const payload: UpdateAuthenticatedUserRequest = {
-            userId: editingUserId,
-            email: newUserEmail.trim().toLowerCase(),
-            roleId: Number(selectedRoleId),
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: InsertProgramRequest = {
+            programName: newProgramName.trim(),
+            userIn: userId,
             setIsLoading,
         }
 
-        await UserService.updateAuthenticatedUser(payload)
+        await ProgramService.insertProgram(payload)
             .then(() => {
                 setIsUpsertModalOpen(false)
-                resetUserForm()
+                resetProgramForm()
                 resetConfirmActionState()
                 setErrorMessage("")
-                setSuccessMessage("User access updated successfully")
+                setSuccessMessage("Program added successfully")
                 setIsShowError(true)
-                handleFetchUsers()
+                handleFetchPrograms()
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -246,24 +220,72 @@ const ManageUserPage = () => {
             })
     }
 
-    const handleDeleteUser = async (user: AuthenticatedUser) => {
-        const payload: DeleteAuthenticatedUserRequest = {
-            userId: user.userId,
+    const handleUpdate = async () => {
+        if (!editingProgramId || !newProgramName.trim()) {
+            return
+        }
+
+        if (isDuplicateProgramName()) {
+            setErrorMessage("Program name already exists")
+            setIsShowError(true)
+            return
+        }
+
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: UpdateProgramRequest = {
+            programId: editingProgramId,
+            programName: newProgramName.trim(),
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
             setIsLoading,
         }
 
-        await UserService.deleteAuthenticatedUser(payload)
+        await ProgramService.updateProgram(payload)
+            .then(() => {
+                setIsUpsertModalOpen(false)
+                resetProgramForm()
+                resetConfirmActionState()
+                setErrorMessage("")
+                setSuccessMessage("Program updated successfully")
+                setIsShowError(true)
+                handleFetchPrograms()
+            })
+            .catch((error) => {
+                setErrorMessage(error.error.message)
+                setIsShowError(true)
+            })
+    }
+
+    const handleDeleteProgram = async (program: MsProgram) => {
+        const userId = ensureAuthenticatedUserId()
+        if (!userId) {
+            return
+        }
+
+        const payload: DeleteProgramRequest = {
+            programId: program.programId,
+            userUp: userId,
+            updatedAt: new Date().toISOString(),
+            setIsLoading,
+        }
+
+        await ProgramService.deleteProgram(payload)
             .then(() => {
                 resetConfirmActionState()
                 setErrorMessage("")
-                setSuccessMessage("User access deleted successfully")
+                setSuccessMessage("Program deleted successfully")
                 setIsShowError(true)
-                if (userList.length === 1 && page > 1) {
+
+                if (programList.length === 1 && page > 1) {
                     setPage((prev) => prev - 1)
                     return
                 }
 
-                handleFetchUsers()
+                handleFetchPrograms()
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -282,38 +304,38 @@ const ManageUserPage = () => {
             return
         }
 
-        if (pendingAction === "delete" && pendingDeleteUser) {
-            await handleDeleteUser(pendingDeleteUser)
+        if (pendingAction === "delete" && pendingDeleteProgram) {
+            await handleDeleteProgram(pendingDeleteProgram)
         }
     }
 
-    const handleFetchUsers = async () => {
-        const payload: GetAuthenticatedUserListRequest = {
+    const handleFetchPrograms = async () => {
+        const payload: GetProgramListRequest = {
             page,
             pageSize,
             search,
             setIsLoading,
         }
 
-        await UserService.getAuthenticatedUserList(payload)
+        await ProgramService.getProgramList(payload)
             .then((res) => {
-                setUserList(res.data || []);
+                setProgramList(res.data || [])
                 setTotalCount(res.count ?? 0)
             })
             .catch((error) => {
-                setErrorMessage(error.error.message);
-                setIsShowError(true);
+                setErrorMessage(error.error.message)
+                setIsShowError(true)
             })
     }
 
-    const handleFetchRoles = async () => {
-        await RoleService.getRoleList({
+    const handleFetchExistingPrograms = async () => {
+        await ProgramService.getProgramList({
             page: 1,
             pageSize: 9999,
             search: "",
         })
             .then((res) => {
-                setRoleList(res.data || [])
+                setExistingProgramList(res.data || [])
             })
             .catch((error) => {
                 setErrorMessage(error.error.message)
@@ -322,31 +344,34 @@ const ManageUserPage = () => {
     }
 
     useEffect(() => {
-        handleFetchUsers();
+        handleFetchPrograms()
     }, [page, pageSize, search])
-
-    useEffect(() => {
-        handleFetchRoles()
-    }, [])
 
     return (
         <div>
             <div className="mb-4">
                 <h1 className="mb-2 scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-                    Manage User
+                    Manage Program
                 </h1>
-                <p className="text-muted-foreground">Manage email and role access for this application</p>
+                <p className="text-muted-foreground">Manage program data</p>
             </div>
+
             <AppModal
-                trigger={manageUserAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Email Access</Button> : undefined}
-                title={editingUserId ? "Edit User Access" : "Add New User Access"}
-                description={editingUserId ? "Update email access for AuthenticatedUser" : "Add a new email access for AuthenticatedUser"}
+                trigger={
+                    programAccess.canInsert ? (
+                        <Button className="mb-4" onClick={handleOpenCreateModal}>
+                            Add Program
+                        </Button>
+                    ) : undefined
+                }
+                title={editingProgramId ? "Edit Program" : "Add New Program"}
+                description={editingProgramId ? "Update selected program" : "Add a new program"}
                 open={isUpsertModalOpen}
                 onOpenChange={(open) => {
                     setIsUpsertModalOpen(open)
 
                     if (!open) {
-                        resetUserForm()
+                        resetProgramForm()
                     }
                 }}
                 footer={
@@ -355,50 +380,42 @@ const ManageUserPage = () => {
                             type="button"
                             onClick={() => {
                                 setIsUpsertModalOpen(false)
-                                resetUserForm()
+                                resetProgramForm()
                             }}
-                            variant={"outline"}
+                            variant="outline"
                         >
                             Cancel
                         </Button>
                         <Button
                             type="button"
                             onClick={() => {
-                                if (editingUserId) {
+                                if (editingProgramId) {
                                     handleOpenUpdateConfirmation()
                                     return
                                 }
 
                                 handleOpenInsertConfirmation()
                             }}
-                            disabled={editingUserId ? !manageUserAccess.canUpdate : !manageUserAccess.canInsert}
                         >
-                            {editingUserId ? "Update" : "Save"}
+                            {editingProgramId ? "Update" : "Save"}
                         </Button>
                     </div>
                 }
             >
                 <AppTextField
-                    label="Email"
-                    placeholder="user123@example.com"
-                    type="email"
-                    required={true}
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e)}
+                    label="Program Name"
+                    placeholder="New Year Program"
+                    required
+                    value={newProgramName}
+                    onChange={(value) => setNewProgramName(value)}
                 />
-                <AppAutoComplete
-                    label="Role"
-                    placeholder="Select role"
-                    searchPlaceholder="Search role"
-                    emptyMessage="No role found"
-                    required={true}
-                    value={selectedRoleId}
-                    options={roleOptions}
-                    onValueChange={(value) => {
-                        setSelectedRoleId(value)
-                    }}
+                <AppExistingList
+                    title="Existing Program List"
+                    items={filteredExistingProgramList.map((program) => program.programName)}
+                    emptyMessage="No program data"
                 />
             </AppModal>
+
             <AppModal
                 open={isConfirmActionModalOpen}
                 onOpenChange={(open) => {
@@ -410,17 +427,17 @@ const ManageUserPage = () => {
                 }}
                 title={
                     pendingAction === "delete"
-                        ? "Delete User Access"
+                        ? "Delete Program"
                         : pendingAction === "insert"
                             ? "Confirm Save"
                             : "Confirm Update"
                 }
                 description={
                     pendingAction === "delete"
-                        ? "This action will remove the selected user access"
+                        ? "This action will remove the selected program"
                         : pendingAction === "insert"
-                            ? "This action will add new user access"
-                            : "This action will update the selected user access"
+                            ? "This action will add new program"
+                            : "This action will update the selected program"
                 }
                 classNames={{
                     content: "sm:max-w-sm",
@@ -453,15 +470,16 @@ const ManageUserPage = () => {
             >
                 <p>
                     {pendingAction === "delete"
-                        ? "Are you sure you want to delete this user?"
+                        ? "Are you sure you want to delete this program?"
                         : pendingAction === "insert"
-                            ? "Are you sure you want to add this user?"
-                            : "Are you sure you want to update this user?"}
+                            ? "Are you sure you want to add this program?"
+                            : "Are you sure you want to update this program?"}
                 </p>
             </AppModal>
+
             <AppSearchBar
-                label="Search User"
-                placeholder="user123@example.com"
+                label="Search Program"
+                placeholder="New Year Program"
                 onSearch={(value) => {
                     setSearch(value)
                     setPage(1)
@@ -474,12 +492,12 @@ const ManageUserPage = () => {
             <AppTable
                 table={table}
                 showNumberColumn
-                columnsCount={manageUserTableColumns.length}
-                emptyMessage={"No users found."}
+                columnsCount={manageProgramTableColumns.length}
+                emptyMessage="No programs found."
                 showPagination
                 page={page}
                 pageSize={pageSize}
-                rowCount={userList.length}
+                rowCount={programList.length}
                 hasNextPage={hasNextPage}
                 onPreviousPage={() => setPage((p) => Math.max(p - 1, 1))}
                 onNextPage={() => setPage((p) => p + 1)}
@@ -487,22 +505,23 @@ const ManageUserPage = () => {
                     setPageSize(size)
                     setPage(1)
                 }}
-                pageSizeOptions={MANAGE_USER_PAGE_SIZE_OPTIONS}
-                pageInfoRenderer={({ page, rowCount }) =>
-                    `Page ${page} • ${totalCount} total • ${rowCount} row(s) shown`
+                pageSizeOptions={MANAGE_PROGRAM_PAGE_SIZE_OPTIONS}
+                pageInfoRenderer={({ page: currentPage, rowCount }) =>
+                    `Page ${currentPage} • ${totalCount} total • ${rowCount} row(s) shown`
                 }
             />
+
             <AppModal
                 open={isShowError}
                 onOpenChange={setIsShowError}
                 title={errorMessage ? "Error" : "Success"}
-                showCloseButton={true}
+                showCloseButton
                 contentProps={{
                     onOpenAutoFocus: (event) => {
-                        event.preventDefault();
+                        event.preventDefault()
                     },
                     onCloseAutoFocus: (event) => {
-                        event.preventDefault();
+                        event.preventDefault()
                     },
                 }}
                 classNames={{
@@ -518,9 +537,9 @@ const ManageUserPage = () => {
                         <Button
                             type="button"
                             onClick={() => {
-                                setErrorMessage("");
-                                setSuccessMessage("");
-                                setIsShowError(false);
+                                setErrorMessage("")
+                                setSuccessMessage("")
+                                setIsShowError(false)
                             }}
                         >
                             OK
@@ -530,9 +549,10 @@ const ManageUserPage = () => {
             >
                 <p>{errorMessage || successMessage}</p>
             </AppModal>
+
             {isLoading && <AppSpinner />}
         </div>
     )
 }
 
-export default ManageUserPage
+export default ManageProgramPage

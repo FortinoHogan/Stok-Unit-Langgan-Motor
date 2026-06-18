@@ -6,7 +6,7 @@ import AppCheckboxList from "@/components/app-layout/app-checkbox-list/AppCheckb
 import AppSearchBar from "@/components/app-layout/app-search-bar/AppSearchBar"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/helpers/hooks/useAuthStore/useAuthStore"
-import { usePrivillegeAccess } from "@/helpers/hooks/usePrivillegeAccess/usePrivillegeAccess"
+import { usePrivilegeAccess } from "@/helpers/hooks/usePrivilegeAccess/usePrivilegeAccess"
 import { CategoryService } from "@/helpers/services/CategoryService"
 import { ColorService } from "@/helpers/services/ColorService"
 import { TypeColorService } from "@/helpers/services/TypeColorService"
@@ -30,7 +30,7 @@ import { TYPE_AND_COLOR_PAGE_SIZE_OPTIONS } from "./TypeAndColorPage.constant"
 
 const TypeAndColorPage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-  const typeAndColorAccess = usePrivillegeAccess("Type and Color")
+  const typeAndColorAccess = usePrivilegeAccess("Type and Color")
 
   const [isAddColorModalOpen, setIsAddColorModalOpen] = useState(false)
   const [isConfirmSaveModalOpen, setIsConfirmSaveModalOpen] = useState(false)

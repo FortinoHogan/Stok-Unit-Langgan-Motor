@@ -3,8 +3,8 @@ import { useMemo } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import AppSpinner from "@/components/app-components/app-spinner/AppSpinner";
 import { routes } from "@/constants/paths";
-import { usePrivillegeStore } from "@/helpers/hooks/usePrivillegeStore/usePrivillegeStore";
-import { canAccessPathByPrivillege } from "@/constants/privillegeAccess";
+import { usePrivilegeStore } from "@/helpers/hooks/usePrivilegeStore/usePrivilegeStore";
+import { canAccessPathByprivilege } from "@/constants/privilegeAccess";
 
 interface AppContentProps {
   children: ReactNode;
@@ -12,12 +12,12 @@ interface AppContentProps {
 
 const AppContent = ({ children }: AppContentProps) => {
   const location = useLocation();
-  const privillegeList = usePrivillegeStore((state) => state.privillegeList);
-  const loadedRoleId = usePrivillegeStore((state) => state.loadedRoleId);
+  const privilegeList = usePrivilegeStore((state) => state.privilegeList);
+  const loadedRoleId = usePrivilegeStore((state) => state.loadedRoleId);
 
   const canAccessCurrentPath = useMemo(
-    () => canAccessPathByPrivillege(location.pathname, privillegeList),
-    [location.pathname, privillegeList],
+    () => canAccessPathByprivilege(location.pathname, privilegeList),
+    [location.pathname, privilegeList],
   );
 
   if (loadedRoleId === null) {
