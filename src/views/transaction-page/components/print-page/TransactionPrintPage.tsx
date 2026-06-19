@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Document, Image, Page, PDFViewer, Text, View } from "@react-pdf/renderer";
+import { Document, Image, Page, PDFViewer, Text, View, Font } from "@react-pdf/renderer";
 import { useParams } from "react-router-dom";
 
 import AppSpinner from "@/components/app-components/app-spinner/AppSpinner";
@@ -15,31 +15,16 @@ import { PeriodService } from "@/helpers/services/PeriodService";
 import { SalesService } from "@/helpers/services/SalesService";
 import { formatLongDate } from "@/lib/utils";
 import AppCheckboxList from "@/components/app-layout/app-checkbox-list/AppCheckboxList";
+    
+Font.register({
+    family: "Calibri",
+    src: "/assets/fonts/Calibri.ttf",
+});
 
 const mmToPt = (mm: number) => mm * 2.83464567;
 
 const buyerInfoRows = (data: TransactionPrintData) => (
     <>
-        <View style={styles.secondBuyerRow}>
-            <Text style={styles.secondBuyerLabel}>Nama</Text>
-            <Text style={styles.secondBuyerColon}>:</Text>
-            <Text style={styles.secondBuyerValue}>{data.name || "-"}</Text>
-        </View>
-        <View style={styles.secondBuyerRow}>
-            <Text style={styles.secondBuyerLabel}>Alamat</Text>
-            <Text style={styles.secondBuyerColon}>:</Text>
-            <Text style={styles.secondBuyerValue}>{data.address || "-"}</Text>
-        </View>
-        <View style={styles.secondBuyerRow}>
-            <Text style={styles.secondBuyerLabel}>No. Telp.</Text>
-            <Text style={styles.secondBuyerColon}>:</Text>
-            <Text style={styles.secondBuyerValue}>{data.phone || "-"}</Text>
-        </View>
-        <View style={styles.secondBuyerDateRow}>
-            <Text style={styles.secondBuyerLabel}>Tgl. Beli</Text>
-            <Text style={styles.secondBuyerColon}>:</Text>
-            <Text style={styles.secondBuyerDateValue}>{formatLongDate(data.dateOUT)}</Text>
-        </View>
         <View style={styles.secondBuyerRow}>
             <Text style={styles.secondBuyerLabel}>Nama</Text>
             <Text style={styles.secondBuyerColon}>:</Text>
@@ -207,6 +192,7 @@ const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
                 style={styles.secondPage}
             >
                 <View style={styles.secondCard}>
+                    <View style={styles.secondBuyerGroup}>{buyerInfoRows(data)}</View>
                     <View style={styles.secondBuyerGroup}>{buyerInfoRows(data)}</View>
                 </View>
             </Page>

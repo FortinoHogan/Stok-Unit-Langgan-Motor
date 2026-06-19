@@ -126,16 +126,19 @@ export const styles = StyleSheet.create({
     marginTop: 40,
   },
   secondPage: {
-    padding: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    paddingLeft: 6,
     fontSize: 8,
+    fontFamily: "Calibri",
   },
   secondCard: {
-    padding: 1,
     height: "100%",
     justifyContent: "center",
+    gap: 2,
   },
   secondBuyerGroup: {
-    gap: 3,
+    gap: 1,
     justifyContent: "space-between",
   },
   secondBuyerRow: {
@@ -144,10 +147,10 @@ export const styles = StyleSheet.create({
   },
   secondBuyerDateRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
   },
   secondBuyerLabel: {
-    width: 34,
+    width: 30,
   },
   secondBuyerColon: {
     width: 4,
@@ -159,6 +162,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     fontSize: 11,
     fontWeight: 900,
+    fontFamily: "Helvetica",
   },
   secondSeparator: {
     borderTopWidth: 1,

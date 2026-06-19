@@ -210,3 +210,9 @@ body {
   src: url("/assets/fonts/Montserrat.ttf") format("truetype");
   font-weight: 400;
 }
+
+@font-face {
+  font-family: "Calibri";
+  src: url("/assets/fonts/Calibri.ttf") format("truetype");
+  font-weight: 400;
+}
