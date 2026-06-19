@@ -1,5 +1,5 @@
 import type { IResponse } from "@/interfaces/IModel.interface";
-import type { PostgrestError } from "@supabase/supabase-js";
+import type { PostgrestError, PostgrestSingleResponse } from "@supabase/supabase-js";
 
 const createUnknownError = (error: unknown): PostgrestError => ({
   code: "UNKNOWN_ERROR",
@@ -19,7 +19,7 @@ const createUnknownError = (error: unknown): PostgrestError => ({
 });
 
 const request = <T>(
-  executor: () => PromiseLike<IResponse<T>>,
+  executor: () => PromiseLike<IResponse<T> | PostgrestSingleResponse<any>>,
 ): Promise<IResponse<T>> =>
   new Promise<IResponse<T>>((resolve, reject) => {
     Promise.resolve(executor())

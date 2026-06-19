@@ -25,7 +25,7 @@ import { ROLE_AND_PRIVILEGE_PAGE_SIZE_OPTIONS } from "./RoleAndPrivilegePage.con
 
 const RoleAndPrivilegePage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-  const roleAndPrivilegeAccess = usePrivilegeAccess("Role and privilege")
+  const roleAndPrivilegeAccess = usePrivilegeAccess("Role and Privilege")
   const canUpdateRolePrivilege = roleAndPrivilegeAccess.canUpdate
 
   const [isAddPrivilegeModalOpen, setIsAddPrivilegeModalOpen] = useState(false)

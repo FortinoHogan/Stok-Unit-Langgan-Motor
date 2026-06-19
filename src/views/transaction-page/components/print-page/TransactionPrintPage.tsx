@@ -14,6 +14,7 @@ import { ProgramService } from "@/helpers/services/ProgramService";
 import { PeriodService } from "@/helpers/services/PeriodService";
 import { SalesService } from "@/helpers/services/SalesService";
 import { formatLongDate } from "@/lib/utils";
+import AppCheckboxList from "@/components/app-layout/app-checkbox-list/AppCheckboxList";
 
 const mmToPt = (mm: number) => mm * 2.83464567;
 
@@ -34,7 +35,27 @@ const buyerInfoRows = (data: TransactionPrintData) => (
             <Text style={styles.secondBuyerColon}>:</Text>
             <Text style={styles.secondBuyerValue}>{data.phone || "-"}</Text>
         </View>
+        <View style={styles.secondBuyerDateRow}>
+            <Text style={styles.secondBuyerLabel}>Tgl. Beli</Text>
+            <Text style={styles.secondBuyerColon}>:</Text>
+            <Text style={styles.secondBuyerDateValue}>{formatLongDate(data.dateOUT)}</Text>
+        </View>
         <View style={styles.secondBuyerRow}>
+            <Text style={styles.secondBuyerLabel}>Nama</Text>
+            <Text style={styles.secondBuyerColon}>:</Text>
+            <Text style={styles.secondBuyerValue}>{data.name || "-"}</Text>
+        </View>
+        <View style={styles.secondBuyerRow}>
+            <Text style={styles.secondBuyerLabel}>Alamat</Text>
+            <Text style={styles.secondBuyerColon}>:</Text>
+            <Text style={styles.secondBuyerValue}>{data.address || "-"}</Text>
+        </View>
+        <View style={styles.secondBuyerRow}>
+            <Text style={styles.secondBuyerLabel}>No. Telp.</Text>
+            <Text style={styles.secondBuyerColon}>:</Text>
+            <Text style={styles.secondBuyerValue}>{data.phone || "-"}</Text>
+        </View>
+        <View style={styles.secondBuyerDateRow}>
             <Text style={styles.secondBuyerLabel}>Tgl. Beli</Text>
             <Text style={styles.secondBuyerColon}>:</Text>
             <Text style={styles.secondBuyerDateValue}>{formatLongDate(data.dateOUT)}</Text>
@@ -187,16 +208,15 @@ const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
             >
                 <View style={styles.secondCard}>
                     <View style={styles.secondBuyerGroup}>{buyerInfoRows(data)}</View>
-                    <View style={styles.secondBuyerGroup}>{buyerInfoRows(data)}</View>
                 </View>
             </Page>
 
             <Page size={{ width: 595.28, height: 420.94 }} style={styles.thirdPage}>
-                <View style={styles.thirdCard}>
+                {data?.programName?.map((programName, index) => <View style={styles.thirdCard} key={index}>
                     <View style={styles.thirdHeaderBox}>
                         <Text style={styles.thirdTitle}>BAST HADIAH</Text>
                         <View style={styles.thirdHeaderDivider} />
-                        <Text style={styles.thirdSubTitle}>{data.programName}</Text>
+                        <Text style={styles.thirdSubTitle}>{programName}</Text>
                         <Text style={styles.thirdPeriod}>{data.period}</Text>
                     </View>
 
@@ -221,7 +241,7 @@ const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
                         </View>
 
                         <Text style={styles.thirdStatement}>Menyatakan telah terima dari Dealer HADIAH berupa :</Text>
-                        <Text style={styles.thirdGiftLine}>{`> 1 Unit ${data.programName}`}</Text>
+                        <Text style={styles.thirdGiftLine}>{`> 1 Unit ${programName}`}</Text>
                     </View>
 
                     <View style={styles.thirdSignatures}>
@@ -239,7 +259,7 @@ const TransactionPrintDocument = ({ data }: { data: TransactionPrintData }) => {
                             <Text style={styles.thirdSignatureName}>{data.salesName || "SALESMAN"}</Text>
                         </View>
                     </View>
-                </View>
+                </View>)}
             </Page>
 
             <Page size={{ width: 595.28, height: 420.94 }} style={styles.fourthPage}>
@@ -377,7 +397,7 @@ const TransactionPrintPage = () => {
     const [isLoadingProgramOptions, setIsLoadingProgramOptions] = useState(false);
     const [isLoadingPeriodOptions, setIsLoadingPeriodOptions] = useState(false);
     const [isLoadingSalesOptions, setIsLoadingSalesOptions] = useState(false);
-    const [selectedProgram, setSelectedProgram] = useState<string>("");
+    const [selectedProgram, setSelectedProgram] = useState<string[]>([]);
     const [selectedPeriod, setSelectedPeriod] = useState<string>("");
     const [selectedSales, setSelectedSales] = useState<string>("");
     const [isShowStatus, setIsShowStatus] = useState(false);
@@ -418,7 +438,7 @@ const TransactionPrintPage = () => {
                     value: item.programId.toString(),
                     label: item.programName,
                 })) || [];
-                setSelectedProgram(options[0]?.value || "");
+                setSelectedProgram(options[0]?.value ? [options[0].value] : []);
                 setProgramOptions(options);
             })
             .catch((error) => {
@@ -472,12 +492,16 @@ const TransactionPrintPage = () => {
 
     useEffect(() => {
         if (printData) {
-            const program = programOptions.find((option) => option.value === selectedProgram);
+            const programs = programOptions.filter((option) =>
+                selectedProgram
+                    .map((value) => value.toLowerCase())
+                    .includes(option.value.toLowerCase())
+            );
             const period = periodOptions.find((option) => option.value === selectedPeriod);
             const sales = salesOptions.find((option) => option.value === selectedSales);
             setPrintData((prev) => prev ? ({
                 ...prev,
-                programName: program?.label || "",
+                programName: programs.map((program) => program.label),
                 period: period?.label || "",
                 salesName: sales?.label || "",
             }) : prev);
@@ -499,13 +523,13 @@ const TransactionPrintPage = () => {
     return (
         <div>
             <div className="mb-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                <AppAutoComplete
+                <AppCheckboxList
                     options={programOptions}
                     label="Select Program"
                     isDisabled={isLoadingProgramOptions}
                     isLoading={isLoadingProgramOptions}
-                    value={selectedProgram}
-                    onValueChange={setSelectedProgram}
+                    values={selectedProgram}
+                    onValuesChange={(values) => setSelectedProgram(values)}
                 />
                 <AppAutoComplete
                     options={periodOptions}

@@ -127,23 +127,24 @@ export const styles = StyleSheet.create({
   },
   secondPage: {
     padding: 4,
-    fontSize: 7,
-    fontFamily: "Helvetica",
+    fontSize: 8,
   },
   secondCard: {
-    padding: 2,
+    padding: 1,
     height: "100%",
-    justifyContent: "space-between",
-    gap: 2,
-    fontWeight: 900,
+    justifyContent: "center",
   },
   secondBuyerGroup: {
     gap: 3,
-    marginBottom: 4,
+    justifyContent: "space-between",
   },
   secondBuyerRow: {
     flexDirection: "row",
     alignItems: "flex-start",
+  },
+  secondBuyerDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   secondBuyerLabel: {
     width: 34,
@@ -156,6 +157,8 @@ export const styles = StyleSheet.create({
   },
   secondBuyerDateValue: {
     flex: 1,
+    fontSize: 11,
+    fontWeight: 900,
   },
   secondSeparator: {
     borderTopWidth: 1,
@@ -164,9 +167,8 @@ export const styles = StyleSheet.create({
   thirdPage: {
     paddingHorizontal: 22,
     paddingVertical: 18,
-    paddingBottom: 28,
+    paddingBottom: 40,
     fontSize: 12,
-    fontFamily: "Helvetica",
   },
   thirdCard: {
     borderWidth: 1,
@@ -255,7 +257,6 @@ export const styles = StyleSheet.create({
     paddingBottom: 18,
     paddingLeft: 22,
     fontSize: 10,
-    fontFamily: "Helvetica",
   },
 
   fourthHeader: {
@@ -302,6 +303,7 @@ export const styles = StyleSheet.create({
   fourthVehicleRow: {
     flexDirection: "row",
     marginBottom: 4,
+    gap: 3,
   },
 
   fourthVehicleLabel: {
@@ -329,7 +331,7 @@ export const styles = StyleSheet.create({
     width: "33.33%",
     flexDirection: "row",
     borderWidth: 1,
-    borderTopWidth: 0,
+    borderTopWidth: 1,
   },
 
   fourthCheckBox: {

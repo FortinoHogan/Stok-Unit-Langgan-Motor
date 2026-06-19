@@ -26,7 +26,7 @@ const RoutePrivilegeRuleList: RoutePrivilegeRule[] = [
   },
   { path: routes.manageMasterDataVolume, resourceName: "Master Volume" },
   { path: routes.typeAndColor, resourceName: "Type and Color" },
-  { path: routes.roleAndPrivilege, resourceName: "Role and privilege" },
+  { path: routes.roleAndPrivilege, resourceName: "Role and Privilege" },
   { path: routes.transaction, resourceName: "Transaction" },
   { path: routes.report, resourceName: "Report" },
 ];

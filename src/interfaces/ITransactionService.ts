@@ -90,7 +90,7 @@ export interface TransactionPrintData {
   phone: string | null;
   dateOUT: string | null;
   salesName: string | null;
-  programName: string | null;
+  programName: string[] | null;
   period: string | null;
 }
 
@@ -159,4 +159,9 @@ export interface UpdateTransactionDetailRequest extends IRequestWithLoading {
   phone: string;
   userUp: number;
   updatedAt: string;
+}
+
+export interface GetTotalTransactionPerMonthRequest extends IRequestWithLoading {
+  month: number;
+  year: number;
 }

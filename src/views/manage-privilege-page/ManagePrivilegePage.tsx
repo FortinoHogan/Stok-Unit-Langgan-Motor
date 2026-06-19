@@ -32,7 +32,7 @@ const CRUD_ACTIONS = ["Insert", "Update", "Delete", "Read"] as const
 
 const ManagePrivilegePage = () => {
   const authenticatedUser = useAuthStore((state) => state.authenticatedUser)
-  const PrivilegeAccess = usePrivilegeAccess("Master Privilege")
+  const privilegeAccess = usePrivilegeAccess("Master Privilege")
 
   const [isUpsertModalOpen, setIsUpsertModalOpen] = useState(false)
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false)
@@ -47,7 +47,7 @@ const ManagePrivilegePage = () => {
   const [isCrudMode, setIsCrudMode] = useState(false)
   const [crudResourceName, setCrudResourceName] = useState("")
 
-  const [PrivilegeList, setPrivilegeList] = useState<MsPrivilege[]>([])
+  const [privilegeList, setPrivilegeList] = useState<MsPrivilege[]>([])
   const [existingPrivilegeList, setExistingPrivilegeList] = useState<MsPrivilege[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [search, setSearch] = useState("")
@@ -78,7 +78,7 @@ const ManagePrivilegePage = () => {
 
   const managePrivilegeTableColumns: ColumnDef<MsPrivilege>[] = [
     {
-      accessorKey: "PrivilegeName",
+      accessorKey: "privilegeName",
       header: "Privilege Name",
     },
     {
@@ -86,7 +86,7 @@ const ManagePrivilegePage = () => {
       header: "Actions",
       cell: ({ row }) => (
         <div className="flex gap-2">
-          {PrivilegeAccess.canUpdate ? (
+          {privilegeAccess.canUpdate ? (
             <Button
               variant="outline"
               size="sm"
@@ -96,7 +96,7 @@ const ManagePrivilegePage = () => {
               <Pencil className="size-4" />
             </Button>
           ) : null}
-          {PrivilegeAccess.canDelete ? (
+          {privilegeAccess.canDelete ? (
             <Button
               variant="destructive"
               size="sm"
@@ -114,23 +114,23 @@ const ManagePrivilegePage = () => {
   const hasNextPage = page * pageSize < totalCount
 
   const table = useReactTable({
-    data: PrivilegeList,
+    data: privilegeList,
     columns: managePrivilegeTableColumns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   })
 
-  const filteredExistingPrivilegeList: MsPrivilege[] = useMemo(() => {
-    const keyword = newPrivilegeName.trim().toLowerCase()
+  const filteredExistingPrivilegeList = useMemo(() => {
+    const keyword = newPrivilegeName.trim().toLowerCase();
 
     if (!keyword) {
-      return existingPrivilegeList
+      return existingPrivilegeList;
     }
 
-    return filteredExistingPrivilegeList.filter((privilege: MsPrivilege) =>
+    return existingPrivilegeList.filter((privilege) =>
       privilege.privilegeName.toLowerCase().includes(keyword),
-    )
-  }, [existingPrivilegeList, newPrivilegeName])
+    );
+  }, [existingPrivilegeList, newPrivilegeName]);
 
   const ensureAuthenticatedUserId = () => {
     const userId = authenticatedUser?.userId
@@ -355,7 +355,7 @@ const ManagePrivilegePage = () => {
         setSuccessMessage("Privilege deleted successfully")
         setIsShowError(true)
 
-        if (PrivilegeList.length === 1 && page > 1) {
+        if (privilegeList.length === 1 && page > 1) {
           setPage((prev) => prev - 1)
           return
         }
@@ -432,7 +432,7 @@ const ManagePrivilegePage = () => {
       </div>
 
       <AppModal
-        trigger={PrivilegeAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Privilege</Button> : undefined}
+        trigger={privilegeAccess.canInsert ? <Button className="mb-4" onClick={handleOpenCreateModal}>Add Privilege</Button> : undefined}
         classNames={{
           content: "sm:max-w-lg",
         }}
@@ -543,7 +543,7 @@ const ManagePrivilegePage = () => {
           items={
             isCrudMode && crudResourceName.trim()
               ? crudPrivilegeNames.filter((item) => item.alreadyExists).map((item) => item.name)
-              : filteredExistingPrivilegeList.map((privilege: MsPrivilege) => privilege.privilegeName)
+              : filteredExistingPrivilegeList.map((privilege) => privilege.privilegeName)
           }
           emptyMessage="No Privilege data"
         />
@@ -630,7 +630,7 @@ const ManagePrivilegePage = () => {
         showPagination
         page={page}
         pageSize={pageSize}
-        rowCount={PrivilegeList.length}
+        rowCount={privilegeList.length}
         hasNextPage={hasNextPage}
         onPreviousPage={() => setPage((p) => Math.max(p - 1, 1))}
         onNextPage={() => setPage((p) => p + 1)}

@@ -31,6 +31,7 @@ import type { IFormData, TransactionDayGroupedRow } from "./TransactionPage.inte
 import type { AutoCompleteOption } from "@/components/app-components/app-auto-complete/AppAutoComplete.interface";
 import { useIsMobile } from "@/helpers/hooks/useMobile/useMobile";
 import { formatDateAsYmd } from "@/lib/utils";
+import AppSpinner from "@/components/app-components/app-spinner/AppSpinner";
 
 const TransactionPage = () => {
   // Base / Access
@@ -371,6 +372,22 @@ const TransactionPage = () => {
       });
   }, []);
 
+
+  const handleGetTotalTransactionCount = useCallback(async () => {
+    await TransactionService.getTotalTransactionPerMonth({
+      year: Number(appliedPeriodFilter.year),
+      month: Number(appliedPeriodFilter.month),
+      setIsLoading: setIsTableLoading,
+    })
+      .then((res) => {
+        setSellingNumberInput(`${String(res.data ? res.data + 1 : 1).padStart(3, "0")}${String(appliedPeriodFilter.month).padStart(2, "0")}${appliedPeriodFilter.year}`);
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
+  }, [appliedPeriodFilter.year, appliedPeriodFilter.month]);
+
   const handleFetchTableTransactionData = useCallback(async () => {
     if (!isFilterApplied) {
       setTransactionList([]);
@@ -393,7 +410,6 @@ const TransactionPage = () => {
       setIsLoading: setIsTableLoading,
     })
       .then((res) => {
-        console.log('transaction data', res.data);
         setTransactionList(res.data || []);
       })
       .catch((error) => {
@@ -570,7 +586,7 @@ const TransactionPage = () => {
         setIsShowError(true);
       });
   };
-  console.log(sellingTypeInput, 'sellingTypeInput');
+
   const handleSubmitSellingDetail = async () => {
     const userId = authenticatedUser?.userId;
 
@@ -629,7 +645,7 @@ const TransactionPage = () => {
     }
 
     const sellingDateOut = formatDateAsYmd(sellingDateOutInput);
-    console.log('sellingTransaction', sellingTransaction)
+
     const payload = {
       transactionDetailId: sellingTransaction.transactionDetailId,
       transactionId: sellingTransaction.transactionId,
@@ -640,7 +656,6 @@ const TransactionPage = () => {
       address: sellingAddressInput.trim(),
       phone: sellingPhoneInput.trim(),
     };
-    console.log('payload', payload)
     if (!isEditingSellingDetail) {
       if (!sellingTransaction.isRFS) {
         setErrorMessage("Only RFS transaction can be sold.");
@@ -929,7 +944,6 @@ const TransactionPage = () => {
   };
 
   const handleOpenDetailModal = (row: TransactionDayGroupedRow) => {
-    console.log('open detail', row.details);
     setSelectedDetailRows(row.details);
     setSelectedDetailTitle(
       `${row.categoryName} - ${row.typeName} (${row.typeCode})`,
@@ -1233,9 +1247,11 @@ const TransactionPage = () => {
 
     void handleFetchSellingTypeOptions();
     void handleFetchSellingVolumeOptions();
+    void handleGetTotalTransactionCount();
   }, [
     handleFetchSellingTypeOptions,
     handleFetchSellingVolumeOptions,
+    handleGetTotalTransactionCount,
     isSellingDetailModalOpen,
   ]);
 
@@ -1901,6 +1917,8 @@ const TransactionPage = () => {
         message={successMessage}
         onClose={handleCloseSuccessModal}
       />
+
+      {isActionLoading && <AppSpinner />}
     </div>
   );
 };

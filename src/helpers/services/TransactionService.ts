@@ -24,6 +24,7 @@ import type {
   TransactionPrintData,
   UpdateTransactionDetailRequest,
   DeleteTransactionDetailRequest,
+  GetTotalTransactionPerMonthRequest,
 } from "@/interfaces/ITransactionService";
 import { ApiService } from "@/utilities/ApiService";
 import { supabase } from "../supabase/client";
@@ -849,6 +850,37 @@ const deleteTransactionDetail = async (
   }
 };
 
+const getTotalTransactionPerMonth = async (
+  params: GetTotalTransactionPerMonthRequest,
+): Promise<IResponse<number>> => {
+  const { month, year, setIsLoading } = params;
+  setIsLoading?.(true);
+
+  try {
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 1);
+
+    const res = await ApiService.request<number>(() =>
+      supabase
+        .from("TrTransaction")
+        .select("*", {
+          count: "exact",
+          head: true,
+        })
+        .eq("isDeleted", false)
+        .gte("dateOUT", start.toISOString())
+        .lt("dateOUT", end.toISOString()),
+    );
+
+    res.data = res.count || 0;
+    return res;
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
 export const TransactionService = {
   getTypeColorOptions,
   getCategoryOptions,
@@ -858,6 +890,7 @@ export const TransactionService = {
   getTableTransactionData,
   getTransactionDetailByTransactionId,
   getTransactionPrintDataByTransactionId,
+  getTotalTransactionPerMonth,
 
   updateTransactionAsSold,
   insertTransactionDetail,
