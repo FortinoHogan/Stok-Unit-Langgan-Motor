@@ -434,7 +434,7 @@ const TransactionPrintPage = () => {
                     value: item.periodId.toString(),
                     label: formatLongDate(item.startDate) + " - " + formatLongDate(item.endDate),
                 })) || [];
-                setSelectedPeriod(options[0]?.value || "");
+                setSelectedPeriod(res.data?.find((item) => item.isDefault === true)?.periodId.toString() || "");
                 setPeriodOptions(options);
             })
             .catch((error) => {

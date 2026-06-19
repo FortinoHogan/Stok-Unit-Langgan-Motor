@@ -45,6 +45,8 @@ export default function LoginPage() {
     const onSubmit = async () => {
 
         const normalizedEmail = email.trim().toLowerCase();
+        localStorage.clear()
+        sessionStorage.clear()
 
         if (!normalizedEmail) {
             return;
