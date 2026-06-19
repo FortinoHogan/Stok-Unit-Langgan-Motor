@@ -136,6 +136,7 @@ export interface TrTransactionDetail extends IModel {
   name: string;
   address: string;
   phone: string;
+  salesId: number;
 }
 
 export interface TrTypeColor extends IModel {

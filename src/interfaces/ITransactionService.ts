@@ -54,6 +54,7 @@ export interface TransactionDetailRow {
   dateOUT: string | null;
   transactionDetailId: number;
   volumeId: number | null;
+  salesId: number | null;
   volumeLabel: string | null;
   sellingTypeId: number | null;
   sellingTypeName: string | null;
@@ -140,6 +141,7 @@ export interface InsertTransactionRequest extends IRequestWithLoading {
 export interface InsertTransactionDetailRequest extends IRequestWithLoading {
   transactionId: number;
   volumeId: number;
+  salesId: number;
   sellingTypeId: number;
   sellingNumber: string;
   name: string;
@@ -152,6 +154,7 @@ export interface UpdateTransactionDetailRequest extends IRequestWithLoading {
   transactionDetailId: number;
   transactionId: number;
   volumeId: number;
+  salesId: number;
   sellingTypeId: number;
   sellingNumber: string;
   name: string;

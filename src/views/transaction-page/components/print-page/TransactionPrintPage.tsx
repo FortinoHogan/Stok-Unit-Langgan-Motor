@@ -379,13 +379,10 @@ const TransactionPrintPage = () => {
     const [printData, setPrintData] = useState<TransactionPrintData | null>(null);
     const [programOptions, setProgramOptions] = useState<AutoCompleteOption[]>([]);
     const [periodOptions, setPeriodOptions] = useState<AutoCompleteOption[]>([]);
-    const [salesOptions, setSalesOptions] = useState<AutoCompleteOption[]>([]);
     const [isLoadingProgramOptions, setIsLoadingProgramOptions] = useState(false);
     const [isLoadingPeriodOptions, setIsLoadingPeriodOptions] = useState(false);
-    const [isLoadingSalesOptions, setIsLoadingSalesOptions] = useState(false);
     const [selectedProgram, setSelectedProgram] = useState<string[]>([]);
     const [selectedPeriod, setSelectedPeriod] = useState<string>("");
-    const [selectedSales, setSelectedSales] = useState<string>("");
     const [isShowStatus, setIsShowStatus] = useState(false);
 
     const fetchPrintData = async () => {
@@ -449,28 +446,11 @@ const TransactionPrintPage = () => {
             });
     };
 
-    const fetchSalesOptions = async () => {
-        await SalesService.getSalesList({ setIsLoading: setIsLoadingSalesOptions, page: 1, pageSize: 9999 })
-            .then((res) => {
-                const options: AutoCompleteOption[] = res.data?.map((item) => ({
-                    value: item.salesId.toString(),
-                    label: item.salesName,
-                })) || [];
-                setSelectedSales(options[0]?.value || "");
-                setSalesOptions(options);
-            })
-            .catch((error) => {
-                setStatusMessage("Failed to fetch sales options: " + error.error.message);
-                setIsShowStatus(true);
-            });
-    };
-
     useEffect(() => {
         const fetchData = async () => {
             await fetchPrintData();
             await fetchProgramOptions();
             await fetchPeriodOptions();
-            await fetchSalesOptions();
         };
 
         fetchData();
@@ -484,15 +464,13 @@ const TransactionPrintPage = () => {
                     .includes(option.value.toLowerCase())
             );
             const period = periodOptions.find((option) => option.value === selectedPeriod);
-            const sales = salesOptions.find((option) => option.value === selectedSales);
             setPrintData((prev) => prev ? ({
                 ...prev,
                 programName: programs.map((program) => program.label),
                 period: period?.label || "",
-                salesName: sales?.label || "",
             }) : prev);
         }
-    }, [selectedProgram, selectedPeriod, selectedSales]);
+    }, [selectedProgram, selectedPeriod]);
 
     if (isLoading) {
         return <AppSpinner />;
@@ -508,7 +486,7 @@ const TransactionPrintPage = () => {
 
     return (
         <div>
-            <div className="mb-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <div className="mb-3 grid gap-3 md:grid-cols-2">
                 <AppCheckboxList
                     options={programOptions}
                     label="Select Program"
@@ -524,14 +502,6 @@ const TransactionPrintPage = () => {
                     isLoading={isLoadingPeriodOptions}
                     value={selectedPeriod}
                     onValueChange={setSelectedPeriod}
-                />
-                <AppAutoComplete
-                    options={salesOptions}
-                    label="Select Sales"
-                    isDisabled={isLoadingSalesOptions}
-                    isLoading={isLoadingSalesOptions}
-                    value={selectedSales}
-                    onValueChange={setSelectedSales}
                 />
             </div>
             <PDFViewer style={styles.viewer} showToolbar>

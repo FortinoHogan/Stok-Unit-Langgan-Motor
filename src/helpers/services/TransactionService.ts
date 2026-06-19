@@ -493,6 +493,7 @@ const getTableTransactionData = async (
           transactionDetailId: 0,
           volumeId: null,
           volumeLabel: null,
+          salesId: null,
           sellingTypeId: null,
           sellingTypeName: null,
           sellingNumber: null,
@@ -575,6 +576,7 @@ const getTransactionPrintDataByTransactionId = async (
           TrTransactionDetail!inner (
             transactionDetailId,
             volumeId,
+            salesId,
             sellingTypeId,
             sellingNumber,
             name,
@@ -588,6 +590,10 @@ const getTransactionPrintDataByTransactionId = async (
             MsSellingType!inner (
               sellingTypeName,
               isDeleted
+            ),
+            MsSales!inner (
+              salesName,
+              isDeleted
             )
           )
         `,
@@ -599,6 +605,7 @@ const getTransactionPrintDataByTransactionId = async (
         .eq("TrTypeColor.MsType.MsCategory.isDeleted", false)
         .eq("TrTransactionDetail.MsVolume.isDeleted", false)
         .eq("TrTransactionDetail.MsSellingType.isDeleted", false)
+        .eq("TrTransactionDetail.MsSales.isDeleted", false)
         .eq("TrTransactionDetail.isDeleted", false)
         .single(),
     );
@@ -628,7 +635,7 @@ const getTransactionPrintDataByTransactionId = async (
             address: item.TrTransactionDetail[0]?.address || null,
             phone: item.TrTransactionDetail[0]?.phone || null,
             dateOUT: item.dateOUT,
-            salesName: null,
+            salesName: item.TrTransactionDetail[0]?.MsSales?.salesName || null,
             period: null,
             programName: null,
           }
@@ -671,6 +678,7 @@ const insertTransactionDetail = async (
   const {
     transactionId,
     volumeId,
+    salesId,
     sellingTypeId,
     sellingNumber,
     name,
@@ -689,6 +697,7 @@ const insertTransactionDetail = async (
         .insert({
           transactionId,
           volumeId,
+          salesId,
           sellingTypeId,
           sellingNumber,
           name,
@@ -715,6 +724,7 @@ const updateTransactionDetail = async (
     transactionDetailId,
     transactionId,
     volumeId,
+    salesId,
     sellingTypeId,
     sellingNumber,
     name,
@@ -733,6 +743,7 @@ const updateTransactionDetail = async (
         .from("TrTransactionDetail")
         .update({
           volumeId,
+          salesId,
           sellingTypeId,
           sellingNumber,
           name,

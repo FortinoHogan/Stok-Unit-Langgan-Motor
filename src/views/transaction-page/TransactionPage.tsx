@@ -32,6 +32,7 @@ import type { AutoCompleteOption } from "@/components/app-components/app-auto-co
 import { useIsMobile } from "@/helpers/hooks/useMobile/useMobile";
 import { formatDateAsYmd } from "@/lib/utils";
 import AppSpinner from "@/components/app-components/app-spinner/AppSpinner";
+import { SalesService } from "@/helpers/services/SalesService";
 
 const TransactionPage = () => {
   // Base / Access
@@ -57,6 +58,7 @@ const TransactionPage = () => {
   const [isYearOptionsLoading, setIsYearOptionsLoading] = useState(false);
   const [isSellingTypeOptionsLoading, setIsSellingTypeOptionsLoading] = useState(false);
   const [isVolumeOptionsLoading, setIsVolumeOptionsLoading] = useState(false);
+  const [isSalesOptionsLoading, setIsSalesOptionsLoading] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isShowSuccess, setIsShowSuccess] = useState(false);
@@ -120,6 +122,7 @@ const TransactionPage = () => {
   ]);
   const [sellingTypeOptions, setSellingTypeOptions] = useState<AutoCompleteOption[]>([]);
   const [sellingVolumeOptions, setSellingVolumeOptions] = useState<AutoCompleteOption[]>([]);
+  const [salesOptions, setSalesOptions] = useState<AutoCompleteOption[]>([]);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [tablePage, setTablePage] = useState(1);
   const [tablePageSize, setTablePageSize] = useState(10);
@@ -144,6 +147,7 @@ const TransactionPage = () => {
   const [editIsRFSInput, setEditIsRFSInput] = useState(true);
   const [sellingVolumeInput, setSellingVolumeInput] = useState("");
   const [sellingTypeInput, setSellingTypeInput] = useState("");
+  const [sellingSalesInput, setSellingSalesInput] = useState("");
   const [sellingNumberInput, setSellingNumberInput] = useState("");
   const [sellingNameInput, setSellingNameInput] = useState("");
   const [sellingAddressInput, setSellingAddressInput] = useState("");
@@ -209,6 +213,7 @@ const TransactionPage = () => {
 
   const resetSellingDetailForm = () => {
     setSellingVolumeInput("");
+    setSellingSalesInput("");
     setSellingTypeInput("");
     setSellingNumberInput("");
     setSellingNameInput("");
@@ -220,6 +225,7 @@ const TransactionPage = () => {
 
   const fillSellingDetailForm = (transaction: TransactionDetailRow) => {
     setSellingVolumeInput(transaction.volumeId ? String(transaction.volumeId) : "");
+    setSellingSalesInput(transaction.salesId ? String(transaction.salesId) : "");
     setSellingTypeInput(transaction.sellingTypeId ? String(transaction.sellingTypeId) : "");
     setSellingNumberInput(transaction.sellingNumber || "");
     setSellingNameInput(transaction.name || "");
@@ -372,6 +378,21 @@ const TransactionPage = () => {
       });
   }, []);
 
+  const handleFetchSalesOptions = useCallback(async () => {
+    await SalesService.getSalesList({ setIsLoading: setIsSalesOptionsLoading, page: 1, pageSize: 9999 })
+      .then((res) => {
+        const options: AutoCompleteOption[] = res.data?.map((item) => ({
+          value: item.salesId.toString(),
+          label: item.salesName,
+        })) || [];
+        
+        setSalesOptions(options);
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
+  }, []);
 
   const handleGetTotalTransactionCount = useCallback(async () => {
     await TransactionService.getTotalTransactionPerMonth({
@@ -619,6 +640,7 @@ const TransactionPage = () => {
 
     const parsedVolumeId = Number(sellingVolumeInput);
     const parsedSellingTypeId = Number(sellingTypeInput);
+    const parsedSalesId = Number(sellingSalesInput);
 
     if (!Number.isInteger(parsedVolumeId) || parsedVolumeId <= 0) {
       setErrorMessage("Volume must be selected.");
@@ -652,6 +674,8 @@ const TransactionPage = () => {
       volumeId: parsedVolumeId,
       sellingTypeId: parsedSellingTypeId,
       sellingNumber: sellingNumberInput.trim().toUpperCase(),
+      salesId: parsedSalesId,
+
       name: sellingNameInput.trim(),
       address: sellingAddressInput.trim(),
       phone: sellingPhoneInput.trim(),
@@ -902,6 +926,7 @@ const TransactionPage = () => {
       transactionDetailId: detail.transactionDetailId,
       volumeId: detail?.volumeId || null,
       volumeLabel: null,
+      salesId: detail?.salesId || null,
       sellingTypeId: detail?.sellingTypeId || null,
       sellingTypeName: null,
       sellingNumber: detail?.sellingNumber || null,
@@ -1247,10 +1272,12 @@ const TransactionPage = () => {
 
     void handleFetchSellingTypeOptions();
     void handleFetchSellingVolumeOptions();
+    void handleFetchSalesOptions();
     void handleGetTotalTransactionCount();
   }, [
     handleFetchSellingTypeOptions,
     handleFetchSellingVolumeOptions,
+    handleFetchSalesOptions,
     handleGetTotalTransactionCount,
     isSellingDetailModalOpen,
   ]);
@@ -1832,6 +1859,17 @@ const TransactionPage = () => {
             value={sellingTypeInput}
             options={sellingTypeOptions}
             onValueChange={setSellingTypeInput}
+          />
+          <AppAutoComplete
+            options={salesOptions}
+            label="Select Sales"
+            placeholder="Select sales"
+            searchPlaceholder="Search sales"
+            emptyMessage="No sales found"
+            isDisabled={isSalesOptionsLoading}
+            isLoading={isSalesOptionsLoading}
+            value={sellingSalesInput}
+            onValueChange={setSellingSalesInput}
           />
           <AppTextField
             label="No"
