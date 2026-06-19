@@ -393,6 +393,7 @@ const TransactionPage = () => {
       setIsLoading: setIsTableLoading,
     })
       .then((res) => {
+        console.log('transaction data', res.data);
         setTransactionList(res.data || []);
       })
       .catch((error) => {
@@ -569,7 +570,7 @@ const TransactionPage = () => {
         setIsShowError(true);
       });
   };
-
+  console.log(sellingTypeInput, 'sellingTypeInput');
   const handleSubmitSellingDetail = async () => {
     const userId = authenticatedUser?.userId;
 
@@ -602,7 +603,6 @@ const TransactionPage = () => {
 
     const parsedVolumeId = Number(sellingVolumeInput);
     const parsedSellingTypeId = Number(sellingTypeInput);
-    const parsedNumber = Number(sellingNumberInput);
 
     if (!Number.isInteger(parsedVolumeId) || parsedVolumeId <= 0) {
       setErrorMessage("Volume must be selected.");
@@ -616,8 +616,8 @@ const TransactionPage = () => {
       return;
     }
 
-    if (!Number.isFinite(parsedNumber) || parsedNumber <= 0) {
-      setErrorMessage("Number must be a valid number greater than 0.");
+    if (!sellingNumberInput.trim()) {
+      setErrorMessage("Selling Number is required.");
       setIsShowError(true);
       return;
     }
@@ -629,7 +629,7 @@ const TransactionPage = () => {
     }
 
     const sellingDateOut = formatDateAsYmd(sellingDateOutInput);
-
+    console.log('sellingTransaction', sellingTransaction)
     const payload = {
       transactionDetailId: sellingTransaction.transactionDetailId,
       transactionId: sellingTransaction.transactionId,
@@ -640,7 +640,7 @@ const TransactionPage = () => {
       address: sellingAddressInput.trim(),
       phone: sellingPhoneInput.trim(),
     };
-
+    console.log('payload', payload)
     if (!isEditingSellingDetail) {
       if (!sellingTransaction.isRFS) {
         setErrorMessage("Only RFS transaction can be sold.");
@@ -745,7 +745,6 @@ const TransactionPage = () => {
 
     const parsedVolumeId = Number(sellingVolumeInput);
     const parsedSellingTypeId = Number(sellingTypeInput);
-    const parsedNumber = Number(sellingNumberInput);
 
     if (!Number.isInteger(parsedVolumeId) || parsedVolumeId <= 0) {
       setErrorMessage("Volume must be selected.");
@@ -759,8 +758,8 @@ const TransactionPage = () => {
       return false;
     }
 
-    if (!Number.isFinite(parsedNumber) || parsedNumber <= 0) {
-      setErrorMessage("Number must be a valid number greater than 0.");
+    if (!sellingNumberInput.trim()) {
+      setErrorMessage("Selling Number is required.");
       setIsShowError(true);
       return false;
     }
@@ -930,6 +929,7 @@ const TransactionPage = () => {
   };
 
   const handleOpenDetailModal = (row: TransactionDayGroupedRow) => {
+    console.log('open detail', row.details);
     setSelectedDetailRows(row.details);
     setSelectedDetailTitle(
       `${row.categoryName} - ${row.typeName} (${row.typeCode})`,

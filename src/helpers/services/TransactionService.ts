@@ -670,7 +670,7 @@ const insertTransactionDetail = async (
   const {
     transactionId,
     volumeId,
-    transactionDetailId,
+    sellingTypeId,
     sellingNumber,
     name,
     address,
@@ -688,7 +688,7 @@ const insertTransactionDetail = async (
         .insert({
           transactionId,
           volumeId,
-          transactionDetailId,
+          sellingTypeId,
           sellingNumber,
           name,
           address,

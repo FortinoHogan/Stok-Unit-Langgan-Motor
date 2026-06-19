@@ -140,7 +140,7 @@ export interface InsertTransactionRequest extends IRequestWithLoading {
 export interface InsertTransactionDetailRequest extends IRequestWithLoading {
   transactionId: number;
   volumeId: number;
-  transactionDetailId: number;
+  sellingTypeId: number;
   sellingNumber: string;
   name: string;
   address: string;
