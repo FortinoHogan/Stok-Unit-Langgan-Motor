@@ -108,6 +108,9 @@ const ReportTableSection = (props: ReportTableSectionProps) => {
                 onPreviousPage={onPreviousPage}
                 onNextPage={onNextPage}
                 onPageSizeChange={onPageSizeChange}
+                classNames={{
+                    wrapper: "mb-4",
+                }}
             />
 
             <AppModal

@@ -385,7 +385,7 @@ const TransactionPage = () => {
           value: item.salesId.toString(),
           label: item.salesName,
         })) || [];
-        
+
         setSalesOptions(options);
       })
       .catch((error) => {
@@ -416,8 +416,8 @@ const TransactionPage = () => {
     }
 
     await TransactionService.getTableTransactionData({
-      page: 1,
-      pageSize: 1,
+      page: tablePage,
+      pageSize: tablePageSize,
       search: "",
       transactionYear: appliedPeriodFilter.year,
       transactionMonth: appliedPeriodFilter.month,

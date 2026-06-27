@@ -25,6 +25,7 @@ import type {
     ReportRow,
 } from "./ReportPage.interface";
 import type { ReportTransactionSummaryRow } from "@/interfaces/IReportService.interface";
+import AppCard from "@/components/app-components/app-card/AppCard";
 
 const ReportPage = () => {
     const today = useMemo(() => new Date(), []);
@@ -41,6 +42,8 @@ const ReportPage = () => {
     const [isShowError, setIsShowError] = useState(false);
 
     const [transactionList, setTransactionList] = useState<ReportTransactionSummaryRow[]>([]);
+    const [startingBalance, setStartingBalance] = useState<ReportTransactionSummaryRow[]>([]);
+    const [endingBalance, setEndingBalance] = useState<ReportTransactionSummaryRow[]>([]);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedDetailRows, setSelectedDetailRows] = useState<ReportTransactionSummaryRow[]>([]);
     const [selectedDetailTitle, setSelectedDetailTitle] = useState("");
@@ -159,6 +162,27 @@ const ReportPage = () => {
         })
             .then((res) => {
                 setTransactionList(res.data || []);
+            })
+            .catch((error) => {
+                setErrorMessage(error.error.message);
+                setIsShowError(true);
+            });
+    }, [appliedFilter, appliedPeriodFilter, isFilterApplied]);
+
+    const handleFetchBalance = useCallback(async () => {
+        await ReportService.getBalance({
+            transactionYear: appliedPeriodFilter.year,
+            transactionMonth: appliedPeriodFilter.month,
+            transactionDay: appliedPeriodFilter.day,
+            categoryId: appliedFilter.categoryId,
+            typeId: appliedFilter.typeId,
+            colorId: appliedFilter.colorId,
+            reportEvent: appliedFilter.reportEvent,
+            setIsLoading: setIsTableLoading,
+        })
+            .then((res) => {
+                setStartingBalance(res.data?.beginningRows || []);
+                setEndingBalance(res.data?.endingRows || []);
             })
             .catch((error) => {
                 setErrorMessage(error.error.message);
@@ -303,6 +327,94 @@ const ReportPage = () => {
         );
     }, [categoryFilterOptions, selectedCategoryFilter]);
 
+    const createBalanceSummary = (
+        transactions: ReportTransactionSummaryRow[],
+    ) => {
+        const groupedMap = new Map<string, ReportRow>();
+
+        transactions.forEach((transaction) => {
+            const categoryName = transaction.categoryName || "-";
+            const typeName = transaction.typeName || "-";
+            const typeCode = transaction.typeCode || "-";
+
+            const key = `${categoryName}|${typeName}|${typeCode}`;
+
+            const existing = groupedMap.get(key);
+
+            if (existing) {
+                existing.quantity += 1;
+                existing.details.push(transaction);
+                return;
+            }
+
+            groupedMap.set(key, {
+                key,
+                categoryName,
+                typeName,
+                typeCode,
+                quantity: 1,
+                details: [transaction],
+            });
+        });
+
+        const rows = Array.from(groupedMap.values()).sort((a, b) => {
+            if (a.categoryName !== b.categoryName) {
+                return a.categoryName.localeCompare(b.categoryName);
+            }
+
+            if (a.typeName !== b.typeName) {
+                return a.typeName.localeCompare(b.typeName);
+            }
+
+            return a.typeCode.localeCompare(b.typeCode);
+        });
+
+        const categoryTotals = Array.from(
+            rows.reduce((map, row) => {
+                map.set(
+                    row.categoryName,
+                    (map.get(row.categoryName) || 0) + row.quantity,
+                );
+
+                return map;
+            }, new Map<string, number>()),
+        )
+            .map(([categoryName, total]) => ({
+                categoryName,
+                total,
+            }))
+            .sort((a, b) =>
+                a.categoryName.localeCompare(b.categoryName),
+            );
+
+        const subtotal = rows.reduce(
+            (sum, row) => sum + row.quantity,
+            0,
+        );
+
+        const grandTotal = categoryTotals.reduce(
+            (sum, item) => sum + item.total,
+            0,
+        );
+
+        return {
+            rows,
+            categoryTotals,
+            subtotal,
+            grandTotal,
+        };
+    };
+
+    const startingBalanceSummary = useMemo(
+        () => createBalanceSummary(startingBalance),
+        [startingBalance],
+    );
+
+    const endingBalanceSummary = useMemo(
+        () => createBalanceSummary(endingBalance),
+        [endingBalance],
+    );
+
     const reportColumns: ColumnDef<ReportRow>[] = [
         {
             accessorKey: "categoryName",
@@ -378,6 +490,7 @@ const ReportPage = () => {
 
     useEffect(() => {
         void handleFetchTableReportData();
+        void handleFetchBalance();
     }, [handleFetchTableReportData, isFilterApplied, appliedFilter, appliedPeriodFilter]);
 
     useEffect(() => {
@@ -566,29 +679,129 @@ const ReportPage = () => {
             />
 
             {isFilterApplied ? (
-                <div className="mt-4 space-y-2 rounded-lg border p-4">
+                <AppCard
+                    title={
+                        selectedCategoryFilter === "All"
+                            ? `Total by Category (${selectedReportEvent === "selling" ? "Selling" : "Delivery Order"})`
+                            : `Sub Total ${selectedCategoryLabel}`
+                    }
+                    classNames={{
+                        content: "space-y-2",
+                    }}
+                >
                     {selectedCategoryFilter === "All" ? (
                         <>
-                            <p className="font-semibold">
-                                Total by Category ({selectedReportEvent === "selling" ? "Selling" : "Delivery Order"})
-                            </p>
                             {categoryTotals.length > 0 ? (
                                 categoryTotals.map((item) => (
-                                    <p key={item.categoryName} className="text-sm text-muted-foreground">
-                                        {item.categoryName}: <span className="font-medium text-foreground">{item.total}</span>
+                                    <p
+                                        key={item.categoryName}
+                                        className="text-sm text-muted-foreground"
+                                    >
+                                        {item.categoryName}:{" "}
+                                        <span className="font-medium text-foreground">
+                                            {item.total}
+                                        </span>
                                     </p>
                                 ))
                             ) : (
-                                <p className="text-sm text-muted-foreground">No category totals.</p>
+                                <p className="text-sm text-muted-foreground">
+                                    No category totals.
+                                </p>
                             )}
-                            <p className="pt-1 text-sm font-semibold">Grand Total: {grandTotal}</p>
+
+                            <p className="pt-1 text-sm font-semibold">
+                                Grand Total: {grandTotal}
+                            </p>
                         </>
                     ) : (
                         <p className="text-sm font-semibold">
-                            Sub Total {selectedCategoryLabel}: {subtotalForSelectedCategory}
+                            {subtotalForSelectedCategory}
                         </p>
                     )}
-                </div>
+                </AppCard>
+            ) : null}
+
+            {isFilterApplied ? (
+                <AppCard
+                    title={
+                        selectedCategoryFilter === "All"
+                            ? "Balance by Category"
+                            : `Balance ${selectedCategoryLabel}`
+                    }
+                    classNames={{
+                        content: "space-y-2",
+                    }}
+                >
+                    <div className="grid grid-cols-2 divide-x">
+                        <div className="space-y-2 pr-4">
+                            <p className="mb-2 font-semibold">Starting Balance</p>
+
+                            {selectedCategoryFilter === "All" ? (
+                                <>
+                                    {startingBalanceSummary.categoryTotals.length > 0 ? (
+                                        startingBalanceSummary.categoryTotals.map((item) => (
+                                            <p
+                                                key={item.categoryName}
+                                                className="text-sm text-muted-foreground"
+                                            >
+                                                {item.categoryName}:{" "}
+                                                <span className="font-medium text-foreground">
+                                                    {item.total}
+                                                </span>
+                                            </p>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">
+                                            No balance totals.
+                                        </p>
+                                    )}
+
+                                    <p className="pt-1 text-sm font-semibold">
+                                        Grand Total: {startingBalanceSummary.grandTotal}
+                                    </p>
+                                </>
+                            ) : (
+                                <p className="text-sm font-semibold">
+                                    {startingBalanceSummary.subtotal}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="pl-4 space-y-2">
+                            <p className="mb-2 font-semibold">Ending Balance</p>
+
+                            {selectedCategoryFilter === "All" ? (
+                                <>
+                                    {endingBalanceSummary.categoryTotals.length > 0 ? (
+                                        endingBalanceSummary.categoryTotals.map((item) => (
+                                            <p
+                                                key={item.categoryName}
+                                                className="text-sm text-muted-foreground"
+                                            >
+                                                {item.categoryName}:{" "}
+                                                <span className="font-medium text-foreground">
+                                                    {item.total}
+                                                </span>
+                                            </p>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">
+                                            No balance totals.
+                                        </p>
+                                    )}
+
+                                    <p className="pt-1 text-sm font-semibold">
+                                        Grand Total: {endingBalanceSummary.grandTotal}
+                                    </p>
+                                </>
+                            ) : (
+                                <p className="text-sm font-semibold">
+                                    {endingBalanceSummary.subtotal}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </AppCard>
             ) : null}
 
             <TransactionStatusModal

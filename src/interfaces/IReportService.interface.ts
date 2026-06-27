@@ -59,3 +59,13 @@ export interface ReportQueryRawRow {
 export interface GetTableReportDataResponse extends IResponse<
   ReportTransactionSummaryRow[]
 > {}
+
+export interface GetBalanceData {
+  beginningBalance: number;
+  endingBalance: number;
+  beginningRows: ReportTransactionSummaryRow[];
+  endingRows: ReportTransactionSummaryRow[];
+}
+
+
+export interface GetBalanceResponse extends IResponse<GetBalanceData> {}
