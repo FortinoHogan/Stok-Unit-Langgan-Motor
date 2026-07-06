@@ -77,7 +77,7 @@ const AppSidebar = () => {
         clearAuthenticatedUser()
         navigate(routes.login)
     }
-
+ console.log("visibleSidebarMenu", authenticatedUser)
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader>
@@ -203,6 +203,10 @@ const AppSidebar = () => {
                                             <span className="truncate text-xs">{authenticatedUser?.email}</span>
                                         </div>
                                     </div>
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel className="px-1 text-sm text-foreground">
+                                    Role: {authenticatedUser?.roleName}
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => { handleLogout() }}>

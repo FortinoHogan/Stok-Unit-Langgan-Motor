@@ -18,16 +18,18 @@ const getUserByEmail = async (
   const { email, setIsLoading } = params;
   setIsLoading?.(true);
   try {
-    const res = await ApiService.request<AuthenticatedUser>(() =>
+    const { data } = await ApiService.request(() =>
       supabase
         .from("AuthenticatedUser")
-        .select("*")
+        .select(`*, MsRole!AuthenticatedUser_roleId_fkey(roleName) `)
         .eq("email", email)
         .eq("isDeleted", false)
+        .eq("MsRole.isDeleted", false)
         .maybeSingle(),
     );
-
-    return res;
+    const user = data && { ...data, roleName: data.MsRole.roleName };
+    delete user?.MsRole;
+    return { data: user || null, error: null, status: 200, statusText: "OK" };
   } catch (error) {
     throw error;
   } finally {

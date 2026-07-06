@@ -53,6 +53,7 @@ export interface AuthenticatedUser {
   email: string;
   isDeleted: boolean;
   roleId: number;
+  roleName: string;
 }
 
 export interface MsCategory extends IModel {
