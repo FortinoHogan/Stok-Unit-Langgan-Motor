@@ -6,6 +6,13 @@ import {
 } from "@tanstack/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Eye } from "lucide-react";
+import {
+    Document,
+    Page,
+    Text,
+    View,
+    pdf,
+} from "@react-pdf/renderer";
 
 import AppAutoComplete from "@/components/app-components/app-auto-complete/AppAutoComplete";
 import { Button } from "@/components/ui/button";
@@ -15,6 +22,7 @@ import { monthFormatter } from "@/views/transaction-page/utilities";
 import TransactionStatusModal from "@/views/transaction-page/components/transaction-status-modal/TransactionStatusModal";
 import ReportTableSection from "./components/report-table-section/ReportTableSection";
 import {
+    exportStyles,
     reportEventOptions,
     reportFilterInitial,
 } from "./ReportPage.constant";
@@ -26,6 +34,7 @@ import type {
 } from "./ReportPage.interface";
 import type { ReportTransactionSummaryRow } from "@/interfaces/IReportService.interface";
 import AppCard from "@/components/app-components/app-card/AppCard";
+import { formatExportDate, formatLongDate } from "@/lib/utils";
 
 const ReportPage = () => {
     const today = useMemo(() => new Date(), []);
@@ -189,6 +198,127 @@ const ReportPage = () => {
                 setIsShowError(true);
             });
     }, [appliedFilter, appliedPeriodFilter, isFilterApplied]);
+
+    const handleExportFile = async () => {
+        await ReportService.getBalance({
+            transactionYear: selectedPeriodYear,
+            transactionMonth: selectedPeriodMonth,
+            transactionDay: selectedPeriodDay,
+            categoryId: selectedCategoryFilter,
+            typeId: selectedTypeFilter,
+            colorId: selectedColorFilter,
+            reportEvent: selectedReportEvent,
+            setIsLoading: setIsTableLoading,
+        })
+            .then(async (res) => {
+                const endingRows = res.data?.endingRows || [];
+
+                const groupedByCategory = endingRows.reduce((map, row) => {
+                    const categoryName = row.categoryName || "-";
+                    const previous = map.get(categoryName) || [];
+                    map.set(categoryName, [...previous, row]);
+                    return map;
+                }, new Map<string, ReportTransactionSummaryRow[]>());
+
+                const sortedCategories = Array.from(groupedByCategory.entries()).sort(
+                    (a, b) => a[0].localeCompare(b[0]),
+                );
+
+                const today = new Date();
+                const parsedYear = Number(selectedPeriodYear) || today.getFullYear();
+                const parsedMonth = Number(selectedPeriodMonth) || today.getMonth() + 1;
+                const parsedDay = Number(selectedPeriodDay);
+
+                const endOfSelectedMonth = new Date(parsedYear, parsedMonth, 0);
+                const dayIsAll = !selectedPeriodDay;
+
+                const resolvedPeriodDate = dayIsAll
+                    ? new Date(
+                        Math.min(
+                            endOfSelectedMonth.getTime(),
+                            today.getTime(),
+                        ),
+                    )
+                    : new Date(parsedYear, parsedMonth - 1, parsedDay || 1);
+
+                const periodLabel = formatLongDate(resolvedPeriodDate);
+
+                const ExportDocument = () => (
+                    <Document title="Unsold Transactions Report">
+                        <Page size="A4" style={exportStyles.page}>
+                            <View style={exportStyles.header}>
+                                <Text style={exportStyles.title}>Unsold Transactions (Ending Balance)</Text>
+                                <Text style={exportStyles.subtitle}>
+                                    Period: {periodLabel}
+                                </Text>
+                            </View>
+
+                            {sortedCategories.length === 0 ? (
+                                <Text style={exportStyles.empty}>No unsold transaction data.</Text>
+                            ) : (
+                                sortedCategories.map(([categoryName, rows]) => (
+                                    <View key={categoryName}>
+                                        <Text style={exportStyles.categoryTitle}>{categoryName}</Text>
+
+                                        <View style={exportStyles.tableHeader}>
+                                            <Text style={exportStyles.colCode}>Code</Text>
+                                            <Text style={exportStyles.colName}>Name</Text>
+                                            <Text style={exportStyles.colColor}>Color</Text>
+                                            <Text style={exportStyles.colRangka}>No Rangka</Text>
+                                            <Text style={exportStyles.colMesin}>No Mesin</Text>
+                                            <Text style={exportStyles.colDate}>Date DO</Text>
+                                        </View>
+
+                                        {rows
+                                            .slice()
+                                            .sort((a, b) => {
+                                                if ((a.typeCode || "") !== (b.typeCode || "")) {
+                                                    return (a.typeCode || "").localeCompare(b.typeCode || "");
+                                                }
+
+                                                const aDate = a.dateDO ? new Date(a.dateDO).getTime() : Number.POSITIVE_INFINITY;
+                                                const bDate = b.dateDO ? new Date(b.dateDO).getTime() : Number.POSITIVE_INFINITY;
+
+                                                if (aDate !== bDate) {
+                                                    return aDate - bDate;
+                                                }
+
+                                                if ((a.typeName || "") !== (b.typeName || "")) {
+                                                    return (a.typeName || "").localeCompare(b.typeName || "");
+                                                }
+
+                                                if ((a.colorName || "") !== (b.colorName || "")) {
+                                                    return (a.colorName || "").localeCompare(b.colorName || "");
+                                                }
+
+                                                return (a.noRangka || "").localeCompare(b.noRangka || "");
+                                            })
+                                            .map((row) => (
+                                                <View key={row.transactionId} style={exportStyles.tableRow}>
+                                                    <Text style={exportStyles.colCode}>{row.typeCode || "-"}</Text>
+                                                    <Text style={exportStyles.colName}>{row.typeName || "-"}</Text>
+                                                    <Text style={exportStyles.colColor}>{row.colorName || "-"}</Text>
+                                                    <Text style={exportStyles.colRangka}>{row.noRangka || "-"}</Text>
+                                                    <Text style={exportStyles.colMesin}>{row.noMesin || "-"}</Text>
+                                                    <Text style={exportStyles.colDate}>{formatExportDate(row.dateDO)}</Text>
+                                                </View>
+                                            ))}
+                                    </View>
+                                ))
+                            )}
+                        </Page>
+                    </Document>
+                );
+
+                const blob = await pdf(<ExportDocument />).toBlob();
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank", "noopener,noreferrer");
+            })
+            .catch((error) => {
+                setErrorMessage(error.error.message);
+                setIsShowError(true);
+            });
+    };
 
     const parsedSelectedPeriodMonth = useMemo(
         () => Number(selectedPeriodMonth),
@@ -651,6 +781,9 @@ const ReportPage = () => {
                 </div>
 
                 <div className="mt-3 flex justify-end gap-2">
+                    <Button type="button" variant={"secondary"} onClick={handleExportFile}>
+                        Export File
+                    </Button>
                     <Button type="button" onClick={handleApplyFilters}>
                         Apply
                     </Button>
