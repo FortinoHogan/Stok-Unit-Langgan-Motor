@@ -168,3 +168,9 @@ export interface GetTotalTransactionPerMonthRequest extends IRequestWithLoading 
   month: number;
   year: number;
 }
+
+export interface UnsoldTransactionRequest extends IRequestWithLoading {
+  transactionDetailId: number;
+  userUp: number;
+  updatedAt: string;
+}

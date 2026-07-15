@@ -77,7 +77,7 @@ const AppSidebar = () => {
         clearAuthenticatedUser()
         navigate(routes.login)
     }
- console.log("visibleSidebarMenu", authenticatedUser)
+ 
     return (
         <Sidebar collapsible="icon">
             <SidebarHeader>

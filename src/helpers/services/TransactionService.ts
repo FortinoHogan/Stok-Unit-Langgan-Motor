@@ -25,6 +25,7 @@ import type {
   UpdateTransactionDetailRequest,
   DeleteTransactionDetailRequest,
   GetTotalTransactionPerMonthRequest,
+  UnsoldTransactionRequest,
 } from "@/interfaces/ITransactionService";
 import { ApiService } from "@/utilities/ApiService";
 import { supabase } from "../supabase/client";
@@ -892,6 +893,42 @@ const getTotalTransactionPerMonth = async (
   }
 };
 
+const unsoldTransaction = async (
+  params: UnsoldTransactionRequest,
+): Promise<IResponse<TrTransactionDetail>> => {
+  const { transactionDetailId, userUp, updatedAt, setIsLoading } = params;
+  setIsLoading?.(true);
+
+  try {
+    const res = await ApiService.request<TrTransactionDetail>(() =>
+      supabase
+        .from("TrTransactionDetail")
+        .update({ userUp, updatedAt, isDeleted: true })
+        .eq("transactionDetailId", transactionDetailId)
+        .eq("isDeleted", false)
+        .select()
+        .single(),
+    );
+
+    const trTransactionId = res.data?.transactionId;
+
+    if (trTransactionId) {
+      await supabase
+        .from("TrTransaction")
+        .update({ userUp, updatedAt, dateOUT: null })
+        .eq("transactionId", trTransactionId)
+        .select()
+        .single();
+    }
+
+    return res;
+  } catch (error) {
+    throw error;
+  } finally {
+    setIsLoading?.(false);
+  }
+};
+
 export const TransactionService = {
   getTypeColorOptions,
   getCategoryOptions,
@@ -903,6 +940,7 @@ export const TransactionService = {
   getTransactionPrintDataByTransactionId,
   getTotalTransactionPerMonth,
 
+  unsoldTransaction,
   updateTransactionAsSold,
   insertTransactionDetail,
   updateTransactionDetail,

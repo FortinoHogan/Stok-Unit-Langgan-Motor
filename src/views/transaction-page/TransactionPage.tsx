@@ -73,6 +73,8 @@ const TransactionPage = () => {
     useState(false);
   const [isConfirmSellDetailModalOpen, setIsConfirmSellDetailModalOpen] =
     useState(false);
+  const [isConfirmUnsoldModalOpen, setIsConfirmUnsoldModalOpen] =
+    useState(false);
   const [isSellingDetailModalOpen, setIsSellingDetailModalOpen] =
     useState(false);
   const [isEditingSellingDetail, setIsEditingSellingDetail] = useState(false);
@@ -886,6 +888,53 @@ const TransactionPage = () => {
 
     setIsSellingDetailModalOpen(false);
     setIsConfirmSellDetailModalOpen(true);
+  };
+
+  const handleOpenConfirmUnsoldModal = () => {
+    setIsSellingDetailModalOpen(false);
+    setIsConfirmUnsoldModalOpen(true);
+  };
+
+  const handleConfirmUnsoldTransaction = async () => {
+    const userId = authenticatedUser?.userId;
+
+    if (!userId) {
+      setErrorMessage("Authenticated user not found. Please login again.");
+      setIsShowError(true);
+      return;
+    }
+
+    if (!sellingTransaction) {
+      setErrorMessage("No transaction selected to unsold.");
+      setIsShowError(true);
+      return;
+    }
+
+    if (!sellingTransaction.transactionDetailId) {
+      setErrorMessage("Transaction detail not found.");
+      setIsShowError(true);
+      return;
+    }
+
+    await TransactionService.unsoldTransaction({
+      transactionDetailId: sellingTransaction.transactionDetailId,
+      userUp: userId,
+      updatedAt: new Date().toISOString(),
+      setIsLoading: setIsActionLoading,
+    })
+      .then(() => {
+        setSuccessMessage("Transaction marked as unsold successfully.");
+        setIsShowSuccess(true);
+        setIsConfirmUnsoldModalOpen(false);
+        setIsSellingDetailModalOpen(false);
+        setSellingTransaction(null);
+        resetSellingDetailForm();
+        void handleFetchTableTransactionData();
+      })
+      .catch((error) => {
+        setErrorMessage(error.error.message);
+        setIsShowError(true);
+      });
   };
 
   const handleOpenEditSellingDetailRow = async (row: TransactionDetailRow) => {
@@ -1820,6 +1869,16 @@ const TransactionPage = () => {
             >
               Cancel
             </Button>
+            {isEditingSellingDetail && (
+              <Button
+                type="button"
+                variant={"destructive"}
+                disabled={isActionLoading}
+                onClick={handleOpenConfirmUnsoldModal}
+              >
+                {isActionLoading ? "Saving..." : "Unsold"}
+              </Button>
+            )}
             <Button
               type="button"
               disabled={isActionLoading}
@@ -1903,6 +1962,43 @@ const TransactionPage = () => {
             onChange={setSellingPhoneInput}
           />
         </div>
+      </AppModal>
+
+      <AppModal
+        open={isConfirmUnsoldModalOpen}
+        onOpenChange={(open) => {
+          setIsConfirmUnsoldModalOpen(open);
+        }}
+        title="Confirm Unsold Transaction"
+        showCloseButton={true}
+        footer={
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isActionLoading}
+              onClick={() => {
+                setIsConfirmUnsoldModalOpen(false);
+                setIsSellingDetailModalOpen(true);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isActionLoading}
+              onClick={handleConfirmUnsoldTransaction}
+            >
+              {isActionLoading ? "Unselling..." : "Confirm Unsold"}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm">
+          Mark transaction <strong>{sellingTransaction?.noMesin || "-"}</strong> /{" "}
+          <strong>{sellingTransaction?.noRangka || "-"}</strong> as unsold?
+        </p>
       </AppModal>
 
       <AppModal
