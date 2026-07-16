@@ -2,6 +2,7 @@ import type { ReportTransactionSummaryRow } from "@/interfaces/IReportService.in
 
 export interface ReportTableSectionProps {
   table: any;
+  reportEvent: "delivery-order" | "selling";
   isLoading?: boolean;
   page?: number;
   pageSize?: number;

@@ -4,6 +4,7 @@ import {
     type ColumnDef,
     useReactTable,
 } from "@tanstack/react-table";
+import { useMemo } from "react";
 
 import AppModal from "@/components/app-components/app-modal/AppModal";
 import AppTable from "@/components/app-components/app-table/AppTable";
@@ -14,6 +15,7 @@ import type { ReportTableSectionProps } from "./ReportTableSection.interface";
 const ReportTableSection = (props: ReportTableSectionProps) => {
     const {
         table,
+        reportEvent,
         isLoading = false,
         page = 1,
         pageSize = 10,
@@ -29,61 +31,76 @@ const ReportTableSection = (props: ReportTableSectionProps) => {
         detailRows,
     } = props;
 
-    const detailColumns: ColumnDef<ReportTransactionSummaryRow>[] = [
-        {
-            accessorKey: "colorName",
-            header: "Color",
-            cell: ({ row }) => row.original.colorName || "-",
-        },
-        {
-            accessorKey: "noMesin",
-            header: "No Mesin",
-        },
-        {
-            accessorKey: "noRangka",
-            header: "No Rangka",
-        },
-        {
-            accessorKey: "year",
-            header: "Year",
-            cell: ({ row }) => row.original.year || "-",
-        },
-        {
-            accessorKey: "isRFS",
-            header: "Status",
-            cell: ({ row }) => (row.original.isRFS ? "RFS" : "NRFS"),
-        },
-        {
-            accessorKey: "dateDO",
-            header: "Date DO",
-            cell: ({ row }) => {
-                const value = row.original.dateDO;
-
-                return value
-                    ? new Intl.DateTimeFormat("en-US", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                    }).format(new Date(value))
-                    : "-";
+    const detailColumns = useMemo<ColumnDef<ReportTransactionSummaryRow>[]>(() => {
+        const baseColumns: ColumnDef<ReportTransactionSummaryRow>[] = [
+            {
+                accessorKey: "colorName",
+                header: "Color",
+                cell: ({ row }) => row.original.colorName || "-",
             },
-        },
-        {
-            accessorKey: "dateOUT",
-            header: "Date OUT",
-            cell: ({ row }) => {
-                const value = row.original.dateOUT;
-
-                return value
-                    ? new Intl.DateTimeFormat("en-US", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                    }).format(new Date(value))
-                    : "-";
+            {
+                accessorKey: "noMesin",
+                header: "No Mesin",
             },
-        },
-    ];
+            {
+                accessorKey: "noRangka",
+                header: "No Rangka",
+            },
+            {
+                accessorKey: "year",
+                header: "Year",
+                cell: ({ row }) => row.original.year || "-",
+            },
+            {
+                accessorKey: "isRFS",
+                header: "Status",
+                cell: ({ row }) => (row.original.isRFS ? "RFS" : "NRFS"),
+            },
+            {
+                accessorKey: "dateDO",
+                header: "Date DO",
+                cell: ({ row }) => {
+                    const value = row.original.dateDO;
+
+                    return value
+                        ? new Intl.DateTimeFormat("en-US", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                        }).format(new Date(value))
+                        : "-";
+                },
+            },
+            {
+                accessorKey: "dateOUT",
+                header: "Date OUT",
+                cell: ({ row }) => {
+                    const value = row.original.dateOUT;
+
+                    return value
+                        ? new Intl.DateTimeFormat("en-US", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                        }).format(new Date(value))
+                        : "-";
+                },
+            },
+        ];
+
+        if (reportEvent !== "selling") {
+            return baseColumns;
+        }
+
+        const columns = [...baseColumns];
+        columns.splice(5, 0, {
+            accessorKey: "customerName",
+            header: "Customer Name",
+            cell: ({ row }) => row.original.customerName || "-",
+        });
+
+        return columns;
+    }, [reportEvent]);
 
     const detailTable = useReactTable({
         data: detailRows,
@@ -119,7 +136,7 @@ const ReportTableSection = (props: ReportTableSectionProps) => {
                 title={detailTitle || "Detail"}
                 showCloseButton={true}
                 classNames={{
-                    content: "sm:max-w-5xl max-h-[calc(100dvh-2rem)] overflow-hidden",
+                    content: "sm:max-w-7xl max-h-[calc(100dvh-2rem)] overflow-hidden",
                     body: "space-y-2 max-h-[calc(100dvh-12rem)] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
                     footer: "bg-muted/30",
                 }}

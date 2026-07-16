@@ -792,6 +792,7 @@ const ReportPage = () => {
 
             <ReportTableSection
                 table={table}
+                reportEvent={appliedFilter.reportEvent}
                 isLoading={isTableLoading}
                 page={tablePage}
                 pageSize={tablePageSize}

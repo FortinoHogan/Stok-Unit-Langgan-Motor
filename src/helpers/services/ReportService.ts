@@ -78,6 +78,10 @@ const getTableReportData = async (
           isRFS,
           dateDO,
           dateOUT,
+          TrTransactionDetail (
+            name,
+            isDeleted
+          ),
 					TrTypeColor!inner (
             typeColorId,
 						typeId,
@@ -109,6 +113,10 @@ const getTableReportData = async (
       .gte(dateColumn, rangeStart.toISOString())
       .lte(dateColumn, rangeEnd.toISOString());
 
+    if (reportEvent === "selling") {
+      query = query.eq("TrTransactionDetail.isDeleted", false);
+    }
+
     if (categoryId !== "All") {
       query = query.eq("TrTypeColor.MsType.categoryId", categoryId);
     }
@@ -128,6 +136,7 @@ const getTableReportData = async (
         const typeColor = pickFirst(item.TrTypeColor);
         const type = pickFirst(typeColor?.MsType);
         const category = pickFirst(type?.MsCategory);
+        const transactionDetail = pickFirst(item.TrTransactionDetail);
 
         return {
           transactionId: item.transactionId,
@@ -136,6 +145,8 @@ const getTableReportData = async (
           typeName: type?.typeName || null,
           typeCode: type?.typeCode || null,
           colorName: pickFirst(typeColor?.MsColor)?.colorName || null,
+          customerName:
+            reportEvent === "selling" ? transactionDetail?.name || null : null,
           noMesin: item.noMesin,
           noRangka: item.noRangka,
           year: item.year,
@@ -303,6 +314,7 @@ const getBalance = async (
         typeName: type?.typeName || null,
         typeCode: type?.typeCode || null,
         colorName: pickFirst(typeColor?.MsColor)?.colorName || null,
+        customerName: null,
         noMesin: item.noMesin,
         noRangka: item.noRangka,
         year: item.year,

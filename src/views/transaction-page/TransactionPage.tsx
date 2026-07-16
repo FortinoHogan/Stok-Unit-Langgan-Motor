@@ -918,6 +918,7 @@ const TransactionPage = () => {
 
     await TransactionService.unsoldTransaction({
       transactionDetailId: sellingTransaction.transactionDetailId,
+      trannsactionId: sellingTransaction.transactionId,
       userUp: userId,
       updatedAt: new Date().toISOString(),
       setIsLoading: setIsActionLoading,

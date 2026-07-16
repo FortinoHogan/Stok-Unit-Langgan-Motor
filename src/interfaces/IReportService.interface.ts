@@ -17,6 +17,7 @@ export interface ReportTransactionSummaryRow {
   typeName: string | null;
   typeCode: string | null;
   colorName: string | null;
+  customerName: string | null;
   noMesin: string;
   noRangka: string;
   year: number;
@@ -44,6 +45,11 @@ export interface ReportTypeColorRaw {
   MsColor: ReportColorRaw | ReportColorRaw[] | null;
 }
 
+export interface ReportTransactionDetailRaw {
+  name: string | null;
+  isDeleted: boolean;
+}
+
 export interface ReportQueryRawRow {
   transactionId: number;
   typeColorId: number;
@@ -54,6 +60,10 @@ export interface ReportQueryRawRow {
   dateDO: string | null;
   dateOUT: string | null;
   TrTypeColor: ReportTypeColorRaw | ReportTypeColorRaw[] | null;
+  TrTransactionDetail:
+    | ReportTransactionDetailRaw
+    | ReportTransactionDetailRaw[]
+    | null;
 }
 
 export interface GetTableReportDataResponse extends IResponse<
@@ -66,6 +76,5 @@ export interface GetBalanceData {
   beginningRows: ReportTransactionSummaryRow[];
   endingRows: ReportTransactionSummaryRow[];
 }
-
 
 export interface GetBalanceResponse extends IResponse<GetBalanceData> {}

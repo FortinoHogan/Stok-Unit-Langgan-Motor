@@ -895,12 +895,18 @@ const getTotalTransactionPerMonth = async (
 
 const unsoldTransaction = async (
   params: UnsoldTransactionRequest,
-): Promise<IResponse<TrTransactionDetail>> => {
-  const { transactionDetailId, userUp, updatedAt, setIsLoading } = params;
+): Promise<IResponse<TrTransaction>> => {
+  const {
+    transactionDetailId,
+    trannsactionId,
+    userUp,
+    updatedAt,
+    setIsLoading,
+  } = params;
   setIsLoading?.(true);
 
   try {
-    const res = await ApiService.request<TrTransactionDetail>(() =>
+    await ApiService.request<TrTransactionDetail>(() =>
       supabase
         .from("TrTransactionDetail")
         .update({ userUp, updatedAt, isDeleted: true })
@@ -910,16 +916,15 @@ const unsoldTransaction = async (
         .single(),
     );
 
-    const trTransactionId = res.data?.transactionId;
-
-    if (trTransactionId) {
-      await supabase
+    const res = await ApiService.request<TrTransaction>(() =>
+      supabase
         .from("TrTransaction")
         .update({ userUp, updatedAt, dateOUT: null })
-        .eq("transactionId", trTransactionId)
+        .eq("transactionId", trannsactionId)
+        .eq("isDeleted", false)
         .select()
-        .single();
-    }
+        .single(),
+    );
 
     return res;
   } catch (error) {
